@@ -5,6 +5,7 @@ from google import genai
 from google.genai import types
 from Models.usuario import Usuario
 from Models.perfil_usuario import PerfilUsuario
+from Util.estado import get_pregunta_actual
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
@@ -32,48 +33,64 @@ class GeminiOrchestratorService:
         contexto_perfil = ""
         if perfil:
             contexto_perfil = f"""
-Perfil actual del usuario:
+Perfil actual:
 - Tipo de viaje: {perfil.tipo_viaje or 'No especificado'}
 - Acompañantes: {perfil.acompanantes or 'No especificado'}
 - Presupuesto: {perfil.presupuesto or 'No especificado'}
-- Duración estadía: {perfil.duracion_estadia or 'No especificado'} días
+- Duración: {perfil.duracion_estadia or 'No especificado'} días
 - Preferencias comida: {perfil.preferencias_comida or 'No especificado'}
-- Interés en regalos: {perfil.interes_regalos or 'No especificado'}
-- Interés en ropa: {perfil.interes_ropa or 'No especificado'}
-- Tipo de recreación: {perfil.interes_tipo_recreacion or 'No especificado'}
+- Interés regalos: {perfil.interes_regalos or 'No especificado'}
+- Interés ropa: {perfil.interes_ropa or 'No especificado'}
+- Tipo recreación: {perfil.interes_tipo_recreacion or 'No especificado'}
+- Viaja con niños: {perfil.viaja_con_ninos or 'No especificado'}
 """
+        
+        # Obtener pregunta actual para contexto
+        pregunta_actual = get_pregunta_actual(usuario.telefono) if hasattr(usuario, 'telefono') else None
         
         prompt = f"""Eres un asistente de viaje que ayuda a usuarios a planificar su estadía en una ciudad.
 
-Estado actual de la conversación: {estado_actual}
-Intereses seleccionados: {', '.join(usuario.intereses) if usuario.intereses else 'Ninguno'}
+Estado actual: {estado_actual}
+Intereses: {', '.join(usuario.intereses) if usuario.intereses else 'Ninguno'}
 {contexto_perfil}
+Pregunta actual que se está haciendo: {pregunta_actual or 'Ninguna específica'}
 
 Mensaje del usuario: "{mensaje}"
 
-Tu tarea es:
-1. Identificar la intención del mensaje
-2. Si el usuario está respondiendo una pregunta sobre su perfil, detectar qué campo está respondiendo
-3. Extraer el valor de la respuesta
-4. Generar una respuesta natural y amigable
+IMPORTANTE: Si el usuario está respondiendo una pregunta, detecta SOLO UN campo a la vez. 
+Si el mensaje menciona múltiples campos, prioriza el que corresponde a la pregunta actual.
 
-Campos posibles del perfil:
-- tipo_viaje: "solo", "pareja", "familia", "amigos", "negocios" (OBLIGATORIO)
-- acompanantes: "solo", "pareja", "familia", "amigos" (OBLIGATORIO)
-- presupuesto: "economico", "medio", "alto", "premium" (OBLIGATORIO)
-- duracion_estadia: número de días (OBLIGATORIO)
-- preferencias_comida: "local", "internacional", "vegetariano", "vegano", "sin_restricciones" (SOLO si "restaurantes" en intereses)
-- interes_regalos: true/false (SOLO si "compras" en intereses)
-- interes_ropa: true/false (SOLO si "compras" en intereses)
-- interes_tipo_recreacion: "activa", "pasiva", "familiar", "romantica" (SOLO si "recreacion" en intereses)
+Tu tarea:
+1. Identificar si el mensaje responde a la pregunta actual
+2. Detectar SOLO UN campo del perfil (el más relevante según la pregunta actual)
+3. Extraer el valor correspondiente
+4. NO generar mensaje_respuesta si no es necesario (solo si es muy relevante)
 
-Responde SOLO con un JSON válido en este formato:
+Campos posibles:
+- tipo_viaje: "solo", "pareja", "familia", "amigos", "negocios"
+- acompanantes: "solo", "pareja", "familia", "amigos"
+- presupuesto: "economico", "medio", "alto", "premium"
+- duracion_estadia: número entero (días)
+- preferencias_comida: "local", "internacional", "vegetariano", "vegano", "sin_restricciones"
+- interes_regalos: true/false
+- interes_ropa: true/false
+- interes_tipo_recreacion: "activa", "pasiva", "familiar", "romantica"
+- viaja_con_ninos: true/false (solo si acompanantes="familia")
+
+REGLA CRÍTICA: Si el mensaje menciona "familia" o "con mi familia", puede referirse a:
+- tipo_viaje="familia" (si la pregunta actual es sobre tipo de viaje)
+- acompanantes="familia" (si la pregunta actual es sobre acompañantes)
+- viaja_con_ninos=true (si ya tiene acompanantes="familia" y la pregunta es sobre niños)
+
+SIEMPRE prioriza el campo que corresponde a la pregunta actual.
+
+Responde SOLO con JSON válido:
 {{
     "intencion": "responder_perfil" | "pregunta" | "saludo" | "otro",
     "respuesta_detectada": true/false,
     "campo_perfil": "nombre_del_campo" o null,
     "valor_detectado": "valor_extraido" o null,
-    "mensaje_respuesta": "respuesta natural y amigable" o null
+    "mensaje_respuesta": null
 }}"""
 
         try:
@@ -194,7 +211,7 @@ Responde SOLO con JSON:
         """
         perfil = usuario.perfil
         if not perfil:
-            return "¿Qué tipo de viaje estás haciendo? (solo, pareja, familia, amigos, negocios)"
+            return "¿Qué tipo de viaje estás haciendo?"
         
         # Obtener campos faltantes considerando intereses (nueva lógica)
         campos_faltantes = perfil.obtener_campos_faltantes(intereses)
@@ -202,21 +219,22 @@ Responde SOLO con JSON:
         if not campos_faltantes:
             return None  # Perfil completo
         
-        # Mapeo de campos a preguntas
+        # Mapeo de campos a preguntas (tono directo, amigable, medio formal)
         preguntas_map = {
-            "tipo_viaje": "¿Qué tipo de viaje estás haciendo? (solo, pareja, familia, amigos, negocios)",
-            "acompanantes": "¿Viajás solo o acompañado? (solo, pareja, familia, amigos)",
-            "presupuesto": "¿Qué presupuesto tenés en mente? (económico, medio, alto, premium)",
-            "duracion_estadia": "¿Cuántos días vas a estar en la ciudad?",
-            "preferencias_comida": "¿Qué tipo de comida te gusta más? (local, internacional, vegetariano, vegano, sin restricciones)",
-            "interes_regalos": "¿Buscás algo para vos o para regalar? (respondé 'para mí' o 'para regalar')",
-            "interes_ropa": "¿Te interesa comprar ropa durante tu viaje? (sí o no)",
-            "interes_tipo_recreacion": "¿Qué tipo de recreación preferís? (activa - deportes/caminatas, pasiva - descanso/relax, familiar - con niños, romántica - pareja)"
+            "tipo_viaje": "¿Qué tipo de viaje estás haciendo? (solo, con pareja, con familia, con amigos, negocios)",
+            "acompanantes": "¿Viajás solo o acompañado?",
+            "presupuesto": "¿Qué presupuesto tenés?",
+            "duracion_estadia": "¿Cuántos días vas a estar?",
+            "preferencias_comida": "¿Qué tipo de comida preferís?",
+            "interes_regalos": "¿Buscás algo para vos o para regalar?",
+            "interes_ropa": "¿Te interesa comprar ropa?",
+            "interes_tipo_recreacion": "¿Qué tipo de recreación preferís?",
+            "viaja_con_ninos": "¿Viajás con niños o familiares chicos?"
         }
         
         # Priorizar: primero campos obligatorios, luego condicionales
         campos_obligatorios = ["tipo_viaje", "acompanantes", "presupuesto", "duracion_estadia"]
-        campos_condicionales = ["preferencias_comida", "interes_regalos", "interes_ropa", "interes_tipo_recreacion"]
+        campos_condicionales = ["preferencias_comida", "interes_regalos", "interes_ropa", "interes_tipo_recreacion", "viaja_con_ninos"]
         
         # Buscar primero campos obligatorios faltantes
         for campo in campos_obligatorios:
@@ -248,7 +266,7 @@ Responde SOLO con JSON:
         if usuario.perfil:
             perfil = usuario.perfil
             perfil_texto = f"""
-Perfil del usuario:
+Perfil:
 - Tipo de viaje: {perfil.tipo_viaje or 'No especificado'}
 - Acompañantes: {perfil.acompanantes or 'No especificado'}
 - Presupuesto: {perfil.presupuesto or 'No especificado'}
@@ -259,11 +277,14 @@ Perfil del usuario:
                 perfil_texto += f"\n- Preferencias comida: {perfil.preferencias_comida or 'No especificado'}"
             
             if "compras" in usuario.intereses:
-                perfil_texto += f"\n- Interés en regalos: {perfil.interes_regalos or 'No especificado'}"
-                perfil_texto += f"\n- Interés en ropa: {perfil.interes_ropa or 'No especificado'}"
+                perfil_texto += f"\n- Interés regalos: {perfil.interes_regalos or 'No especificado'}"
+                perfil_texto += f"\n- Interés ropa: {perfil.interes_ropa or 'No especificado'}"
             
             if "recreacion" in usuario.intereses:
-                perfil_texto += f"\n- Tipo de recreación: {perfil.interes_tipo_recreacion or 'No especificado'}"
+                perfil_texto += f"\n- Tipo recreación: {perfil.interes_tipo_recreacion or 'No especificado'}"
+            
+            if perfil.viaja_con_ninos is not None:
+                perfil_texto += f"\n- Viaja con niños: {perfil.viaja_con_ninos}"
         
         excursiones_texto = "\n".join([
             f"- {exc.nombre} ({exc.categoria}): {exc.descripcion}"
@@ -280,12 +301,13 @@ Intereses: {intereses_texto}
 Excursiones recomendadas:
 {excursiones_texto}
 
-Genera un resumen natural, amigable y personalizado (máximo 200 palabras) que:
-1. Mencione el nombre del usuario si está disponible
-2. Haga referencia a sus intereses y preferencias
-3. Presente las recomendaciones de forma entusiasta pero no invasiva
-4. Use emojis apropiados
-5. Sea conversacional y cálido
+Genera un resumen directo, amigable y medio formal (máximo 150 palabras) que:
+1. Sea conciso y no robe tiempo al usuario
+2. Mencione el nombre si está disponible
+3. Haga referencia breve a sus intereses
+4. Presente las recomendaciones de forma clara y directa
+5. Use emojis moderados
+6. Mantenga tono amigable pero profesional
 
 Responde SOLO con el texto del resumen, sin explicaciones adicionales."""
 

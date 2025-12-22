@@ -11,6 +11,7 @@ class PerfilUsuario:
         interes_regalos: Optional[bool] = None,
         interes_ropa: Optional[bool] = None,  # True si le interesa comprar ropa
         interes_tipo_recreacion: Optional[str] = None,  # "activa", "pasiva", "familiar", "romantica"
+        viaja_con_ninos: Optional[bool] = None,  # True si viaja con niños/familiares chicos
         duracion_estadia: Optional[int] = None  # días
     ):
         self.tipo_viaje = tipo_viaje
@@ -20,6 +21,7 @@ class PerfilUsuario:
         self.interes_regalos = interes_regalos
         self.interes_ropa = interes_ropa
         self.interes_tipo_recreacion = interes_tipo_recreacion
+        self.viaja_con_ninos = viaja_con_ninos
         self.duracion_estadia = duracion_estadia
     
     def actualizar_campo(self, campo: str, valor):
@@ -68,6 +70,10 @@ class PerfilUsuario:
         if "recreacion" in intereses:
             campos_condicionales.append("interes_tipo_recreacion")
         
+        # Si viaja con familia, preguntar si hay niños
+        if self.acompanantes == "familia" and self.viaja_con_ninos is None:
+            campos_condicionales.append("viaja_con_ninos")
+        
         # Combinar todos los campos requeridos
         campos_requeridos = campos_obligatorios + campos_condicionales
         
@@ -83,6 +89,7 @@ class PerfilUsuario:
             "interes_regalos": self.interes_regalos,
             "interes_ropa": self.interes_ropa,
             "interes_tipo_recreacion": self.interes_tipo_recreacion,
+            "viaja_con_ninos": self.viaja_con_ninos,
             "duracion_estadia": self.duracion_estadia
         }
 

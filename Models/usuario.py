@@ -76,6 +76,11 @@ class Usuario:
             if perfil.interes_tipo_recreacion is None:
                 return False
         
+        # Si viaja con familia, debe tener respuesta sobre niños
+        if perfil.acompanantes == "familia":
+            if perfil.viaja_con_ninos is None:
+                return False
+        
         # Si llegamos aquí, el perfil está completo
         return True
     

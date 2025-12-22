@@ -285,11 +285,11 @@ class Chat:
         
         mensaje_inicial = (
             f"Hola {usuario.nombre or 'viajero'} 👋\n\n"
-            f"Estoy acá para ayudarte a disfrutar al máximo tu recorrido por {usuario.ciudad or 'la ciudad'}.\n\n"
-            f"Para empezar, contame qué tipo de cosas te interesan durante este viaje 👇"
+            f"Te ayudo a armar tu plan para {usuario.ciudad or 'la ciudad'}.\n\n"
+            f"¿Qué te interesa? 👇"
         ) if not intereses_actuales else (
             f"Seleccionaste: {', '.join([i.capitalize() for i in intereses_actuales])}\n\n"
-            f"¿Querés agregar más intereses o continuar?"
+            f"¿Agregar más o continuar?"
         )
         
         payload = {
@@ -325,29 +325,43 @@ class Chat:
         """Flujo para armar el perfil del usuario con preguntas progresivas"""
         usuario = UsuarioService.obtener_o_crear_usuario(numero)
         
+        # IMPORTANTE: Si el perfil ya está completo y no es un ajuste explícito, NO volver a preguntar
+        if usuario.tiene_perfil_completo() and texto.lower() not in ("ajustar plan", "ajustar", "modificar", "cambiar"):
+            # Perfil completo, pasar a seguimiento o generación según contexto
+            if usuario.estado_conversacion == ESTADOS_BOT["SEGUIMIENTO"]:
+                return self.flujo_seguimiento(numero, texto)
+            else:
+                # Si no hay plan generado, generarlo
+                set_estado_bot(numero, ESTADOS_BOT["GENERANDO_PLAN"])
+                usuario.estado_conversacion = ESTADOS_BOT["GENERANDO_PLAN"]
+                UsuarioService.actualizar_usuario(usuario)
+                return self.flujo_generando_plan(numero, texto)
+        
         # Inicializar perfil si no existe
         if not usuario.perfil:
             UsuarioService.inicializar_perfil(numero)
             usuario = UsuarioService.obtener_usuario_por_telefono(numero)
         
-        # Interpretar respuesta del usuario usando Gemini
-        interpretacion = GeminiOrchestratorService.interpretar_mensaje_usuario(
-            texto,
-            usuario
-        )
-        
-        # Si detectó una respuesta a un campo del perfil
-        if interpretacion.get("respuesta_detectada") and interpretacion.get("campo_perfil"):
-            campo = interpretacion.get("campo_perfil")
-            valor = interpretacion.get("valor_detectado")
+        # Solo interpretar si el texto no es un comando de ajuste
+        interpretacion = None
+        if texto.lower() not in ("ajustar plan", "ajustar", "modificar", "cambiar"):
+            # Interpretar respuesta del usuario usando Gemini
+            interpretacion = GeminiOrchestratorService.interpretar_mensaje_usuario(
+                texto,
+                usuario
+            )
             
-            # Actualizar perfil
-            UsuarioService.actualizar_perfil(numero, campo, valor)
-            usuario = UsuarioService.obtener_usuario_por_telefono(numero)
-            
-            # Mensaje de confirmación si Gemini generó uno
-            if interpretacion.get("mensaje_respuesta"):
-                enviar_mensaje_whatsapp(numero, interpretacion.get("mensaje_respuesta"))
+            # Si detectó una respuesta a un campo del perfil
+            if interpretacion and interpretacion.get("respuesta_detectada") and interpretacion.get("campo_perfil"):
+                campo = interpretacion.get("campo_perfil")
+                valor = interpretacion.get("valor_detectado")
+                
+                # Actualizar perfil
+                UsuarioService.actualizar_perfil(numero, campo, valor)
+                usuario = UsuarioService.obtener_usuario_por_telefono(numero)
+                
+                # NO enviar mensaje de confirmación aquí para evitar duplicación
+                # Solo actualizar y continuar con siguiente pregunta
         
         # Verificar si el perfil está completo
         if usuario.tiene_perfil_completo():
@@ -357,7 +371,7 @@ class Chat:
             UsuarioService.actualizar_usuario(usuario)
             return self.flujo_generando_plan(numero, texto)
         
-        # Generar siguiente pregunta
+        # Generar siguiente pregunta (solo una vez)
         siguiente_pregunta = GeminiOrchestratorService.generar_pregunta_siguiente(
             usuario,
             usuario.intereses
@@ -365,7 +379,6 @@ class Chat:
         
         if siguiente_pregunta:
             # Guardar qué pregunta se está haciendo
-            # Extraer el campo de la pregunta (simplificado)
             campo_pregunta = None
             if "tipo de viaje" in siguiente_pregunta.lower():
                 campo_pregunta = "tipo_viaje"
@@ -375,12 +388,14 @@ class Chat:
                 campo_pregunta = "preferencias_comida"
             elif "presupuesto" in siguiente_pregunta.lower():
                 campo_pregunta = "presupuesto"
-            elif "regalar" in siguiente_pregunta.lower() or ("vos" in siguiente_pregunta.lower() and "regalar" in siguiente_pregunta.lower()):
+            elif "regalar" in siguiente_pregunta.lower():
                 campo_pregunta = "interes_regalos"
             elif "ropa" in siguiente_pregunta.lower():
                 campo_pregunta = "interes_ropa"
             elif "recreación" in siguiente_pregunta.lower() or "recreacion" in siguiente_pregunta.lower():
                 campo_pregunta = "interes_tipo_recreacion"
+            elif "niños" in siguiente_pregunta.lower() or "ninos" in siguiente_pregunta.lower() or "chicos" in siguiente_pregunta.lower():
+                campo_pregunta = "viaja_con_ninos"
             elif "días" in siguiente_pregunta.lower() or "dias" in siguiente_pregunta.lower():
                 campo_pregunta = "duracion_estadia"
             
@@ -390,6 +405,7 @@ class Chat:
             UsuarioService.actualizar_usuario(usuario)
             self.set_waiting_for(numero, "flujo_armando_perfil")
             
+            # Enviar SOLO UNA pregunta
             return enviar_mensaje_whatsapp(numero, siguiente_pregunta)
         else:
             # No hay más preguntas, pasar a generación de plan
@@ -448,39 +464,46 @@ class Chat:
     
     def flujo_seguimiento(self, numero, texto):
         """Ofrece ayuda adicional después de presentar el plan"""
-        usuario = UsuarioService.obtener_usuario_por_telefono(numero)
+        usuario = UsuarioService.obtener_o_crear_usuario(numero)
         
         texto_lower = texto.lower()
         
-        # Opciones de seguimiento
-        if texto_lower in ("ajustar", "modificar", "cambiar", "otro plan"):
-            # Volver a armando perfil
-            set_estado_bot(numero, ESTADOS_BOT["ARMANDO_PERFIL"])
-            if usuario:
+        # IMPORTANTE: Si el perfil está completo, NO volver a preguntar
+        # Solo procesar comandos específicos o consultas generales
+        if usuario.tiene_perfil_completo():
+            # Opciones de seguimiento
+            if texto_lower in ("ajustar", "modificar", "cambiar", "otro plan"):
+                # Volver a armando perfil (pero mantener datos existentes)
+                set_estado_bot(numero, ESTADOS_BOT["ARMANDO_PERFIL"])
                 usuario.estado_conversacion = ESTADOS_BOT["ARMANDO_PERFIL"]
                 UsuarioService.actualizar_usuario(usuario)
-            return self.flujo_armando_perfil(numero, "ajustar plan")
-        
-        if texto_lower in ("nuevo plan", "otro", "generar otro"):
-            # Generar nuevo plan
-            set_estado_bot(numero, ESTADOS_BOT["GENERANDO_PLAN"])
-            if usuario:
+                return self.flujo_armando_perfil(numero, "ajustar plan")
+            
+            if texto_lower in ("nuevo plan", "otro", "generar otro"):
+                # Generar nuevo plan con el mismo perfil
+                set_estado_bot(numero, ESTADOS_BOT["GENERANDO_PLAN"])
                 usuario.estado_conversacion = ESTADOS_BOT["GENERANDO_PLAN"]
                 UsuarioService.actualizar_usuario(usuario)
-            return self.flujo_generando_plan(numero, texto)
-        
-        # Mensaje de seguimiento
-        mensaje = (
-            "Si querés, puedo ayudarte a:\n"
-            "• Elegir qué hacer hoy\n"
-            "• Buscar algo cerca de tu ubicación\n"
-            "• Ajustar el plan según tus preferencias\n\n"
-            "Solo escribime lo que necesitás 👌"
-        )
-        
-        set_estado_bot(numero, ESTADOS_BOT["SEGUIMIENTO"])
-        if usuario:
+                return self.flujo_generando_plan(numero, texto)
+            
+            # Si no es un comando específico, solo mostrar ayuda
+            mensaje = (
+                "¿Necesitás algo más?\n"
+                "• Ajustar el plan\n"
+                "• Generar otro plan\n"
+                "• Consultar algo específico\n\n"
+                "Escribime lo que necesitás 👌"
+            )
+            
+            set_estado_bot(numero, ESTADOS_BOT["SEGUIMIENTO"])
             usuario.estado_conversacion = ESTADOS_BOT["SEGUIMIENTO"]
             UsuarioService.actualizar_usuario(usuario)
-        
-        return enviar_mensaje_whatsapp(numero, mensaje)
+            
+            return enviar_mensaje_whatsapp(numero, mensaje)
+        else:
+            # Si el perfil NO está completo, continuar armándolo
+            # Esto puede pasar si hay algún error o si se perdió información
+            set_estado_bot(numero, ESTADOS_BOT["ARMANDO_PERFIL"])
+            usuario.estado_conversacion = ESTADOS_BOT["ARMANDO_PERFIL"]
+            UsuarioService.actualizar_usuario(usuario)
+            return self.flujo_armando_perfil(numero, texto)
