@@ -110,13 +110,37 @@ async def health():
 
 @app.get("/webhook")
 async def verify(request: Request):
-    mode = request.query_params.get("hub.mode")
-    token = request.query_params.get("hub.verify_token")
-    challenge = request.query_params.get("hub.challenge")
-
-    if mode == "subscribe" and token == VERIFY_TOKEN:
-        return PlainTextResponse(challenge)
-    return PlainTextResponse("Token inválido", status_code=403)
+    try:
+        mode = request.query_params.get("hub.mode")
+        token = request.query_params.get("hub.verify_token")
+        challenge = request.query_params.get("hub.challenge")
+        
+        # Log para debugging
+        print(f"🔍 Verificación webhook recibida:")
+        print(f"   Mode: {mode}")
+        print(f"   Token recibido: {token}")
+        print(f"   Token esperado: {VERIFY_TOKEN}")
+        print(f"   Challenge: {challenge}")
+        print(f"   URL completa: {request.url}")
+        
+        # WhatsApp requiere que mode sea "subscribe" y el token coincida exactamente
+        if mode == "subscribe" and token == VERIFY_TOKEN:
+            if challenge:
+                # Convertir challenge a string explícitamente y devolverlo sin formato adicional
+                challenge_str = str(challenge)
+                print(f"✅ Verificación exitosa, devolviendo challenge: {challenge_str}")
+                # WhatsApp requiere que la respuesta sea exactamente el challenge como texto plano
+                return PlainTextResponse(challenge_str, status_code=200)
+            else:
+                print("⚠️ Challenge vacío")
+                return PlainTextResponse("Challenge requerido", status_code=400)
+        
+        print(f"❌ Verificación fallida - Mode: {mode}, Token válido: {token == VERIFY_TOKEN}")
+        return PlainTextResponse("Token inválido", status_code=403)
+    except Exception as e:
+        print(f"❌ Error en verificación webhook: {e}")
+        traceback.print_exc()
+        return PlainTextResponse(f"Error: {str(e)}", status_code=500)
 
 
 @app.post("/webhook")

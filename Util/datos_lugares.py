@@ -16,46 +16,51 @@ DATOS_LUGARES = {
                 id="rest_001",
                 ciudad="Canelones",
                 categoria="restaurantes",
-                nombre="Parrilla El Fogón",
-                descripcion="Parrilla tradicional uruguaya, ambiente familiar y relajado. Especialidad en asado y chivito.",
-                ubicacion="Centro de Canelones",
-                tags=["local", "parrilla", "economico", "familiar"]
+                nombre="Parrillada La Rueda",
+                descripcion="Situada en la Ruta 11, es un referente en cortes bovinos y platos italo-uruguayos, destacando su milanesa a la napolitana por su tamaño y sabor. Su relación calidad-precio es de las mejores del departamento, con un servicio atento y un ambiente acogedor.",
+                ubicacion="Ruta 11 km 97.500",
+                tags=["parrilla", "italo-uruguayo", "economico", "familiar"],
+                imagen_url="https://static.wixstatic.com/media/482a1d_5945b5509e1941509d023545b56b8e28~mv2.jpg/v1/fill/w_720,h_900,al_c,q_85/482a1d_5945b5509e1941509d023545b56b8e28~mv2.jpg"
             ),
             Excursion(
                 id="rest_002",
                 ciudad="Canelones",
                 categoria="restaurantes",
-                nombre="La Casona",
-                descripcion="Cocina casera y platos típicos. Ambiente acogedor, ideal para familias.",
-                ubicacion="Zona Centro",
-                tags=["local", "casero", "economico", "familiar"]
+                nombre="El Rancho",
+                descripcion="Establecimiento polivalente ideal para eventos o almuerzos familiares, conocido por su buffet variado y su excelente parrilla en un entorno natural a las afueras de la ciudad.",
+                ubicacion="Rivera km 47",
+                tags=["parrilla", "buffet", "eventos", "familiar", "medio"],
+                imagen_url="https://media-cdn.tripadvisor.com/media/photo-s/02/8f/1a/a4/el-rancho.jpg"
             ),
             Excursion(
                 id="rest_003",
                 ciudad="Canelones",
                 categoria="restaurantes",
-                nombre="Restaurante del Parque",
-                descripcion="Vista al parque, especialidad en pescados y mariscos. Ambiente romántico ideal para parejas.",
-                ubicacion="Frente al Parque Rodó",
-                tags=["pescados", "romantico", "medio", "vista_parque"]
+                nombre="Parador Chivitos",
+                descripcion="Especializado en el plato nacional uruguayo, ofrece chivitos abundantes con ingredientes frescos y lomo de primera calidad. Es una opción accesible para el turismo de paso con horarios extendidos.",
+                ubicacion="FPG6+7FP, Canelones",
+                tags=["chivitos", "rapido", "economico", "local"],
+                imagen_url=None
             ),
             Excursion(
                 id="rest_004",
                 ciudad="Canelones",
                 categoria="restaurantes",
-                nombre="Bistro Canelones",
-                descripcion="Restaurante con cocina internacional y ambiente moderno. Ideal para ocasiones especiales.",
-                ubicacion="Zona Centro",
-                tags=["internacional", "premium", "romantico", "especial"]
+                nombre="Lo Del Vasco",
+                descripcion="Representa la cocina casera y artesanal por excelencia en la capital canaria. Con una política de precios muy competitiva, es el lugar preferido por locales para una comida rápida pero de alta calidad.",
+                ubicacion="Luis A. de Herrera, Canelones",
+                tags=["casero", "artesanal", "economico", "local", "rapido"],
+                imagen_url=None
             ),
             Excursion(
                 id="rest_005",
                 ciudad="Canelones",
                 categoria="restaurantes",
-                nombre="Veggie Life",
-                descripcion="Opción vegetariana y vegana. Platos saludables y creativos con ingredientes frescos.",
-                ubicacion="Centro de Canelones",
-                tags=["vegetariano", "vegano", "saludable", "medio"]
+                nombre="Santoral Restaurante y Posada",
+                descripcion="En Atlántida, ofrece una propuesta cosmopolita frente a la Rambla Mansa. Destaca por su política de no propinas, su dulcería artesanal y una carta que fusiona influencias portuguesas, africanas y mexicanas.",
+                ubicacion="Rambla Mansa, Atlántida",
+                tags=["internacional", "premium", "cosmopolita", "romantico"],
+                imagen_url="https://media-cdn.tripadvisor.com/media/photo-s/0e/d1/3a/50/fachada-de-la-casa-ano.jpg"
             )
         ],
         "comercios": [
@@ -63,28 +68,31 @@ DATOS_LUGARES = {
                 id="com_001",
                 ciudad="Canelones",
                 categoria="comercios",
-                nombre="Shopping Canelones",
-                descripcion="Centro comercial con tiendas de ropa, electrónica y servicios. Variedad de opciones.",
-                ubicacion="Zona Centro",
-                tags=["shopping", "ropa", "electronica", "variedad"]
+                nombre="Otherside",
+                descripcion="Retail textil con prendas casuales y contemporáneas. Ideal para ropa urbana de temporada.",
+                ubicacion="Treinta y Tres 598, Canelones",
+                tags=["ropa", "urbana", "casual", "contemporaneo"],
+                imagen_url=None
             ),
             Excursion(
                 id="com_002",
                 ciudad="Canelones",
                 categoria="comercios",
-                nombre="Mercado Artesanal Municipal",
-                descripcion="Artesanías locales, souvenirs y productos típicos uruguayos. Ideal para regalos y recuerdos.",
-                ubicacion="Plaza Principal",
-                tags=["artesanias", "souvenirs", "regalos", "local"]
+                nombre="Manos del Uruguay",
+                descripcion="Cooperativas de mujeres rurales que producen lana, cuero y joyería de exportación bajo comercio justo.",
+                ubicacion="Costa Urbana Shopping",
+                tags=["artesanias", "lana", "cuero", "joyeria", "comercio_justo"],
+                imagen_url=None
             ),
             Excursion(
                 id="com_003",
                 ciudad="Canelones",
                 categoria="comercios",
-                nombre="Feria de los Sábados",
-                descripcion="Feria al aire libre con productos locales, artesanías y comida. Sábados por la mañana.",
-                ubicacion="Plaza Principal",
-                tags=["feria", "artesanias", "local", "sabados"]
+                nombre="Feria Artesanal de Atlántida",
+                descripcion="Paseo clásico para comprar souvenirs de cerámica, cuero, lana y mates trabajados por artesanos locales.",
+                ubicacion="Centro de Atlántida",
+                tags=["feria", "artesanias", "souvenirs", "local", "ceramica"],
+                imagen_url=None
             )
         ],
         "recreacion": [
@@ -92,37 +100,21 @@ DATOS_LUGARES = {
                 id="rec_001",
                 ciudad="Canelones",
                 categoria="recreacion",
-                nombre="Parque Rodó",
-                descripcion="Parque principal ideal para caminar, descansar y disfrutar de la naturaleza. Espacios verdes y juegos para niños.",
-                ubicacion="Centro de Canelones",
-                tags=["parque", "naturaleza", "familiar", "tranquilo"]
+                nombre="Parque Roosevelt",
+                descripcion="Pulmón verde con tren eléctrico y deportes. Ideal para actividades al aire libre y recreación familiar.",
+                ubicacion="Av. Giannattasio km 21",
+                tags=["parque", "naturaleza", "deportes", "familiar", "tren"],
+                imagen_url=None
             ),
             Excursion(
                 id="rec_002",
                 ciudad="Canelones",
                 categoria="recreacion",
-                nombre="Rambla Costera",
-                descripcion="Paseo costero recomendado al atardecer. Vista al río, ideal para caminar o andar en bicicleta.",
-                ubicacion="Costanera",
-                tags=["paseo", "rio", "atardecer", "activo"]
-            ),
-            Excursion(
-                id="rec_003",
-                ciudad="Canelones",
-                categoria="recreacion",
-                nombre="Playa Municipal",
-                descripcion="Playa sobre el río. Ideal para días de calor, con servicios y seguridad. Espacio familiar.",
-                ubicacion="Costanera",
-                tags=["playa", "rio", "verano", "familiar"]
-            ),
-            Excursion(
-                id="rec_004",
-                ciudad="Canelones",
-                categoria="recreacion",
-                nombre="Club Deportivo Canelones",
-                descripcion="Instalaciones deportivas con canchas, piscina y áreas recreativas. Ideal para actividades físicas.",
-                ubicacion="Zona Sur",
-                tags=["deportes", "piscina", "activo", "familiar"]
+                nombre="Quinta Capurro",
+                descripcion="Jardín histórico con especies exóticas del siglo XIX. Espacio verde con valor patrimonial y botánico.",
+                ubicacion="Bv. Federico Capurro 555",
+                tags=["jardin", "historico", "patrimonio", "botanico", "tranquilo"],
+                imagen_url=None
             )
         ],
         "cultura": [
@@ -130,37 +122,21 @@ DATOS_LUGARES = {
                 id="cul_001",
                 ciudad="Canelones",
                 categoria="cultura",
-                nombre="Museo Histórico de Canelones",
-                descripcion="Museo que muestra la historia y evolución de la ciudad y la región. Interesante para toda la familia.",
-                ubicacion="Centro de Canelones",
-                tags=["museo", "historia", "cultura", "familiar"]
+                nombre="Iglesia Cristo Obrero",
+                descripcion="Patrimonio UNESCO, obra de Eladio Dieste. Arquitectura única en ladrillo visto, referente de la arquitectura moderna uruguaya.",
+                ubicacion="Ruta 11 km 164",
+                tags=["iglesia", "unesco", "arquitectura", "dieste", "patrimonio", "gratis"],
+                imagen_url=None
             ),
             Excursion(
                 id="cul_002",
                 ciudad="Canelones",
                 categoria="cultura",
-                nombre="Teatro Municipal",
-                descripcion="Teatro histórico con programación cultural variada. Espectáculos y eventos culturales durante todo el año.",
-                ubicacion="Centro de Canelones",
-                tags=["teatro", "cultura", "espectaculos", "medio"]
-            ),
-            Excursion(
-                id="cul_003",
-                ciudad="Canelones",
-                categoria="cultura",
-                nombre="Plaza Principal",
-                descripcion="Plaza principal de la ciudad con monumentos históricos. Centro histórico y punto de encuentro.",
-                ubicacion="Centro de Canelones",
-                tags=["plaza", "historia", "centro", "gratis"]
-            ),
-            Excursion(
-                id="cul_004",
-                ciudad="Canelones",
-                categoria="cultura",
-                nombre="Iglesia Catedral",
-                descripcion="Catedral histórica de la ciudad. Arquitectura colonial, punto de interés religioso y cultural.",
-                ubicacion="Centro de Canelones",
-                tags=["iglesia", "historia", "arquitectura", "gratis"]
+                nombre="Museo de la Uva",
+                descripcion="Museo que muestra la historia de la vitivinicultura uruguaya. Exposiciones sobre el cultivo de la vid y la producción de vino en la región.",
+                ubicacion="Ruta 48 km 18.500",
+                tags=["museo", "vino", "historia", "vitivinicultura", "gratis"],
+                imagen_url=None
             )
         ],
         "compras": [
@@ -168,19 +144,21 @@ DATOS_LUGARES = {
                 id="compr_001",
                 ciudad="Canelones",
                 categoria="compras",
-                nombre="Centro Comercial Abierto",
-                descripcion="Zona comercial con tiendas variadas, ideal para compras de ropa, calzado y accesorios.",
-                ubicacion="Centro de Canelones",
-                tags=["compras", "ropa", "accesorios", "economico"]
+                nombre="Costa Urbana Shopping",
+                descripcion="Centro comercial con cine, tiendas y Centro Cívico Público. Oferta variada de compras, entretenimiento y servicios.",
+                ubicacion="Av. Giannattasio km 21",
+                tags=["shopping", "cine", "tiendas", "entretenimiento", "variedad"],
+                imagen_url=None
             ),
             Excursion(
                 id="compr_002",
                 ciudad="Canelones",
                 categoria="compras",
-                nombre="Tiendas de Regalos y Souvenirs",
-                descripcion="Variedad de tiendas especializadas en souvenirs y regalos típicos uruguayos.",
-                ubicacion="Zona Centro",
-                tags=["regalos", "souvenirs", "local", "variedad"]
+                nombre="Las Piedras Shopping",
+                descripcion="Centro comercial con tiendas de moda, cines y gastronomía. Oferta completa para compras y entretenimiento.",
+                ubicacion="Bulevar del Bicentenario",
+                tags=["shopping", "moda", "cine", "gastronomia", "variedad"],
+                imagen_url=None
             )
         ]
     }

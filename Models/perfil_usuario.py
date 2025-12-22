@@ -9,6 +9,8 @@ class PerfilUsuario:
         preferencias_comida: Optional[str] = None,  # "local", "internacional", "vegetariano", "vegano", "sin_restricciones"
         presupuesto: Optional[str] = None,  # "economico", "medio", "alto", "premium"
         interes_regalos: Optional[bool] = None,
+        interes_ropa: Optional[bool] = None,  # True si le interesa comprar ropa
+        interes_tipo_recreacion: Optional[str] = None,  # "activa", "pasiva", "familiar", "romantica"
         duracion_estadia: Optional[int] = None  # días
     ):
         self.tipo_viaje = tipo_viaje
@@ -16,6 +18,8 @@ class PerfilUsuario:
         self.preferencias_comida = preferencias_comida
         self.presupuesto = presupuesto
         self.interes_regalos = interes_regalos
+        self.interes_ropa = interes_ropa
+        self.interes_tipo_recreacion = interes_tipo_recreacion
         self.duracion_estadia = duracion_estadia
     
     def actualizar_campo(self, campo: str, valor):
@@ -23,17 +27,52 @@ class PerfilUsuario:
         if hasattr(self, campo):
             setattr(self, campo, valor)
     
-    def obtener_campos_faltantes(self) -> List[str]:
-        """Retorna lista de campos que aún no tienen valor"""
-        campos = [
+    def obtener_campos_faltantes(self, intereses: List[str] = None) -> List[str]:
+        """
+        Retorna lista de campos que aún no tienen valor.
+        Considera campos obligatorios y condicionales según intereses.
+        
+        Campos obligatorios siempre:
+        - tipo_viaje
+        - acompanantes
+        - presupuesto
+        - duracion_estadia
+        
+        Campos condicionales:
+        - preferencias_comida (solo si "restaurantes" en intereses)
+        - interes_regalos (solo si "compras" en intereses)
+        - interes_ropa (solo si "compras" en intereses)
+        - interes_tipo_recreacion (solo si "recreacion" en intereses)
+        """
+        if intereses is None:
+            intereses = []
+        
+        # Campos obligatorios siempre
+        campos_obligatorios = [
             "tipo_viaje",
-            "acompanantes", 
-            "preferencias_comida",
+            "acompanantes",
             "presupuesto",
-            "interes_regalos",
             "duracion_estadia"
         ]
-        return [campo for campo in campos if getattr(self, campo) is None]
+        
+        # Campos condicionales según intereses
+        campos_condicionales = []
+        
+        if "restaurantes" in intereses:
+            campos_condicionales.append("preferencias_comida")
+        
+        if "compras" in intereses:
+            campos_condicionales.append("interes_regalos")
+            campos_condicionales.append("interes_ropa")
+        
+        if "recreacion" in intereses:
+            campos_condicionales.append("interes_tipo_recreacion")
+        
+        # Combinar todos los campos requeridos
+        campos_requeridos = campos_obligatorios + campos_condicionales
+        
+        # Retornar solo los que faltan
+        return [campo for campo in campos_requeridos if getattr(self, campo) is None]
     
     def to_dict(self) -> dict:
         return {
@@ -42,6 +81,8 @@ class PerfilUsuario:
             "preferencias_comida": self.preferencias_comida,
             "presupuesto": self.presupuesto,
             "interes_regalos": self.interes_regalos,
+            "interes_ropa": self.interes_ropa,
+            "interes_tipo_recreacion": self.interes_tipo_recreacion,
             "duracion_estadia": self.duracion_estadia
         }
 

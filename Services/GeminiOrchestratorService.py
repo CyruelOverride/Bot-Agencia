@@ -35,10 +35,12 @@ class GeminiOrchestratorService:
 Perfil actual del usuario:
 - Tipo de viaje: {perfil.tipo_viaje or 'No especificado'}
 - Acompañantes: {perfil.acompanantes or 'No especificado'}
-- Preferencias comida: {perfil.preferencias_comida or 'No especificado'}
 - Presupuesto: {perfil.presupuesto or 'No especificado'}
-- Interés en regalos: {perfil.interes_regalos or 'No especificado'}
 - Duración estadía: {perfil.duracion_estadia or 'No especificado'} días
+- Preferencias comida: {perfil.preferencias_comida or 'No especificado'}
+- Interés en regalos: {perfil.interes_regalos or 'No especificado'}
+- Interés en ropa: {perfil.interes_ropa or 'No especificado'}
+- Tipo de recreación: {perfil.interes_tipo_recreacion or 'No especificado'}
 """
         
         prompt = f"""Eres un asistente de viaje que ayuda a usuarios a planificar su estadía en una ciudad.
@@ -56,12 +58,14 @@ Tu tarea es:
 4. Generar una respuesta natural y amigable
 
 Campos posibles del perfil:
-- tipo_viaje: "solo", "pareja", "familia", "amigos", "negocios"
-- acompanantes: "solo", "pareja", "familia", "amigos"
-- preferencias_comida: "local", "internacional", "vegetariano", "vegano", "sin_restricciones"
-- presupuesto: "economico", "medio", "alto", "premium"
-- interes_regalos: true/false
-- duracion_estadia: número de días
+- tipo_viaje: "solo", "pareja", "familia", "amigos", "negocios" (OBLIGATORIO)
+- acompanantes: "solo", "pareja", "familia", "amigos" (OBLIGATORIO)
+- presupuesto: "economico", "medio", "alto", "premium" (OBLIGATORIO)
+- duracion_estadia: número de días (OBLIGATORIO)
+- preferencias_comida: "local", "internacional", "vegetariano", "vegano", "sin_restricciones" (SOLO si "restaurantes" en intereses)
+- interes_regalos: true/false (SOLO si "compras" en intereses)
+- interes_ropa: true/false (SOLO si "compras" en intereses)
+- interes_tipo_recreacion: "activa", "pasiva", "familiar", "romantica" (SOLO si "recreacion" en intereses)
 
 Responde SOLO con un JSON válido en este formato:
 {{
@@ -183,36 +187,50 @@ Responde SOLO con JSON:
         """
         Genera la siguiente pregunta conversacional basada en los intereses y perfil actual.
         Retorna la pregunta como string o None si ya hay suficiente información.
+        
+        Prioriza preguntas según:
+        1. Campos obligatorios primero (tipo_viaje, acompanantes, presupuesto, duracion_estadia)
+        2. Campos condicionales según intereses
         """
         perfil = usuario.perfil
         if not perfil:
             return "¿Qué tipo de viaje estás haciendo? (solo, pareja, familia, amigos, negocios)"
         
-        campos_faltantes = perfil.obtener_campos_faltantes()
+        # Obtener campos faltantes considerando intereses (nueva lógica)
+        campos_faltantes = perfil.obtener_campos_faltantes(intereses)
         
-        # Priorizar preguntas según intereses
-        preguntas_prioritarias = []
+        if not campos_faltantes:
+            return None  # Perfil completo
         
-        if "restaurantes" in intereses and "preferencias_comida" in campos_faltantes:
-            preguntas_prioritarias.append(("preferencias_comida", "¿Qué tipo de comida te gusta más? (local, internacional, vegetariano, vegano)"))
+        # Mapeo de campos a preguntas
+        preguntas_map = {
+            "tipo_viaje": "¿Qué tipo de viaje estás haciendo? (solo, pareja, familia, amigos, negocios)",
+            "acompanantes": "¿Viajás solo o acompañado? (solo, pareja, familia, amigos)",
+            "presupuesto": "¿Qué presupuesto tenés en mente? (económico, medio, alto, premium)",
+            "duracion_estadia": "¿Cuántos días vas a estar en la ciudad?",
+            "preferencias_comida": "¿Qué tipo de comida te gusta más? (local, internacional, vegetariano, vegano, sin restricciones)",
+            "interes_regalos": "¿Buscás algo para vos o para regalar? (respondé 'para mí' o 'para regalar')",
+            "interes_ropa": "¿Te interesa comprar ropa durante tu viaje? (sí o no)",
+            "interes_tipo_recreacion": "¿Qué tipo de recreación preferís? (activa - deportes/caminatas, pasiva - descanso/relax, familiar - con niños, romántica - pareja)"
+        }
         
-        if "compras" in intereses or "regalos" in intereses and "interes_regalos" in campos_faltantes:
-            preguntas_prioritarias.append(("interes_regalos", "¿Buscás algo para vos o para regalar?"))
+        # Priorizar: primero campos obligatorios, luego condicionales
+        campos_obligatorios = ["tipo_viaje", "acompanantes", "presupuesto", "duracion_estadia"]
+        campos_condicionales = ["preferencias_comida", "interes_regalos", "interes_ropa", "interes_tipo_recreacion"]
         
-        if "acompanantes" in campos_faltantes:
-            preguntas_prioritarias.append(("acompanantes", "¿Viajás solo o acompañado?"))
+        # Buscar primero campos obligatorios faltantes
+        for campo in campos_obligatorios:
+            if campo in campos_faltantes:
+                return preguntas_map.get(campo, f"¿Puedes completar {campo}?")
         
-        if "presupuesto" in campos_faltantes:
-            preguntas_prioritarias.append(("presupuesto", "¿Qué presupuesto tenés en mente? (económico, medio, alto, premium)"))
+        # Luego campos condicionales
+        for campo in campos_condicionales:
+            if campo in campos_faltantes:
+                return preguntas_map.get(campo, f"¿Puedes completar {campo}?")
         
-        if "duracion_estadia" in campos_faltantes:
-            preguntas_prioritarias.append(("duracion_estadia", "¿Cuántos días vas a estar en la ciudad?"))
-        
-        if "tipo_viaje" in campos_faltantes:
-            preguntas_prioritarias.append(("tipo_viaje", "¿Qué tipo de viaje estás haciendo?"))
-        
-        if preguntas_prioritarias:
-            return preguntas_prioritarias[0][1]
+        # Si hay algún campo faltante que no está en el mapa, preguntar genérico
+        if campos_faltantes:
+            return f"¿Puedes completar {campos_faltantes[0]}?"
         
         return None
     
@@ -233,10 +251,19 @@ Responde SOLO con JSON:
 Perfil del usuario:
 - Tipo de viaje: {perfil.tipo_viaje or 'No especificado'}
 - Acompañantes: {perfil.acompanantes or 'No especificado'}
-- Preferencias comida: {perfil.preferencias_comida or 'No especificado'}
 - Presupuesto: {perfil.presupuesto or 'No especificado'}
-- Duración: {perfil.duracion_estadia or 'No especificado'} días
-"""
+- Duración: {perfil.duracion_estadia or 'No especificado'} días"""
+            
+            # Agregar campos condicionales según intereses
+            if "restaurantes" in usuario.intereses:
+                perfil_texto += f"\n- Preferencias comida: {perfil.preferencias_comida or 'No especificado'}"
+            
+            if "compras" in usuario.intereses:
+                perfil_texto += f"\n- Interés en regalos: {perfil.interes_regalos or 'No especificado'}"
+                perfil_texto += f"\n- Interés en ropa: {perfil.interes_ropa or 'No especificado'}"
+            
+            if "recreacion" in usuario.intereses:
+                perfil_texto += f"\n- Tipo de recreación: {perfil.interes_tipo_recreacion or 'No especificado'}"
         
         excursiones_texto = "\n".join([
             f"- {exc.nombre} ({exc.categoria}): {exc.descripcion}"

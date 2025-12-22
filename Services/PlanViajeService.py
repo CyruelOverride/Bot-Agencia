@@ -1,9 +1,13 @@
-from typing import List
+from typing import List, Optional
+import os
+import logging
 from Models.plan_viaje import PlanViaje
 from Models.usuario import Usuario
 from Models.excursion import Excursion
 from Services.ExcursionService import ExcursionService
 from Services.GeminiOrchestratorService import GeminiOrchestratorService
+
+logger = logging.getLogger(__name__)
 
 
 class PlanViajeService:
@@ -172,4 +176,66 @@ class PlanViajeService:
                 }
             }
         }
+    
+    @staticmethod
+    def enviar_plan_con_imagen(numero: str, plan: PlanViaje, ruta_imagen: Optional[str] = None):
+        """
+        Envía el plan con una imagen principal y el resumen como caption.
+        Prioriza imágenes de las excursiones del plan. Si no hay, busca imagen local por defecto.
+        Si falla la imagen, continúa enviando el texto sin interrumpir el flujo.
+        
+        Args:
+            numero: Número de teléfono del usuario
+            plan: Plan de viaje a enviar
+            ruta_imagen: Ruta opcional a la imagen. Si no se proporciona, busca automáticamente
+        """
+        from whatsapp_api import enviar_imagen_whatsapp, enviar_mensaje_whatsapp
+        import time
+        
+        # Determinar imagen a usar
+        imagen_a_enviar = None
+        
+        # Prioridad 1: Imagen proporcionada explícitamente
+        if ruta_imagen:
+            imagen_a_enviar = ruta_imagen
+        else:
+            # Prioridad 2: Buscar imagen_url en las excursiones del plan (solo si tienen URL)
+            for excursion in plan.excursiones:
+                if excursion.imagen_url:
+                    imagen_a_enviar = excursion.imagen_url
+                    break  # Usar la primera que encuentre
+            
+            # Prioridad 3: Si no hay imagen en excursiones, buscar imagen local por defecto
+            if not imagen_a_enviar:
+                base_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "imagenes")
+                ciudad_lower = plan.ciudad.lower().replace(" ", "_")
+                ruta_especifica = os.path.join(base_path, f"plan_{ciudad_lower}.png")
+                ruta_default = os.path.join(base_path, "plan_default.png")
+                
+                if os.path.exists(ruta_especifica):
+                    imagen_a_enviar = ruta_especifica
+                elif os.path.exists(ruta_default):
+                    imagen_a_enviar = ruta_default
+        
+        # Intentar enviar imagen solo si existe (evitar errores)
+        if imagen_a_enviar:
+            try:
+                # Caption con resumen corto (500-700 chars recomendado, usamos 700 como máximo seguro)
+                caption = f"🎯 Tu Plan Personalizado para {plan.ciudad}\n\n{plan.resumen_ia[:700]}"
+                
+                resultado = enviar_imagen_whatsapp(numero, imagen_a_enviar, caption)
+                
+                if resultado.get("success"):
+                    # Pequeña pausa para mejor UX
+                    time.sleep(1)
+                else:
+                    logger.warning(f"No se pudo enviar imagen del plan: {resultado.get('error', 'Error desconocido')}")
+                    
+            except Exception as e:
+                # Error silencioso: no interrumpir el flujo si falla la imagen
+                logger.warning(f"No se pudo enviar imagen del plan: {e}")
+        
+        # Siempre enviar el plan detallado como texto (incluso si no hay imagen o falló)
+        mensaje_plan = PlanViajeService.formatear_plan_para_whatsapp(plan)
+        enviar_mensaje_whatsapp(numero, mensaje_plan)
 

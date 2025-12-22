@@ -369,14 +369,18 @@ class Chat:
             campo_pregunta = None
             if "tipo de viaje" in siguiente_pregunta.lower():
                 campo_pregunta = "tipo_viaje"
-            elif "acompañado" in siguiente_pregunta.lower() or "solo" in siguiente_pregunta.lower():
+            elif "acompañado" in siguiente_pregunta.lower() or ("solo" in siguiente_pregunta.lower() and "viajás" in siguiente_pregunta.lower()):
                 campo_pregunta = "acompanantes"
             elif "comida" in siguiente_pregunta.lower():
                 campo_pregunta = "preferencias_comida"
             elif "presupuesto" in siguiente_pregunta.lower():
                 campo_pregunta = "presupuesto"
-            elif "regalar" in siguiente_pregunta.lower() or "vos" in siguiente_pregunta.lower():
+            elif "regalar" in siguiente_pregunta.lower() or ("vos" in siguiente_pregunta.lower() and "regalar" in siguiente_pregunta.lower()):
                 campo_pregunta = "interes_regalos"
+            elif "ropa" in siguiente_pregunta.lower():
+                campo_pregunta = "interes_ropa"
+            elif "recreación" in siguiente_pregunta.lower() or "recreacion" in siguiente_pregunta.lower():
+                campo_pregunta = "interes_tipo_recreacion"
             elif "días" in siguiente_pregunta.lower() or "dias" in siguiente_pregunta.lower():
                 campo_pregunta = "duracion_estadia"
             
@@ -423,17 +427,15 @@ class Chat:
             )
     
     def flujo_plan_presentado(self, numero, texto):
-        """Presenta el plan generado al usuario"""
+        """Presenta el plan generado al usuario con imagen si está disponible"""
         plan = self.conversation_data.get('plan_viaje')
         
         if not plan:
             return self.flujo_generando_plan(numero, texto)
         
-        # Formatear y enviar plan
-        mensaje_plan = PlanViajeService.formatear_plan_para_whatsapp(plan)
-        
-        # Enviar plan como texto
-        enviar_mensaje_whatsapp(numero, mensaje_plan)
+        # Enviar plan con imagen (si está disponible) y texto detallado
+        # El método maneja errores silenciosamente si no hay imagen
+        PlanViajeService.enviar_plan_con_imagen(numero, plan)
         
         # Pasar a seguimiento
         set_estado_bot(numero, ESTADOS_BOT["SEGUIMIENTO"])

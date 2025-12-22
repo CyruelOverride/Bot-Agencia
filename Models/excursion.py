@@ -10,7 +10,8 @@ class Excursion:
         nombre: str,
         descripcion: str,
         ubicacion: Optional[str] = None,
-        tags: Optional[List[str]] = None
+        tags: Optional[List[str]] = None,
+        imagen_url: Optional[str] = None  # URL de la imagen del lugar
     ):
         self.id = id
         self.ciudad = ciudad
@@ -19,6 +20,7 @@ class Excursion:
         self.descripcion = descripcion
         self.ubicacion = ubicacion
         self.tags = tags or []
+        self.imagen_url = imagen_url
     
     def tiene_tag(self, tag: str) -> bool:
         """Verifica si la excursión tiene un tag específico"""
@@ -50,6 +52,7 @@ class Excursion:
             "nombre": self.nombre,
             "descripcion": self.descripcion,
             "ubicacion": self.ubicacion,
-            "tags": self.tags
+            "tags": self.tags,
+            "imagen_url": self.imagen_url
         }
 

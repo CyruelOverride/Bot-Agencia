@@ -30,24 +30,54 @@ class Usuario:
             self.intereses.append(interes)
     
     def tiene_perfil_completo(self) -> bool:
-        """Verifica si el perfil tiene información suficiente para generar un plan"""
+        """
+        Verifica si el perfil está completo según las reglas definidas.
+        
+        Perfil completo cuando tiene:
+        - Campos obligatorios siempre: tipo_viaje, acompanantes, presupuesto, duracion_estadia
+        - Campos condicionales según intereses:
+          * preferencias_comida (solo si "restaurantes" en intereses)
+          * interes_regalos (solo si "compras" en intereses)
+          * interes_ropa (solo si "compras" en intereses)
+          * interes_tipo_recreacion (solo si "recreacion" en intereses)
+        """
         if not self.perfil:
             return False
         
-        # Mínimo: tener al menos un interés y alguna preferencia básica
+        # Debe tener al menos un interés
         if len(self.intereses) == 0:
             return False
         
-        # Verificar que el perfil tenga al menos información básica
         perfil = self.perfil
-        tiene_info_basica = (
-            perfil.tipo_viaje is not None or
-            perfil.preferencias_comida is not None or
-            perfil.presupuesto is not None or
+        
+        # Verificar campos obligatorios (siempre requeridos)
+        campos_obligatorios_completos = (
+            perfil.tipo_viaje is not None and
+            perfil.acompanantes is not None and
+            perfil.presupuesto is not None and
             perfil.duracion_estadia is not None
         )
         
-        return tiene_info_basica
+        if not campos_obligatorios_completos:
+            return False
+        
+        # Verificar campos condicionales según intereses
+        if "restaurantes" in self.intereses:
+            if perfil.preferencias_comida is None:
+                return False
+        
+        if "compras" in self.intereses:
+            if perfil.interes_regalos is None:
+                return False
+            if perfil.interes_ropa is None:
+                return False
+        
+        if "recreacion" in self.intereses:
+            if perfil.interes_tipo_recreacion is None:
+                return False
+        
+        # Si llegamos aquí, el perfil está completo
+        return True
     
     def to_dict(self) -> dict:
         return {
