@@ -145,11 +145,18 @@ class Chat:
             usuario.perfil = None
             UsuarioService.actualizar_usuario(usuario)
             
-            # Asegurar que el estado del bot esté en INICIO
+            # Asegurar que el estado del bot esté en INICIO y sin waiting_for
             set_estado_bot(numero, ESTADOS_BOT["INICIO"])
+            clear_waiting_for(numero)
             
             # Obtener usuario actualizado para asegurar que los cambios se aplicaron
             usuario = UsuarioService.obtener_usuario_por_telefono(numero)
+            
+            # Verificar que los intereses estén realmente vacíos
+            if usuario.intereses:
+                usuario.intereses = []
+                UsuarioService.actualizar_usuario(usuario)
+                usuario = UsuarioService.obtener_usuario_por_telefono(numero)
             
             # Forzar que flujo_inicio muestre el mensaje inicial ignorando intereses
             # Enviar mensaje de apertura directamente
@@ -236,11 +243,18 @@ class Chat:
         
         # Si el estado es INICIO y no hay waiting_for, siempre mostrar mensaje inicial
         # (esto permite que #Iniciar funcione correctamente)
+        # Si el usuario no tiene intereses, forzar mostrar mensaje inicial
         if estado_actual == ESTADOS_BOT["INICIO"] and not waiting_for:
-            # Forzar mostrar mensaje inicial sin importar intereses
-            pass  # Continuar con el mensaje de bienvenida
-        # Si el usuario ya confirmó el servicio y tiene intereses, continuar con el flujo normal
-        elif usuario.intereses and len(usuario.intereses) > 0:
+            # Forzar mostrar mensaje inicial sin importar intereses si no tiene intereses
+            if not usuario.intereses or len(usuario.intereses) == 0:
+                # Continuar con el mensaje de bienvenida
+                pass
+            else:
+                # Tiene intereses pero estamos en INICIO sin waiting_for - puede ser un estado inconsistente
+                # Mostrar mensaje inicial de todos modos para resetear el flujo
+                pass
+        # Si el usuario ya confirmó el servicio y tiene intereses Y hay waiting_for, continuar con el flujo normal
+        elif usuario.intereses and len(usuario.intereses) > 0 and waiting_for:
             # Ya pasó por la confirmación, continuar con flujo normal
             if not usuario.tiene_perfil_completo():
                 return self.flujo_armando_perfil(numero, texto)
@@ -343,6 +357,23 @@ class Chat:
         """Flujo de selección de intereses con menú interactivo"""
         usuario = UsuarioService.obtener_o_crear_usuario(numero)
         
+        # Validar estado: si no estamos en SELECCION_INTERESES, verificar si es un botón obsoleto
+        estado_actual = get_estado_bot(numero)
+        if estado_actual != ESTADOS_BOT["SELECCION_INTERESES"]:
+            # Si es un botón de intereses pero el estado cambió, redirigir apropiadamente
+            if texto in ("agregar_mas_intereses", "continuar_intereses"):
+                # Si estamos en ARMANDO_PERFIL, rechazar el botón obsoleto
+                if estado_actual == ESTADOS_BOT["ARMANDO_PERFIL"]:
+                    # Ya estamos en otro flujo, ignorar el botón obsoleto
+                    return self.flujo_armando_perfil(numero, texto)
+                # Si estamos en otro estado, intentar redirigir al flujo correcto
+                elif estado_actual == ESTADOS_BOT["INICIO"]:
+                    return self.flujo_inicio(numero, texto)
+                # Estado desconocido, redirigir al inicio
+                else:
+                    set_estado_bot(numero, ESTADOS_BOT["INICIO"])
+                    return self.flujo_inicio(numero, texto)
+        
         # ============================================================
         # CÓDIGO DE INTERACTIVE LIST - COMENTADO
         # ============================================================
@@ -371,18 +402,46 @@ class Chat:
         texto_lower = texto.lower().strip()
         # Manejar botón interactivo o texto libre
         if (texto == "continuar_intereses" or 
-            texto_lower in ("continuar", "listo", "siguiente", "listo, continuar")) and usuario.intereses:
+            texto_lower in ("continuar", "listo", "siguiente", "listo, continuar")):
+            if not usuario.intereses or len(usuario.intereses) == 0:
+                # No tiene intereses, pedir que seleccione al menos uno
+                mensaje = (
+                    f"Necesitás seleccionar al menos un interés para continuar.\n\n"
+                    f"¿Qué te interesa? Podés elegir varios separados por espacios o comas:\n"
+                    f"1. 🍽️ Restaurantes\n"
+                    f"2. 🛍️ Comercios\n"
+                    f"3. 🌳 Recreación\n"
+                    f"4. 🏛️ Cultura\n"
+                    f"5. 🛒 Compras\n\n"
+                    f"Ejemplo: \"1 2 3\" o \"restaurantes compras recreacion\""
+                )
+                set_estado_bot(numero, ESTADOS_BOT["SELECCION_INTERESES"])
+                usuario.estado_conversacion = ESTADOS_BOT["SELECCION_INTERESES"]
+                UsuarioService.actualizar_usuario(usuario)
+                self.set_waiting_for(numero, "flujo_seleccion_intereses")
+                return enviar_mensaje_whatsapp(numero, mensaje)
+            
+            # Tiene intereses, continuar al siguiente flujo
             set_estado_bot(numero, ESTADOS_BOT["ARMANDO_PERFIL"])
             usuario.estado_conversacion = ESTADOS_BOT["ARMANDO_PERFIL"]
             UsuarioService.actualizar_usuario(usuario)
             clear_waiting_for(numero)
-            return self.flujo_armando_perfil(numero, texto)
+            # Llamar a flujo_armando_perfil con texto vacío para que muestre la primera pregunta
+            return self.flujo_armando_perfil(numero, "")
         
         # Si el usuario quiere agregar más intereses (botón interactivo)
         if texto == "agregar_mas_intereses":
+            # Verificar que estamos en el estado correcto
+            if estado_actual != ESTADOS_BOT["SELECCION_INTERESES"]:
+                # Estado incorrecto, redirigir
+                set_estado_bot(numero, ESTADOS_BOT["SELECCION_INTERESES"])
+                usuario.estado_conversacion = ESTADOS_BOT["SELECCION_INTERESES"]
+                UsuarioService.actualizar_usuario(usuario)
+            
             # Mostrar mensaje inicial para agregar más intereses
+            nombres_actuales = [self._obtener_nombre_interes(i) for i in usuario.intereses] if usuario.intereses else []
             mensaje_inicial = (
-                f"Perfecto!\n"
+                f"Perfecto! Ya tenés seleccionado: {', '.join(nombres_actuales) if nombres_actuales else 'ninguno'}\n\n"
                 f"¿Qué más te interesa? Podés elegir varios separados por espacios o comas:\n"
                 f"1. 🍽️ Restaurantes\n"
                 f"2. 🛍️ Comercios\n"
@@ -853,6 +912,11 @@ class Chat:
         """Flujo para armar el perfil del usuario con preguntas progresivas"""
         usuario = UsuarioService.obtener_o_crear_usuario(numero)
         
+        # Rechazar botones obsoletos de intereses si estamos en este flujo
+        if texto in ("agregar_mas_intereses", "continuar_intereses"):
+            # Botón obsoleto, ignorar y continuar con el flujo normal
+            texto = ""  # Tratar como entrada inicial
+        
         # IMPORTANTE: Si el perfil ya está completo y no es un ajuste explícito, NO volver a preguntar
         if usuario.tiene_perfil_completo() and texto.lower() not in ("ajustar plan", "ajustar", "modificar", "cambiar"):
             # Perfil completo, pasar a seguimiento o generación según contexto
@@ -870,30 +934,35 @@ class Chat:
             UsuarioService.inicializar_perfil(numero)
             usuario = UsuarioService.obtener_usuario_por_telefono(numero)
         
-        # Procesar respuesta (puede ser botón interactivo o texto)
-        respuesta_procesada = self._procesar_respuesta_interactiva(texto)
+        # Si el texto está vacío o es "continuar_intereses", significa que entramos desde selección de intereses
+        # No procesar como respuesta, solo mostrar la primera pregunta
+        procesar_respuesta = texto and texto.strip() and texto != "continuar_intereses"
         
-        if respuesta_procesada:
-            # Es una respuesta de botón interactivo
-            campo = respuesta_procesada["campo"]
-            valor = respuesta_procesada["valor"]
-            UsuarioService.actualizar_perfil(numero, campo, valor)
-            usuario = UsuarioService.obtener_usuario_por_telefono(numero)
-        elif texto.lower() not in ("ajustar plan", "ajustar", "modificar", "cambiar"):
-            # Interpretar respuesta del usuario usando Gemini (texto libre)
-            interpretacion = GeminiOrchestratorService.interpretar_mensaje_usuario(
-                texto,
-                usuario
-            )
+        if procesar_respuesta:
+            # Procesar respuesta (puede ser botón interactivo o texto)
+            respuesta_procesada = self._procesar_respuesta_interactiva(texto)
             
-            # Si detectó una respuesta a un campo del perfil
-            if interpretacion and interpretacion.get("respuesta_detectada") and interpretacion.get("campo_perfil"):
-                campo = interpretacion.get("campo_perfil")
-                valor = interpretacion.get("valor_detectado")
-                
-                # Actualizar perfil
+            if respuesta_procesada:
+                # Es una respuesta de botón interactivo
+                campo = respuesta_procesada["campo"]
+                valor = respuesta_procesada["valor"]
                 UsuarioService.actualizar_perfil(numero, campo, valor)
                 usuario = UsuarioService.obtener_usuario_por_telefono(numero)
+            elif texto.lower() not in ("ajustar plan", "ajustar", "modificar", "cambiar"):
+                # Interpretar respuesta del usuario usando Gemini (texto libre)
+                interpretacion = GeminiOrchestratorService.interpretar_mensaje_usuario(
+                    texto,
+                    usuario
+                )
+                
+                # Si detectó una respuesta a un campo del perfil
+                if interpretacion and interpretacion.get("respuesta_detectada") and interpretacion.get("campo_perfil"):
+                    campo = interpretacion.get("campo_perfil")
+                    valor = interpretacion.get("valor_detectado")
+                    
+                    # Actualizar perfil
+                    UsuarioService.actualizar_perfil(numero, campo, valor)
+                    usuario = UsuarioService.obtener_usuario_por_telefono(numero)
         
         # Verificar si el perfil está completo
         if usuario.tiene_perfil_completo():
