@@ -232,6 +232,22 @@ class Chat:
         """Flujo inicial: saludo cálido y confirmación de servicio"""
         usuario = UsuarioService.obtener_o_crear_usuario(numero)
         
+        # Verificar estado actual
+        estado_actual = get_estado_bot(numero)
+        waiting_for = get_waiting_for(numero)
+        
+        # Si el estado es INICIO y no hay waiting_for, SIEMPRE mostrar mensaje inicial
+        # Esto permite que #Iniciar funcione correctamente
+        if estado_actual == ESTADOS_BOT["INICIO"] and not waiting_for:
+            # Forzar mostrar mensaje inicial - resetear cualquier estado previo
+            pass  # Continuar con el mensaje de bienvenida
+        # Si el usuario ya confirmó el servicio y tiene intereses Y hay waiting_for, continuar con el flujo normal
+        elif usuario.intereses and len(usuario.intereses) > 0 and waiting_for and estado_actual != ESTADOS_BOT["INICIO"]:
+            # Ya pasó por la confirmación, continuar con flujo normal
+            if not usuario.tiene_perfil_completo():
+                return self.flujo_armando_perfil(numero, texto)
+            return self.flujo_seguimiento(numero, texto)
+        
         # Si es la primera vez, obtener nombre si está disponible
         if not usuario.nombre:
             nombre = "viajero"
@@ -242,30 +258,6 @@ class Chat:
         if not usuario.ciudad:
             usuario.ciudad = "Colonia"
             UsuarioService.actualizar_usuario(usuario)
-        
-        # Verificar si realmente estamos en estado INICIO (sin waiting_for)
-        # Si hay waiting_for, significa que estamos esperando una respuesta, no es el inicio real
-        estado_actual = get_estado_bot(numero)
-        waiting_for = get_waiting_for(numero)
-        
-        # Si el estado es INICIO y no hay waiting_for, siempre mostrar mensaje inicial
-        # (esto permite que #Iniciar funcione correctamente)
-        # Si el usuario no tiene intereses, forzar mostrar mensaje inicial
-        if estado_actual == ESTADOS_BOT["INICIO"] and not waiting_for:
-            # Forzar mostrar mensaje inicial sin importar intereses si no tiene intereses
-            if not usuario.intereses or len(usuario.intereses) == 0:
-                # Continuar con el mensaje de bienvenida
-                pass
-            else:
-                # Tiene intereses pero estamos en INICIO sin waiting_for - puede ser un estado inconsistente
-                # Mostrar mensaje inicial de todos modos para resetear el flujo
-                pass
-        # Si el usuario ya confirmó el servicio y tiene intereses Y hay waiting_for, continuar con el flujo normal
-        elif usuario.intereses and len(usuario.intereses) > 0 and waiting_for:
-            # Ya pasó por la confirmación, continuar con flujo normal
-            if not usuario.tiene_perfil_completo():
-                return self.flujo_armando_perfil(numero, texto)
-            return self.flujo_seguimiento(numero, texto)
         
         # Si no ha confirmado, enviar mensaje de bienvenida con confirmación automáticamente
         # (sin importar qué texto envió el usuario, incluso "Hola")
@@ -431,25 +423,31 @@ class Chat:
             return self._mostrar_mensaje_intereses(numero, usuario, True)
         
         # Detectar intereses del texto del usuario (formato: "1 2 3" o texto libre)
-        intereses_detectados = self._detectar_intereses_texto(texto)
-        
-        if intereses_detectados:
-            # Agregar intereses detectados (sin duplicar)
-            intereses_nuevos = []
-            for interes in intereses_detectados:
-                if interes not in usuario.intereses:
-                    usuario.agregar_interes(interes)
-                    intereses_nuevos.append(interes)
-            UsuarioService.actualizar_usuario(usuario)
+        # Solo procesar si el texto no está vacío y no es un botón
+        if texto and texto.strip() and texto not in ("confirmar_intereses", "agregar_mas_intereses"):
+            intereses_detectados = self._detectar_intereses_texto(texto)
+            print(f"🔍 Texto recibido: '{texto}' -> Intereses detectados: {intereses_detectados}")
             
-            # Actualizar estado local
-            intereses_actuales = usuario.intereses.copy()
-            set_intereses_seleccionados(numero, intereses_actuales)
-            
-            # Mostrar confirmación con botones
-            return self._mostrar_confirmacion_intereses(numero, usuario)
+            if intereses_detectados:
+                # Agregar intereses detectados (sin duplicar)
+                intereses_nuevos = []
+                for interes in intereses_detectados:
+                    if interes not in usuario.intereses:
+                        usuario.agregar_interes(interes)
+                        intereses_nuevos.append(interes)
+                UsuarioService.actualizar_usuario(usuario)
+                
+                # Actualizar estado local
+                intereses_actuales = usuario.intereses.copy()
+                set_intereses_seleccionados(numero, intereses_actuales)
+                
+                # Mostrar confirmación con botones
+                print(f"✅ Intereses agregados: {intereses_actuales}")
+                return self._mostrar_confirmacion_intereses(numero, usuario)
+            else:
+                print(f"⚠️ No se detectaron intereses en el texto: '{texto}'")
         
-        # Si no se detectaron intereses, mostrar mensaje inicial
+        # Si no se detectaron intereses o el texto está vacío, mostrar mensaje inicial
         return self._mostrar_mensaje_intereses(numero, usuario, False)
     
     def _mostrar_mensaje_intereses(self, numero, usuario, excluir_seleccionados=False):
@@ -490,17 +488,23 @@ class Chat:
         intereses_actuales = usuario.intereses if usuario.intereses else []
         nombres_intereses = [self._obtener_nombre_interes(i) for i in intereses_actuales]
         
+        # Limitar el mensaje a 1024 caracteres (límite de WhatsApp)
         mensaje = f"Tus intereses son: {', '.join(nombres_intereses)}\n\n¿Confirmar o agregar más intereses?"
+        if len(mensaje) > 1024:
+            mensaje = f"Tus intereses: {', '.join(nombres_intereses[:3])}{'...' if len(nombres_intereses) > 3 else ''}\n\n¿Confirmar o agregar más?"
         
         # Verificar si los botones ya fueron presionados (usando waiting_for como flag)
         waiting_for = get_waiting_for(numero)
         # Si waiting_for contiene "confirmado", significa que ya se presionó el botón de confirmar
-        # (no verificamos "agregar_mas" porque queremos permitir agregar más intereses múltiples veces)
         if waiting_for and "confirmado" in waiting_for:
             # Botón de confirmar ya fue presionado, no mostrar botones de nuevo, solo el mensaje
+            set_estado_bot(numero, ESTADOS_BOT["SELECCION_INTERESES"])
+            usuario.estado_conversacion = ESTADOS_BOT["SELECCION_INTERESES"]
+            UsuarioService.actualizar_usuario(usuario)
             return enviar_mensaje_whatsapp(numero, mensaje)
         
         # Crear payload con botones interactivos
+        # Limitar títulos de botones a 20 caracteres (límite de WhatsApp)
         payload = {
             "messaging_product": "whatsapp",
             "to": numero,
@@ -523,7 +527,7 @@ class Chat:
                             "type": "reply",
                             "reply": {
                                 "id": "agregar_mas_intereses",
-                                "title": "➕ Agregar más intereses"
+                                "title": "➕ Agregar más"
                             }
                         }
                     ]
@@ -536,7 +540,17 @@ class Chat:
         UsuarioService.actualizar_usuario(usuario)
         self.set_waiting_for(numero, "flujo_seleccion_intereses")
         
-        return enviar_mensaje_whatsapp(numero, payload)
+        try:
+            resultado = enviar_mensaje_whatsapp(numero, payload)
+            # Si hay error, intentar enviar solo texto
+            if resultado and not resultado.get("success", True):
+                print(f"⚠️ Error enviando botones interactivos, enviando solo texto")
+                return enviar_mensaje_whatsapp(numero, mensaje)
+            return resultado
+        except Exception as e:
+            print(f"⚠️ Error en _mostrar_confirmacion_intereses: {e}")
+            # Fallback: enviar solo texto
+            return enviar_mensaje_whatsapp(numero, mensaje)
     
     def _crear_pregunta_interactiva(self, numero: str, campo: str) -> dict:
         """Crea un mensaje interactivo según el campo del perfil"""
@@ -698,22 +712,26 @@ class Chat:
         if texto_lower in ("todo", "todos", "all", "t"):
             return intereses_validos
         
-        # Dividir el texto por espacios, comas, o puntos
-        palabras = texto_lower.replace(",", " ").replace(".", " ").split()
+        # Dividir el texto por espacios, comas, puntos o punto y coma
+        # Manejar tanto "1 2 3" como "1,2,3" o "1.2.3" o "1;2;3"
+        palabras = texto_lower.replace(",", " ").replace(".", " ").replace(";", " ").split()
         
         for palabra in palabras:
             palabra_limpia = palabra.strip()
+            # Verificar coincidencia exacta primero (más rápido y preciso)
             if palabra_limpia in intereses_map:
                 interes = intereses_map[palabra_limpia]
                 if interes not in intereses_detectados:
                     intereses_detectados.append(interes)
             else:
-                # Buscar coincidencias parciales
-                for key, interes in intereses_map.items():
-                    if key in palabra_limpia or palabra_limpia in key:
-                        if interes not in intereses_detectados:
-                            intereses_detectados.append(interes)
-                        break
+                # Buscar coincidencias parciales solo si la palabra tiene más de 2 caracteres
+                # (evita falsos positivos con números de un solo dígito)
+                if len(palabra_limpia) > 2:
+                    for key, interes in intereses_map.items():
+                        if key in palabra_limpia or palabra_limpia in key:
+                            if interes not in intereses_detectados:
+                                intereses_detectados.append(interes)
+                            break
         
         return intereses_detectados
     

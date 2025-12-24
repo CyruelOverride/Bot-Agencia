@@ -36,6 +36,14 @@ def enviar_mensaje_whatsapp(numero, mensaje):
     response = requests.post(url, headers=headers, json=data)
     print(f" Enviado a {numero}")
     print(" Estado:", response.status_code)
+    
+    # Si hay error, imprimir detalles
+    if response.status_code != 200:
+        try:
+            error_json = response.json()
+            print(f"❌ Error en WhatsApp API: {error_json}")
+        except:
+            print(f"❌ Error en WhatsApp API (sin JSON): {response.text}")
 
     try:
         res_json = response.json()
