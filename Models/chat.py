@@ -767,19 +767,19 @@ class Chat:
             usuario = UsuarioService.obtener_usuario_por_telefono(numero)
         elif texto.lower() not in ("ajustar plan", "ajustar", "modificar", "cambiar"):
             # Interpretar respuesta del usuario usando Gemini (texto libre)
-        interpretacion = GeminiOrchestratorService.interpretar_mensaje_usuario(
-            texto,
-            usuario
-        )
-        
-        # Si detectó una respuesta a un campo del perfil
-            if interpretacion and interpretacion.get("respuesta_detectada") and interpretacion.get("campo_perfil"):
-            campo = interpretacion.get("campo_perfil")
-            valor = interpretacion.get("valor_detectado")
+            interpretacion = GeminiOrchestratorService.interpretar_mensaje_usuario(
+                texto,
+                usuario
+            )
             
-            # Actualizar perfil
-            UsuarioService.actualizar_perfil(numero, campo, valor)
-            usuario = UsuarioService.obtener_usuario_por_telefono(numero)
+            # Si detectó una respuesta a un campo del perfil
+            if interpretacion and interpretacion.get("respuesta_detectada") and interpretacion.get("campo_perfil"):
+                campo = interpretacion.get("campo_perfil")
+                valor = interpretacion.get("valor_detectado")
+                
+                # Actualizar perfil
+                UsuarioService.actualizar_perfil(numero, campo, valor)
+                usuario = UsuarioService.obtener_usuario_por_telefono(numero)
         
         # Verificar si el perfil está completo
         if usuario.tiene_perfil_completo():
