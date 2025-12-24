@@ -132,13 +132,26 @@ class Chat:
         
         # Comando #Iniciar para testing: reinicia todo y envía mensaje de apertura
         if texto_lower == "#iniciar" or texto_strip == "#Iniciar":
+            # Limpiar todo el estado temporal
             self.clear_state(numero)
+            reset_estado(numero)
+            clear_waiting_for(numero)
+            clear_pregunta_actual(numero)
+            set_intereses_seleccionados(numero, [])
+            
+            # Limpiar datos del usuario en BD
             usuario.estado_conversacion = ESTADOS_BOT["INICIO"]
             usuario.intereses = []
             usuario.perfil = None
             UsuarioService.actualizar_usuario(usuario)
+            
+            # Asegurar que el estado del bot esté en INICIO
             set_estado_bot(numero, ESTADOS_BOT["INICIO"])
-            clear_waiting_for(numero)
+            
+            # Obtener usuario actualizado para asegurar que los cambios se aplicaron
+            usuario = UsuarioService.obtener_usuario_por_telefono(numero)
+            
+            # Forzar que flujo_inicio muestre el mensaje inicial ignorando intereses
             # Enviar mensaje de apertura directamente
             return self.flujo_inicio(numero, "")
         
@@ -216,9 +229,18 @@ class Chat:
             usuario.ciudad = "Colonia"
             UsuarioService.actualizar_usuario(usuario)
         
-        # Si el usuario ya confirmó el servicio, continuar con el flujo normal
-        # Verificar si ya pasó por la confirmación (podemos usar un flag o verificar si tiene intereses)
-        if usuario.intereses and len(usuario.intereses) > 0:
+        # Verificar si realmente estamos en estado INICIO (sin waiting_for)
+        # Si hay waiting_for, significa que estamos esperando una respuesta, no es el inicio real
+        estado_actual = get_estado_bot(numero)
+        waiting_for = get_waiting_for(numero)
+        
+        # Si el estado es INICIO y no hay waiting_for, siempre mostrar mensaje inicial
+        # (esto permite que #Iniciar funcione correctamente)
+        if estado_actual == ESTADOS_BOT["INICIO"] and not waiting_for:
+            # Forzar mostrar mensaje inicial sin importar intereses
+            pass  # Continuar con el mensaje de bienvenida
+        # Si el usuario ya confirmó el servicio y tiene intereses, continuar con el flujo normal
+        elif usuario.intereses and len(usuario.intereses) > 0:
             # Ya pasó por la confirmación, continuar con flujo normal
             if not usuario.tiene_perfil_completo():
                 return self.flujo_armando_perfil(numero, texto)
