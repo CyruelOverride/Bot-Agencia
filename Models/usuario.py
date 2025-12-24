@@ -34,7 +34,7 @@ class Usuario:
         Verifica si el perfil está completo según las reglas definidas.
         
         Perfil completo cuando tiene:
-        - Campos obligatorios siempre: tipo_viaje, acompanantes, presupuesto, duracion_estadia
+        - Campos obligatorios siempre: tipo_viaje, acompanantes, duracion_estadia
         - Campos condicionales según intereses:
           * preferencias_comida (solo si "restaurantes" en intereses)
           * interes_regalos (solo si "compras" en intereses)
@@ -54,7 +54,6 @@ class Usuario:
         campos_obligatorios_completos = (
             perfil.tipo_viaje is not None and
             perfil.acompanantes is not None and
-            perfil.presupuesto is not None and
             perfil.duracion_estadia is not None
         )
         

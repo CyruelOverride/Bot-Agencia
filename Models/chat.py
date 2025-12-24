@@ -1,4 +1,4 @@
-from typing import Any, Optional, Dict, Callable
+from typing import Any, Optional, Dict, Callable, List
 from datetime import datetime
 from whatsapp_api import enviar_mensaje_whatsapp, extraer_nombre_del_webhook
 from Util.estado import (
@@ -24,6 +24,7 @@ class Chat:
         # Mapeo de funciones de flujo
         self.function_map = {
             "flujo_inicio": self.flujo_inicio,
+            "flujo_confirmacion_servicio": self.flujo_confirmacion_servicio,
             "flujo_seleccion_intereses": self.flujo_seleccion_intereses,
             "flujo_armando_perfil": self.flujo_armando_perfil,
             "flujo_generando_plan": self.flujo_generando_plan,
@@ -144,6 +145,8 @@ class Chat:
         # Enrutar según estado
         if estado_bot == ESTADOS_BOT["INICIO"]:
             return self.flujo_inicio(numero, texto)
+        elif estado_bot == ESTADOS_BOT["ESPERANDO_CONFIRMACION"]:
+            return self.flujo_confirmacion_servicio(numero, texto)
         elif estado_bot == ESTADOS_BOT["SELECCION_INTERESES"]:
             return self.flujo_seleccion_intereses(numero, texto)
         elif estado_bot == ESTADOS_BOT["ARMANDO_PERFIL"]:
@@ -172,8 +175,8 @@ class Chat:
             # Esto se puede mejorar con geocoding inverso
             usuario = UsuarioService.obtener_usuario_por_telefono(numero)
             if usuario and not usuario.ciudad:
-                # Asumir Canelones por defecto (a futuro será configurable por BDD)
-                usuario.ciudad = "Canelones"
+                # Asumir Colonia por defecto (a futuro será configurable por BDD)
+                usuario.ciudad = "Colonia"
                 UsuarioService.actualizar_usuario(usuario)
             
             return self.handle_text(numero, "continuar")
@@ -187,7 +190,7 @@ class Chat:
     # ============================================================
     
     def flujo_inicio(self, numero, texto):
-        """Flujo inicial: saludo y asignación automática de ciudad (Canelones)"""
+        """Flujo inicial: saludo cálido y confirmación de servicio"""
         usuario = UsuarioService.obtener_o_crear_usuario(numero)
         
         # Si es la primera vez, obtener nombre si está disponible
@@ -196,130 +199,541 @@ class Chat:
         else:
             nombre = usuario.nombre
         
-        # Asignar automáticamente Canelones si no tiene ciudad
+        # Asignar automáticamente Colonia si no tiene ciudad
         if not usuario.ciudad:
-            usuario.ciudad = "Canelones"
+            usuario.ciudad = "Colonia"
             UsuarioService.actualizar_usuario(usuario)
         
-        # Si tiene ciudad pero no intereses, pasar directamente a selección de intereses
-        if not usuario.intereses or len(usuario.intereses) == 0:
+        # Si el usuario ya confirmó el servicio, continuar con el flujo normal
+        # Verificar si ya pasó por la confirmación (podemos usar un flag o verificar si tiene intereses)
+        if usuario.intereses and len(usuario.intereses) > 0:
+            # Ya pasó por la confirmación, continuar con flujo normal
+            if not usuario.tiene_perfil_completo():
+                return self.flujo_armando_perfil(numero, texto)
+            return self.flujo_seguimiento(numero, texto)
+        
+        # Si no ha confirmado, enviar mensaje de bienvenida con confirmación
+        mensaje = (
+            f"¡Hola! 👋\n\n"
+            f"Soy tu asistente virtual en este viaje. Te ayudo a armar un plan personalizado "
+            f"para que disfrutes al máximo tu estadía en {usuario.ciudad}.\n\n"
+            f"Puedo recomendarte restaurantes, lugares para visitar, actividades y mucho más, "
+            f"todo adaptado a tus gustos y necesidades.\n\n"
+            f"¿Quieres que te proporcione este servicio sin costo adicional?"
+        )
+        
+        # Enviar mensaje con botones de confirmación
+        payload = {
+            "messaging_product": "whatsapp",
+            "to": numero,
+            "type": "interactive",
+            "interactive": {
+                "type": "button",
+                "body": {
+                    "text": mensaje
+                },
+                "action": {
+                    "buttons": [
+                        {
+                            "type": "reply",
+                            "reply": {
+                                "id": "confirmar_servicio_si",
+                                "title": "✅ Sí, quiero el servicio"
+                            }
+                        },
+                        {
+                            "type": "reply",
+                            "reply": {
+                                "id": "confirmar_servicio_no",
+                                "title": "❌ No, gracias"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+        
+        set_estado_bot(numero, ESTADOS_BOT["ESPERANDO_CONFIRMACION"])
+        usuario.estado_conversacion = ESTADOS_BOT["ESPERANDO_CONFIRMACION"]
+        UsuarioService.actualizar_usuario(usuario)
+        self.set_waiting_for(numero, "flujo_confirmacion_servicio")
+        
+        return enviar_mensaje_whatsapp(numero, payload)
+    
+    def flujo_confirmacion_servicio(self, numero, texto):
+        """Maneja la confirmación del servicio por parte del usuario"""
+        usuario = UsuarioService.obtener_o_crear_usuario(numero)
+        
+        texto_lower = texto.lower()
+        
+        # Verificar si es respuesta afirmativa (botón o texto)
+        es_afirmativo = (
+            texto == "confirmar_servicio_si" or
+            texto_lower in ("sí", "si", "yes", "ok", "okay", "dale", "vamos", "adelante", "continuar", "sí, quiero el servicio")
+        )
+        
+        es_negativo = (
+            texto == "confirmar_servicio_no" or
+            texto_lower in ("no", "nope", "no gracias", "no, gracias", "cancelar")
+        )
+        
+        if es_negativo:
+            mensaje = (
+                "Entendido. Si cambias de opinión, solo escribime y estaré aquí para ayudarte. "
+                "¡Que tengas un excelente viaje! 🎉"
+            )
+            set_estado_bot(numero, ESTADOS_BOT["INICIO"])
+            usuario.estado_conversacion = ESTADOS_BOT["INICIO"]
+            UsuarioService.actualizar_usuario(usuario)
+            clear_waiting_for(numero)
+            return enviar_mensaje_whatsapp(numero, mensaje)
+        
+        if es_afirmativo:
+            # Continuar con selección de intereses
+            clear_waiting_for(numero)
             return self.flujo_seleccion_intereses(numero, texto)
         
-        # Si ya tiene intereses pero no perfil completo, continuar con perfil
-        if not usuario.tiene_perfil_completo():
-            return self.flujo_armando_perfil(numero, texto)
+        # Si no es claro, usar Gemini para interpretar y responder amigablemente
+        respuesta_amigable = GeminiOrchestratorService.generar_respuesta_amigable(
+            texto,
+            usuario,
+            contexto_estado="El bot está esperando confirmación del usuario para iniciar el servicio de planificación de viaje"
+        )
         
-        # Si tiene todo, puede estar en seguimiento
-        return self.flujo_seguimiento(numero, texto)
+        # Agregar recordatorio sobre los botones
+        mensaje = f"{respuesta_amigable}\n\nSi querés continuar, podés usar los botones o responder 'Sí' para comenzar."
+        return enviar_mensaje_whatsapp(numero, mensaje)
     
     def flujo_seleccion_intereses(self, numero, texto):
         """Flujo de selección de intereses con menú interactivo"""
         usuario = UsuarioService.obtener_o_crear_usuario(numero)
         
-        # Si el texto es una selección interactiva
-        if texto.startswith("interes_"):
-            interes = texto.replace("interes_", "")
-            intereses_validos = ["restaurantes", "comercios", "recreacion", "cultura", "compras"]
-            
-            if interes in intereses_validos:
-                # Toggle: si ya está seleccionado, quitarlo; si no, agregarlo
-                if interes in usuario.intereses:
-                    usuario.intereses.remove(interes)
-                else:
-                    usuario.agregar_interes(interes)
-                UsuarioService.actualizar_usuario(usuario)
-                
-                # Actualizar estado local
-                intereses_actuales = usuario.intereses.copy()
-                set_intereses_seleccionados(numero, intereses_actuales)
-                
-                # Mostrar menú actualizado
-                return self.flujo_seleccion_intereses(numero, "actualizar")
+        # ============================================================
+        # CÓDIGO DE INTERACTIVE LIST - COMENTADO
+        # ============================================================
+        # # Si el texto es una selección interactiva
+        # if texto.startswith("interes_"):
+        #     interes = texto.replace("interes_", "")
+        #     intereses_validos = ["restaurantes", "comercios", "recreacion", "cultura", "compras"]
+        #     
+        #     if interes in intereses_validos:
+        #         # Toggle: si ya está seleccionado, quitarlo; si no, agregarlo
+        #         if interes in usuario.intereses:
+        #             usuario.intereses.remove(interes)
+        #         else:
+        #             usuario.agregar_interes(interes)
+        #         UsuarioService.actualizar_usuario(usuario)
+        #         
+        #         # Actualizar estado local
+        #         intereses_actuales = usuario.intereses.copy()
+        #         set_intereses_seleccionados(numero, intereses_actuales)
+        #         
+        #         # Mostrar menú actualizado
+        #         return self.flujo_seleccion_intereses(numero, "actualizar")
+        # ============================================================
         
-        # Si el texto es "continuar_intereses" o "continuar" y hay intereses seleccionados
-        if (texto == "continuar_intereses" or texto.lower() in ("continuar", "listo", "siguiente", "listo, continuar")) and usuario.intereses:
+        # Verificar si el usuario quiere continuar (debe tener al menos un interés)
+        texto_lower = texto.lower().strip()
+        if texto_lower in ("continuar", "listo", "siguiente", "listo, continuar", "continuar_intereses") and usuario.intereses:
             set_estado_bot(numero, ESTADOS_BOT["ARMANDO_PERFIL"])
             usuario.estado_conversacion = ESTADOS_BOT["ARMANDO_PERFIL"]
             UsuarioService.actualizar_usuario(usuario)
             clear_waiting_for(numero)
             return self.flujo_armando_perfil(numero, texto)
         
-        # Si el texto es "actualizar", solo refrescar el menú sin cambiar estado
-        if texto == "actualizar":
-            # Continuar para mostrar menú actualizado
-            pass
+        # ============================================================
+        # CÓDIGO DEL INTERACTIVE LIST - COMENTADO PARA REFERENCIA
+        # ============================================================
+        # # Si el texto es "actualizar", solo refrescar el menú sin cambiar estado
+        # if texto == "actualizar":
+        #     # Continuar para mostrar menú actualizado
+        #     pass
+        # 
+        # # Mostrar menú de intereses
+        # intereses_actuales = usuario.intereses
+        # rows = []
+        # 
+        # intereses_opciones = [
+        #     {"id": "restaurantes", "title": "🍽️ Restaurantes", "description": "Lugares para comer"},
+        #     {"id": "comercios", "title": "🛍️ Comercios", "description": "Tiendas y negocios"},
+        #     {"id": "recreacion", "title": "🌳 Zonas de Recreación", "description": "Parques y espacios al aire libre"},
+        #     {"id": "cultura", "title": "🏛️ Cultura / Paseos", "description": "Museos, teatros, plazas"},
+        #     {"id": "compras", "title": "🛒 Compras / Regalos", "description": "Shopping y souvenirs"}
+        # ]
+        # 
+        # for opcion in intereses_opciones:
+        #     esta_seleccionado = opcion["id"] in intereses_actuales
+        #     titulo = f"{'✅ ' if esta_seleccionado else ''}{opcion['title']}"
+        #     rows.append({
+        #         "id": f"interes_{opcion['id']}",
+        #         "title": titulo,
+        #         "description": opcion["description"]
+        #     })
+        # 
+        # # Agregar opción para continuar si hay al menos un interés seleccionado
+        # if intereses_actuales:
+        #     rows.append({
+        #         "id": "continuar_intereses",
+        #         "title": "✅ Continuar",
+        #         "description": f"Listo con {len(intereses_actuales)} interés/es seleccionado/s"
+        #     })
+        # 
+        # secciones = [{
+        #     "title": "Seleccioná tus intereses",
+        #     "rows": rows
+        # }]
+        # 
+        # mensaje_inicial = (
+        #     f"Hola {usuario.nombre or 'viajero'} 👋\n\n"
+        #     f"Te ayudo a armar tu plan para {usuario.ciudad or 'la ciudad'}.\n\n"
+        #     f"¿Qué te interesa? 👇"
+        # ) if not intereses_actuales else (
+        #     f"Seleccionaste: {', '.join([i.capitalize() for i in intereses_actuales])}\n\n"
+        #     f"¿Agregar más o continuar?"
+        # )
+        # 
+        # payload = {
+        #     "messaging_product": "whatsapp",
+        #     "to": numero,
+        #     "type": "interactive",
+        #     "interactive": {
+        #         "type": "list",
+        #         "header": {
+        #             "type": "text",
+        #             "text": "🎯 ¿Qué te interesa?"
+        #         },
+        #         "body": {
+        #             "text": mensaje_inicial
+        #         },
+        #         "footer": {
+        #             "text": "Podés seleccionar múltiples opciones"
+        #         },
+        #         "action": {
+        #             "button": "Ver opciones",
+        #             "sections": secciones
+        #         }
+        #     }
+        # }
+        # 
+        # set_estado_bot(numero, ESTADOS_BOT["SELECCION_INTERESES"])
+        # usuario.estado_conversacion = ESTADOS_BOT["SELECCION_INTERESES"]
+        # UsuarioService.actualizar_usuario(usuario)
+        # 
+        # return enviar_mensaje_whatsapp(numero, payload)
+        # ============================================================
+        # FIN DEL CÓDIGO COMENTADO
+        # ============================================================
         
-        # Mostrar menú de intereses
-        intereses_actuales = usuario.intereses
-        rows = []
+        # NUEVA IMPLEMENTACIÓN: Selección por texto libre
+        # Detectar intereses del texto del usuario
+        intereses_detectados = self._detectar_intereses_texto(texto)
         
-        intereses_opciones = [
-            {"id": "restaurantes", "title": "🍽️ Restaurantes", "description": "Lugares para comer"},
-            {"id": "comercios", "title": "🛍️ Comercios", "description": "Tiendas y negocios"},
-            {"id": "recreacion", "title": "🌳 Zonas de Recreación", "description": "Parques y espacios al aire libre"},
-            {"id": "cultura", "title": "🏛️ Cultura / Paseos", "description": "Museos, teatros, plazas"},
-            {"id": "compras", "title": "🛒 Compras / Regalos", "description": "Shopping y souvenirs"}
-        ]
+        if intereses_detectados:
+            # Agregar intereses detectados (sin duplicar)
+            intereses_nuevos = []
+            for interes in intereses_detectados:
+                if interes not in usuario.intereses:
+                    usuario.agregar_interes(interes)
+                    intereses_nuevos.append(interes)
+            UsuarioService.actualizar_usuario(usuario)
+            
+            # Mostrar confirmación
+            intereses_actuales = usuario.intereses
+            nombres_intereses = [self._obtener_nombre_interes(i) for i in intereses_actuales]
+            
+            if intereses_nuevos:
+                mensaje_confirmacion = (
+                    f"✅ Seleccionaste: {', '.join(nombres_intereses)}\n\n"
+                    f"¿Querés agregar más o continuar?\n"
+                    f"Escribí más intereses o 'continuar' para seguir."
+                )
+            else:
+                # Todos los intereses ya estaban seleccionados
+                mensaje_confirmacion = (
+                    f"Ya tenés seleccionado: {', '.join(nombres_intereses)}\n\n"
+                    f"¿Querés agregar más o continuar?\n"
+                    f"Escribí más intereses o 'continuar' para seguir."
+                )
+            
+            set_estado_bot(numero, ESTADOS_BOT["SELECCION_INTERESES"])
+            usuario.estado_conversacion = ESTADOS_BOT["SELECCION_INTERESES"]
+            UsuarioService.actualizar_usuario(usuario)
+            
+            return enviar_mensaje_whatsapp(numero, mensaje_confirmacion)
         
-        for opcion in intereses_opciones:
-            esta_seleccionado = opcion["id"] in intereses_actuales
-            titulo = f"{'✅ ' if esta_seleccionado else ''}{opcion['title']}"
-            rows.append({
-                "id": f"interes_{opcion['id']}",
-                "title": titulo,
-                "description": opcion["description"]
-            })
+        # Si no se detectaron intereses y ya tiene algunos, mostrar mensaje de ayuda
+        if usuario.intereses:
+            nombres_intereses = [self._obtener_nombre_interes(i) for i in usuario.intereses]
+            mensaje_ayuda = (
+                f"No entendí tu mensaje. Ya tenés seleccionado: {', '.join(nombres_intereses)}\n\n"
+                f"Podés escribir:\n"
+                f"• Números: \"1 2 3\"\n"
+                f"• Letras: \"A B C\"\n"
+                f"• Nombres: \"restaurantes compras recreacion\"\n"
+                f"• O \"continuar\" para seguir"
+            )
+            
+            set_estado_bot(numero, ESTADOS_BOT["SELECCION_INTERESES"])
+            usuario.estado_conversacion = ESTADOS_BOT["SELECCION_INTERESES"]
+            UsuarioService.actualizar_usuario(usuario)
+            
+            return enviar_mensaje_whatsapp(numero, mensaje_ayuda)
         
-        # Agregar opción para continuar si hay al menos un interés seleccionado
-        if intereses_actuales:
-            rows.append({
-                "id": "continuar_intereses",
-                "title": "✅ Continuar",
-                "description": f"Listo con {len(intereses_actuales)} interés/es seleccionado/s"
-            })
-        
-        secciones = [{
-            "title": "Seleccioná tus intereses",
-            "rows": rows
-        }]
-        
+        # Si no se detectaron intereses y no tiene ninguno, mostrar mensaje inicial
         mensaje_inicial = (
-            f"Hola {usuario.nombre or 'viajero'} 👋\n\n"
-            f"Te ayudo a armar tu plan para {usuario.ciudad or 'la ciudad'}.\n\n"
-            f"¿Qué te interesa? 👇"
-        ) if not intereses_actuales else (
-            f"Seleccionaste: {', '.join([i.capitalize() for i in intereses_actuales])}\n\n"
-            f"¿Agregar más o continuar?"
+            f"Perfecto!\n"
+            f"Te ayudo a armar tu plan para {usuario.ciudad or 'Colonia'}.\n\n"
+            f"¿Qué te interesa? Podés elegir varios separados por espacios o comas:\n"
+            f"1. 🍽️ Restaurantes\n"
+            f"2. 🛍️ Comercios\n"
+            f"3. 🌳 Recreación\n"
+            f"4. 🏛️ Cultura\n"
+            f"5. 🛒 Compras\n\n"
+            f"Ejemplo: \"1 2 3\" o \"restaurantes compras recreacion\""
         )
+        
+        set_estado_bot(numero, ESTADOS_BOT["SELECCION_INTERESES"])
+        usuario.estado_conversacion = ESTADOS_BOT["SELECCION_INTERESES"]
+        UsuarioService.actualizar_usuario(usuario)
+        self.set_waiting_for(numero, "flujo_seleccion_intereses")
+        
+        return enviar_mensaje_whatsapp(numero, mensaje_inicial)
+    
+    def _crear_pregunta_interactiva(self, numero: str, campo: str) -> dict:
+        """Crea un mensaje interactivo según el campo del perfil"""
+        preguntas_interactivas = {
+            "tipo_viaje": {
+                "body": "¿Qué tipo de viaje estás haciendo?",
+                "buttons": [
+                    {"id": "tipo_viaje_solo", "title": "Solo"},
+                    {"id": "tipo_viaje_pareja", "title": "Con pareja"},
+                    {"id": "tipo_viaje_familia", "title": "Con familia"},
+                    {"id": "tipo_viaje_amigos", "title": "Con amigos"},
+                    {"id": "tipo_viaje_negocios", "title": "Negocios"}
+                ]
+            },
+            "acompanantes": {
+                "body": "¿Viajás solo o acompañado?",
+                "buttons": [
+                    {"id": "acompanantes_solo", "title": "Solo"},
+                    {"id": "acompanantes_pareja", "title": "Pareja"},
+                    {"id": "acompanantes_familia", "title": "Familia"},
+                    {"id": "acompanantes_amigos", "title": "Amigos"}
+                ]
+            },
+            "duracion_estadia": {
+                "body": "¿Cuántos días vas a estar?",
+                "buttons": [
+                    {"id": "duracion_1_2", "title": "1-2 días"},
+                    {"id": "duracion_3_5", "title": "3-5 días"},
+                    {"id": "duracion_mas_5", "title": "Más de 5 días"}
+                ]
+            },
+            "preferencias_comida": {
+                "body": "¿Qué tipo de comida preferís?",
+                "buttons": [
+                    {"id": "comida_local", "title": "Local"},
+                    {"id": "comida_internacional", "title": "Internacional"},
+                    {"id": "comida_vegetariano", "title": "Vegetariano"},
+                    {"id": "comida_vegano", "title": "Vegano"},
+                    {"id": "comida_sin_restricciones", "title": "Sin restricciones"}
+                ]
+            },
+            "interes_regalos": {
+                "body": "¿Buscás algo para vos o para regalar?",
+                "buttons": [
+                    {"id": "regalos_si", "title": "Sí, para regalar"},
+                    {"id": "regalos_no", "title": "No, para mí"}
+                ]
+            },
+            "interes_ropa": {
+                "body": "¿Te interesa comprar ropa?",
+                "buttons": [
+                    {"id": "ropa_si", "title": "Sí"},
+                    {"id": "ropa_no", "title": "No"}
+                ]
+            },
+            "interes_tipo_recreacion": {
+                "body": "¿Qué tipo de recreación preferís?",
+                "buttons": [
+                    {"id": "recreacion_activa", "title": "Activa"},
+                    {"id": "recreacion_pasiva", "title": "Pasiva"},
+                    {"id": "recreacion_familiar", "title": "Familiar"},
+                    {"id": "recreacion_romantica", "title": "Romántica"}
+                ]
+            },
+            "viaja_con_ninos": {
+                "body": "¿Viajás con niños o familiares chicos?",
+                "buttons": [
+                    {"id": "ninos_si", "title": "Sí"},
+                    {"id": "ninos_no", "title": "No"}
+                ]
+            }
+        }
+        
+        if campo not in preguntas_interactivas:
+            return None
+        
+        pregunta_data = preguntas_interactivas[campo]
         
         payload = {
             "messaging_product": "whatsapp",
             "to": numero,
             "type": "interactive",
             "interactive": {
-                "type": "list",
-                "header": {
-                    "type": "text",
-                    "text": "🎯 ¿Qué te interesa?"
-                },
+                "type": "button",
                 "body": {
-                    "text": mensaje_inicial
-                },
-                "footer": {
-                    "text": "Podés seleccionar múltiples opciones"
+                    "text": pregunta_data["body"]
                 },
                 "action": {
-                    "button": "Ver opciones",
-                    "sections": secciones
+                    "buttons": [
+                        {
+                            "type": "reply",
+                            "reply": {
+                                "id": btn["id"],
+                                "title": btn["title"]
+                            }
+                        }
+                        for btn in pregunta_data["buttons"]
+                    ]
                 }
             }
         }
         
-        set_estado_bot(numero, ESTADOS_BOT["SELECCION_INTERESES"])
-        usuario.estado_conversacion = ESTADOS_BOT["SELECCION_INTERESES"]
-        UsuarioService.actualizar_usuario(usuario)
+        return payload
+    
+    def _detectar_intereses_texto(self, texto: str) -> List[str]:
+        """
+        Detecta intereses del texto del usuario.
+        Soporta:
+        - Números: "1 2 3" → restaurantes, comercios, recreacion
+        - Letras: "A B C" → restaurantes, comercios, recreacion
+        - Nombres completos o parciales: "restaurantes compras recreacion"
+        - "todo" → todos los intereses
+        """
+        if not texto or not texto.strip():
+            return []
         
-        return enviar_mensaje_whatsapp(numero, payload)
+        texto_lower = texto.lower().strip()
+        
+        # Mapeo de intereses
+        intereses_map = {
+            "1": "restaurantes",
+            "a": "restaurantes",
+            "restaurante": "restaurantes",
+            "restaurantes": "restaurantes",
+            "comida": "restaurantes",
+            "2": "comercios",
+            "b": "comercios",
+            "comercio": "comercios",
+            "comercios": "comercios",
+            "tienda": "comercios",
+            "tiendas": "comercios",
+            "3": "recreacion",
+            "c": "recreacion",
+            "recreacion": "recreacion",
+            "recreación": "recreacion",
+            "recreativo": "recreacion",
+            "parque": "recreacion",
+            "parques": "recreacion",
+            "4": "cultura",
+            "d": "cultura",
+            "cultura": "cultura",
+            "museo": "cultura",
+            "museos": "cultura",
+            "paseo": "cultura",
+            "paseos": "cultura",
+            "5": "compras",
+            "e": "compras",
+            "compra": "compras",
+            "compras": "compras",
+            "shopping": "compras",
+            "regalo": "compras",
+            "regalos": "compras"
+        }
+        
+        intereses_validos = ["restaurantes", "comercios", "recreacion", "cultura", "compras"]
+        intereses_detectados = []
+        
+        # Si dice "todo", seleccionar todos
+        if texto_lower in ("todo", "todos", "all", "t"):
+            return intereses_validos
+        
+        # Dividir el texto por espacios, comas, o puntos
+        palabras = texto_lower.replace(",", " ").replace(".", " ").split()
+        
+        for palabra in palabras:
+            palabra_limpia = palabra.strip()
+            if palabra_limpia in intereses_map:
+                interes = intereses_map[palabra_limpia]
+                if interes not in intereses_detectados:
+                    intereses_detectados.append(interes)
+            else:
+                # Buscar coincidencias parciales
+                for key, interes in intereses_map.items():
+                    if key in palabra_limpia or palabra_limpia in key:
+                        if interes not in intereses_detectados:
+                            intereses_detectados.append(interes)
+                        break
+        
+        return intereses_detectados
+    
+    def _obtener_nombre_interes(self, interes: str) -> str:
+        """Obtiene el nombre amigable de un interés"""
+        nombres = {
+            "restaurantes": "Restaurantes",
+            "comercios": "Comercios",
+            "recreacion": "Recreación",
+            "cultura": "Cultura",
+            "compras": "Compras"
+        }
+        return nombres.get(interes, interes.capitalize())
+    
+    def _procesar_respuesta_interactiva(self, texto: str) -> Optional[Dict[str, Any]]:
+        """Procesa una respuesta de botón interactivo y retorna campo y valor"""
+        mapeo_respuestas = {
+            # Tipo de viaje
+            "tipo_viaje_solo": ("tipo_viaje", "solo"),
+            "tipo_viaje_pareja": ("tipo_viaje", "pareja"),
+            "tipo_viaje_familia": ("tipo_viaje", "familia"),
+            "tipo_viaje_amigos": ("tipo_viaje", "amigos"),
+            "tipo_viaje_negocios": ("tipo_viaje", "negocios"),
+            # Acompañantes
+            "acompanantes_solo": ("acompanantes", "solo"),
+            "acompanantes_pareja": ("acompanantes", "pareja"),
+            "acompanantes_familia": ("acompanantes", "familia"),
+            "acompanantes_amigos": ("acompanantes", "amigos"),
+            # Duración
+            "duracion_1_2": ("duracion_estadia", 2),
+            "duracion_3_5": ("duracion_estadia", 4),
+            "duracion_mas_5": ("duracion_estadia", 7),
+            # Preferencias comida
+            "comida_local": ("preferencias_comida", "local"),
+            "comida_internacional": ("preferencias_comida", "internacional"),
+            "comida_vegetariano": ("preferencias_comida", "vegetariano"),
+            "comida_vegano": ("preferencias_comida", "vegano"),
+            "comida_sin_restricciones": ("preferencias_comida", "sin_restricciones"),
+            # Interés regalos
+            "regalos_si": ("interes_regalos", True),
+            "regalos_no": ("interes_regalos", False),
+            # Interés ropa
+            "ropa_si": ("interes_ropa", True),
+            "ropa_no": ("interes_ropa", False),
+            # Tipo recreación
+            "recreacion_activa": ("interes_tipo_recreacion", "activa"),
+            "recreacion_pasiva": ("interes_tipo_recreacion", "pasiva"),
+            "recreacion_familiar": ("interes_tipo_recreacion", "familiar"),
+            "recreacion_romantica": ("interes_tipo_recreacion", "romantica"),
+            # Viaja con niños
+            "ninos_si": ("viaja_con_ninos", True),
+            "ninos_no": ("viaja_con_ninos", False)
+        }
+        
+        if texto in mapeo_respuestas:
+            campo, valor = mapeo_respuestas[texto]
+            return {"campo": campo, "valor": valor}
+        
+        return None
     
     def flujo_armando_perfil(self, numero, texto):
         """Flujo para armar el perfil del usuario con preguntas progresivas"""
@@ -342,26 +756,30 @@ class Chat:
             UsuarioService.inicializar_perfil(numero)
             usuario = UsuarioService.obtener_usuario_por_telefono(numero)
         
-        # Solo interpretar si el texto no es un comando de ajuste
-        interpretacion = None
-        if texto.lower() not in ("ajustar plan", "ajustar", "modificar", "cambiar"):
-            # Interpretar respuesta del usuario usando Gemini
-            interpretacion = GeminiOrchestratorService.interpretar_mensaje_usuario(
-                texto,
-                usuario
-            )
-            
-            # Si detectó una respuesta a un campo del perfil
+        # Procesar respuesta (puede ser botón interactivo o texto)
+        respuesta_procesada = self._procesar_respuesta_interactiva(texto)
+        
+        if respuesta_procesada:
+            # Es una respuesta de botón interactivo
+            campo = respuesta_procesada["campo"]
+            valor = respuesta_procesada["valor"]
+            UsuarioService.actualizar_perfil(numero, campo, valor)
+            usuario = UsuarioService.obtener_usuario_por_telefono(numero)
+        elif texto.lower() not in ("ajustar plan", "ajustar", "modificar", "cambiar"):
+            # Interpretar respuesta del usuario usando Gemini (texto libre)
+        interpretacion = GeminiOrchestratorService.interpretar_mensaje_usuario(
+            texto,
+            usuario
+        )
+        
+        # Si detectó una respuesta a un campo del perfil
             if interpretacion and interpretacion.get("respuesta_detectada") and interpretacion.get("campo_perfil"):
-                campo = interpretacion.get("campo_perfil")
-                valor = interpretacion.get("valor_detectado")
-                
-                # Actualizar perfil
-                UsuarioService.actualizar_perfil(numero, campo, valor)
-                usuario = UsuarioService.obtener_usuario_por_telefono(numero)
-                
-                # NO enviar mensaje de confirmación aquí para evitar duplicación
-                # Solo actualizar y continuar con siguiente pregunta
+            campo = interpretacion.get("campo_perfil")
+            valor = interpretacion.get("valor_detectado")
+            
+            # Actualizar perfil
+            UsuarioService.actualizar_perfil(numero, campo, valor)
+            usuario = UsuarioService.obtener_usuario_por_telefono(numero)
         
         # Verificar si el perfil está completo
         if usuario.tiene_perfil_completo():
@@ -371,14 +789,14 @@ class Chat:
             UsuarioService.actualizar_usuario(usuario)
             return self.flujo_generando_plan(numero, texto)
         
-        # Generar siguiente pregunta (solo una vez)
+        # Generar siguiente pregunta
         siguiente_pregunta = GeminiOrchestratorService.generar_pregunta_siguiente(
             usuario,
             usuario.intereses
         )
         
         if siguiente_pregunta:
-            # Guardar qué pregunta se está haciendo
+            # Detectar qué campo se está preguntando
             campo_pregunta = None
             if "tipo de viaje" in siguiente_pregunta.lower():
                 campo_pregunta = "tipo_viaje"
@@ -386,8 +804,6 @@ class Chat:
                 campo_pregunta = "acompanantes"
             elif "comida" in siguiente_pregunta.lower():
                 campo_pregunta = "preferencias_comida"
-            elif "presupuesto" in siguiente_pregunta.lower():
-                campo_pregunta = "presupuesto"
             elif "regalar" in siguiente_pregunta.lower():
                 campo_pregunta = "interes_regalos"
             elif "ropa" in siguiente_pregunta.lower():
@@ -405,7 +821,13 @@ class Chat:
             UsuarioService.actualizar_usuario(usuario)
             self.set_waiting_for(numero, "flujo_armando_perfil")
             
-            # Enviar SOLO UNA pregunta
+            # Enviar pregunta interactiva si está disponible, sino texto simple
+            if campo_pregunta:
+                payload_interactivo = self._crear_pregunta_interactiva(numero, campo_pregunta)
+                if payload_interactivo:
+                    return enviar_mensaje_whatsapp(numero, payload_interactivo)
+            
+            # Fallback a texto simple si no hay versión interactiva
             return enviar_mensaje_whatsapp(numero, siguiente_pregunta)
         else:
             # No hay más preguntas, pasar a generación de plan
@@ -468,38 +890,58 @@ class Chat:
         
         texto_lower = texto.lower()
         
+        # Procesar respuestas de botones interactivos
+        if texto in ("seguimiento_ajustar", "seguimiento_nuevo", "seguimiento_consulta"):
+            if texto == "seguimiento_ajustar":
+                set_estado_bot(numero, ESTADOS_BOT["ARMANDO_PERFIL"])
+                usuario.estado_conversacion = ESTADOS_BOT["ARMANDO_PERFIL"]
+                UsuarioService.actualizar_usuario(usuario)
+                return self.flujo_armando_perfil(numero, "ajustar plan")
+            elif texto == "seguimiento_nuevo":
+                set_estado_bot(numero, ESTADOS_BOT["GENERANDO_PLAN"])
+                usuario.estado_conversacion = ESTADOS_BOT["GENERANDO_PLAN"]
+                UsuarioService.actualizar_usuario(usuario)
+                return self.flujo_generando_plan(numero, texto)
+            elif texto == "seguimiento_consulta":
+                mensaje = (
+                    "Escribime tu consulta y te ayudo a resolverla. "
+                    "Puedo ayudarte con información sobre lugares, restaurantes, actividades, etc."
+                )
+                set_estado_bot(numero, ESTADOS_BOT["SEGUIMIENTO"])
+                usuario.estado_conversacion = ESTADOS_BOT["SEGUIMIENTO"]
+                UsuarioService.actualizar_usuario(usuario)
+                return enviar_mensaje_whatsapp(numero, mensaje)
+        
         # IMPORTANTE: Si el perfil está completo, NO volver a preguntar
         # Solo procesar comandos específicos o consultas generales
         if usuario.tiene_perfil_completo():
-            # Opciones de seguimiento
-            if texto_lower in ("ajustar", "modificar", "cambiar", "otro plan"):
+            # Procesar comandos directos
+            if texto_lower in ("ajustar", "modificar", "cambiar", "reorganizar", "reorganizar plan"):
                 # Volver a armando perfil (pero mantener datos existentes)
                 set_estado_bot(numero, ESTADOS_BOT["ARMANDO_PERFIL"])
                 usuario.estado_conversacion = ESTADOS_BOT["ARMANDO_PERFIL"]
                 UsuarioService.actualizar_usuario(usuario)
                 return self.flujo_armando_perfil(numero, "ajustar plan")
             
-            if texto_lower in ("nuevo plan", "otro", "generar otro"):
+            if texto_lower in ("nuevo plan", "otro", "generar otro", "otro plan"):
                 # Generar nuevo plan con el mismo perfil
                 set_estado_bot(numero, ESTADOS_BOT["GENERANDO_PLAN"])
                 usuario.estado_conversacion = ESTADOS_BOT["GENERANDO_PLAN"]
                 UsuarioService.actualizar_usuario(usuario)
                 return self.flujo_generando_plan(numero, texto)
             
-            # Si no es un comando específico, solo mostrar ayuda
-            mensaje = (
-                "¿Necesitás algo más?\n"
-                "• Ajustar el plan\n"
-                "• Generar otro plan\n"
-                "• Consultar algo específico\n\n"
-                "Escribime lo que necesitás 👌"
+            # Si no es un comando específico, usar Gemini para generar respuesta amigable
+            respuesta_amigable = GeminiOrchestratorService.generar_respuesta_amigable(
+                texto,
+                usuario,
+                contexto_estado=f"El usuario tiene un plan completo y está en seguimiento. Ciudad: {usuario.ciudad}"
             )
             
             set_estado_bot(numero, ESTADOS_BOT["SEGUIMIENTO"])
             usuario.estado_conversacion = ESTADOS_BOT["SEGUIMIENTO"]
             UsuarioService.actualizar_usuario(usuario)
             
-            return enviar_mensaje_whatsapp(numero, mensaje)
+            return enviar_mensaje_whatsapp(numero, respuesta_amigable)
         else:
             # Si el perfil NO está completo, continuar armándolo
             # Esto puede pasar si hay algún error o si se perdió información

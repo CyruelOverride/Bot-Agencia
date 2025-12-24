@@ -29,12 +29,6 @@ class Excursion:
     def coincide_con_perfil(self, perfil) -> bool:
         """Verifica si la excursión coincide con el perfil del usuario"""
         # Lógica básica de coincidencia
-        if perfil.presupuesto:
-            if perfil.presupuesto == "economico" and "premium" in self.tags:
-                return False
-            if perfil.presupuesto == "premium" and "economico" in self.tags:
-                return False
-        
         if perfil.preferencias_comida:
             if self.categoria == "restaurantes":
                 if perfil.preferencias_comida == "vegetariano" and not self.tiene_tag("vegetariano"):

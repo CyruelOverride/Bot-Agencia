@@ -36,7 +36,6 @@ class GeminiOrchestratorService:
 Perfil actual:
 - Tipo de viaje: {perfil.tipo_viaje or 'No especificado'}
 - Acompañantes: {perfil.acompanantes or 'No especificado'}
-- Presupuesto: {perfil.presupuesto or 'No especificado'}
 - Duración: {perfil.duracion_estadia or 'No especificado'} días
 - Preferencias comida: {perfil.preferencias_comida or 'No especificado'}
 - Interés regalos: {perfil.interes_regalos or 'No especificado'}
@@ -69,7 +68,6 @@ Tu tarea:
 Campos posibles:
 - tipo_viaje: "solo", "pareja", "familia", "amigos", "negocios"
 - acompanantes: "solo", "pareja", "familia", "amigos"
-- presupuesto: "economico", "medio", "alto", "premium"
 - duracion_estadia: número entero (días)
 - preferencias_comida: "local", "internacional", "vegetariano", "vegano", "sin_restricciones"
 - interes_regalos: true/false
@@ -206,7 +204,7 @@ Responde SOLO con JSON:
         Retorna la pregunta como string o None si ya hay suficiente información.
         
         Prioriza preguntas según:
-        1. Campos obligatorios primero (tipo_viaje, acompanantes, presupuesto, duracion_estadia)
+        1. Campos obligatorios primero (tipo_viaje, acompanantes, duracion_estadia)
         2. Campos condicionales según intereses
         """
         perfil = usuario.perfil
@@ -223,7 +221,6 @@ Responde SOLO con JSON:
         preguntas_map = {
             "tipo_viaje": "¿Qué tipo de viaje estás haciendo? (solo, con pareja, con familia, con amigos, negocios)",
             "acompanantes": "¿Viajás solo o acompañado?",
-            "presupuesto": "¿Qué presupuesto tenés?",
             "duracion_estadia": "¿Cuántos días vas a estar?",
             "preferencias_comida": "¿Qué tipo de comida preferís?",
             "interes_regalos": "¿Buscás algo para vos o para regalar?",
@@ -233,7 +230,7 @@ Responde SOLO con JSON:
         }
         
         # Priorizar: primero campos obligatorios, luego condicionales
-        campos_obligatorios = ["tipo_viaje", "acompanantes", "presupuesto", "duracion_estadia"]
+        campos_obligatorios = ["tipo_viaje", "acompanantes", "duracion_estadia"]
         campos_condicionales = ["preferencias_comida", "interes_regalos", "interes_ropa", "interes_tipo_recreacion", "viaja_con_ninos"]
         
         # Buscar primero campos obligatorios faltantes
@@ -269,7 +266,6 @@ Responde SOLO con JSON:
 Perfil:
 - Tipo de viaje: {perfil.tipo_viaje or 'No especificado'}
 - Acompañantes: {perfil.acompanantes or 'No especificado'}
-- Presupuesto: {perfil.presupuesto or 'No especificado'}
 - Duración: {perfil.duracion_estadia or 'No especificado'} días"""
             
             # Agregar campos condicionales según intereses
@@ -325,4 +321,89 @@ Responde SOLO con el texto del resumen, sin explicaciones adicionales."""
         except Exception as e:
             print(f"⚠️ Error al generar resumen con Gemini: {e}")
             return f"Perfecto {usuario.nombre or ''}, armé un plan pensado especialmente para vos basado en tus intereses: {intereses_texto}."
+    
+    @staticmethod
+    def generar_respuesta_amigable(
+        mensaje: str,
+        usuario: Usuario,
+        contexto_estado: str = None
+    ) -> str:
+        """
+        Genera una respuesta amigable usando Gemini cuando el usuario envía texto libre
+        que no coincide con keywords específicas.
+        
+        Args:
+            mensaje: Mensaje del usuario
+            usuario: Usuario actual
+            contexto_estado: Estado actual del bot (opcional)
+        
+        Returns:
+            Respuesta amigable generada por Gemini
+        """
+        try:
+            nombre = usuario.nombre or "viajero"
+            ciudad = usuario.ciudad or "Colonia"
+            
+            contexto = ""
+            if contexto_estado:
+                contexto = f"\nEstado actual del bot: {contexto_estado}"
+            
+            if usuario.perfil:
+                perfil_info = f"""
+Perfil del usuario:
+- Tipo de viaje: {usuario.perfil.tipo_viaje or 'No especificado'}
+- Acompañantes: {usuario.perfil.acompanantes or 'No especificado'}
+- Duración: {usuario.perfil.duracion_estadia or 'No especificado'} días
+"""
+            else:
+                perfil_info = "El usuario aún no ha completado su perfil."
+            
+            prompt = f"""Eres un asistente virtual amigable y profesional que ayuda a usuarios a planificar su viaje a {ciudad}.
+
+Contexto:
+{perfil_info}
+{contexto}
+
+Mensaje del usuario: "{mensaje}"
+
+Tu tarea es generar una respuesta amigable, útil y directa. Debes:
+1. Ser amigable pero profesional (tono medio formal)
+2. Ser conciso (no más de 3-4 líneas)
+3. Si el mensaje es una pregunta, intentar responderla de forma útil
+4. Si no entiendes bien, ofrecer ayuda de forma amigable
+5. Si es un saludo, responder cordialmente
+6. Si es una consulta sobre lugares/restaurantes/actividades, ser útil y sugerir que puede ajustar su plan
+
+NO uses emojis excesivos (máximo 1-2 si es apropiado).
+NO ofrezcas opciones que no están disponibles.
+Mantén un tono cálido pero directo.
+
+Responde SOLO con el texto de la respuesta, sin explicaciones adicionales."""
+
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=[prompt],
+                config=types.GenerateContentConfig(
+                    thinking_config=types.ThinkingConfig(thinking_budget=0)
+                )
+            )
+            
+            respuesta = response.text.strip()
+            
+            # Limpiar la respuesta si tiene formato JSON o comillas
+            if respuesta.startswith('"') and respuesta.endswith('"'):
+                respuesta = respuesta[1:-1]
+            if respuesta.startswith("'") and respuesta.endswith("'"):
+                respuesta = respuesta[1:-1]
+            
+            return respuesta
+            
+        except Exception as e:
+            print(f"⚠️ Error al generar respuesta amigable con Gemini: {e}")
+            # Respuesta de fallback amigable
+            return (
+                "Gracias por tu mensaje. Si necesitás ayuda con tu plan de viaje, "
+                "podés ajustar tu plan, generar uno nuevo, o consultarme sobre lugares y actividades. "
+                "¿En qué te puedo ayudar?"
+            )
 

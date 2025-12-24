@@ -3,161 +3,161 @@ Datos hardcodeados de lugares/excursiones por ciudad.
 Estructura: {ciudad: {categoria: [Excursion, ...]}}
 
 NOTA: Los datos están hardcodeados en listas. A futuro se implementará BDD.
-La ciudad por defecto es Canelones (a futuro será configurable por medio de BDD).
+La ciudad por defecto es Colonia (a futuro será configurable por medio de BDD).
 """
 
 from Models.excursion import Excursion
 
-# Datos hardcodeados para Canelones, Uruguay
+# Datos hardcodeados para Colonia, Uruguay
 DATOS_LUGARES = {
-    "Canelones": {
+    "Colonia": {
         "restaurantes": [
             Excursion(
                 id="rest_001",
-                ciudad="Canelones",
+                ciudad="Colonia",
                 categoria="restaurantes",
-                nombre="Parrillada La Rueda",
-                descripcion="Situada en la Ruta 11, es un referente en cortes bovinos y platos italo-uruguayos, destacando su milanesa a la napolitana por su tamaño y sabor. Su relación calidad-precio es de las mejores del departamento, con un servicio atento y un ambiente acogedor.",
-                ubicacion="Ruta 11 km 97.500",
-                tags=["parrilla", "italo-uruguayo", "economico", "familiar"],
-                imagen_url="https://static.wixstatic.com/media/482a1d_5945b5509e1941509d023545b56b8e28~mv2.jpg/v1/fill/w_720,h_900,al_c,q_85/482a1d_5945b5509e1941509d023545b56b8e28~mv2.jpg"
+                nombre="El Buen Suspiro",
+                descripcion="Situado en la icónica Calle de los Suspiros, este local funciona en una construcción portuguesa del siglo XVIII que mantiene sus paredes de piedra y techos de madera originales. Es famoso por ofrecer una experiencia íntima donde se pueden degustar los mejores quesos de la región, fiambres artesanales y una selección premium de vinos uruguayos. Es el lugar ideal para una picada romántica o un brindis en un entorno que transporta al pasado colonial.\n\nHorario: Lunes a domingo de 11:00 a 20:00 hs.",
+                ubicacion="https://www.google.com/maps/search/El+Buen+Suspiro+Colonia",
+                tags=["quesos", "vinos", "romantico", "historico", "premium"],
+                imagen_url="https://media-cdn.tripadvisor.com/media/photo-s/0e/d1/3a/50/fachada-de-la-casa-ano.jpg"
             ),
             Excursion(
                 id="rest_002",
-                ciudad="Canelones",
+                ciudad="Colonia",
                 categoria="restaurantes",
-                nombre="El Rancho",
-                descripcion="Establecimiento polivalente ideal para eventos o almuerzos familiares, conocido por su buffet variado y su excelente parrilla en un entorno natural a las afueras de la ciudad.",
-                ubicacion="Rivera km 47",
-                tags=["parrilla", "buffet", "eventos", "familiar", "medio"],
-                imagen_url="https://media-cdn.tripadvisor.com/media/photo-s/02/8f/1a/a4/el-rancho.jpg"
+                nombre="Charco Bistró",
+                descripcion="Este restaurante de autor se encuentra dentro de un hotel boutique ubicado en la faja costera del casco histórico. Se destaca por su diseño minimalista y elegante con una terraza que ofrece vistas espectaculares al Río de la Plata. Su propuesta culinaria es sofisticada, incluyendo mariscos frescos, pulpo a la parrilla, carnes de exportación y una pastelería de origen seleccionada, siendo una parada obligatoria para quienes buscan alta cocina frente al agua.\n\nHorario: Todos los días de 08:00 a 23:00 hs.",
+                ubicacion="https://www.google.com/maps/search/Charco+Bistro+Colonia",
+                tags=["alta_cocina", "mariscos", "premium", "vista_rio", "elegante"],
+                imagen_url="https://media-cdn.tripadvisor.com/media/photo-s/0f/39/57/29/terrace.jpg"
             ),
             Excursion(
                 id="rest_003",
-                ciudad="Canelones",
+                ciudad="Colonia",
                 categoria="restaurantes",
-                nombre="Parador Chivitos",
-                descripcion="Especializado en el plato nacional uruguayo, ofrece chivitos abundantes con ingredientes frescos y lomo de primera calidad. Es una opción accesible para el turismo de paso con horarios extendidos.",
-                ubicacion="FPG6+7FP, Canelones",
-                tags=["chivitos", "rapido", "economico", "local"],
-                imagen_url=None
+                nombre="La Bodeguita",
+                descripcion="Ubicada sobre la antigua muralla defensiva de la ciudad, esta pizzería y restaurante es reconocida por poseer una de las mejores terrazas para contemplar el atardecer. Su especialidad son las pizzas cocinadas en horno de barro, aunque también ofrecen chivitos uruguayos y pastas en un ambiente relajado y bohemio que suele llenarse al caer el sol.\n\nHorario: Todos los días a partir de las 20:00 hs.",
+                ubicacion="https://www.google.com/maps/search/La+Bodeguita+Colonia",
+                tags=["pizza", "horno_barro", "atardecer", "bohemio", "terraza"],
+                imagen_url="https://th.bing.com/th/id/R.fd97452e324b98f82067527e105c3cae?rik=iP76bvNh%2fnrOhQ&pid=ImgRaw&r=0"
             ),
             Excursion(
                 id="rest_004",
-                ciudad="Canelones",
+                ciudad="Colonia",
                 categoria="restaurantes",
-                nombre="Lo Del Vasco",
-                descripcion="Representa la cocina casera y artesanal por excelencia en la capital canaria. Con una política de precios muy competitiva, es el lugar preferido por locales para una comida rápida pero de alta calidad.",
-                ubicacion="Luis A. de Herrera, Canelones",
-                tags=["casero", "artesanal", "economico", "local", "rapido"],
-                imagen_url=None
+                nombre="Parrillada El Portón",
+                descripcion="Establecido en 1984, es un clásico ineludible ubicado en la avenida principal de la ciudad. Es el lugar de referencia para quienes desean probar la auténtica parrilla uruguaya en un ambiente familiar y cálido. Destaca por sus cortes de carne abundantes, como el asado de tira y el vacío, servidos con rapidez y una atención cordial que lo ha mantenido como uno de los favoritos de los locales y turistas por décadas.\n\nHorario: Todos los días de 12:00 a 16:00 hs y de 20:00 a 00:00 hs.",
+                ubicacion="https://www.google.com/maps/search/Parrillada+El+Porton+Colonia",
+                tags=["parrilla", "clasico", "familiar", "carne", "local"],
+                imagen_url="https://tse1.mm.bing.net/th/id/OIP.U2qtt2MN4ULv4Qk1NhE2mQHaCf?cb=ucfimg2&ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3"
             ),
             Excursion(
                 id="rest_005",
-                ciudad="Canelones",
+                ciudad="Colonia",
                 categoria="restaurantes",
-                nombre="Santoral Restaurante y Posada",
-                descripcion="En Atlántida, ofrece una propuesta cosmopolita frente a la Rambla Mansa. Destaca por su política de no propinas, su dulcería artesanal y una carta que fusiona influencias portuguesas, africanas y mexicanas.",
-                ubicacion="Rambla Mansa, Atlántida",
-                tags=["internacional", "premium", "cosmopolita", "romantico"],
-                imagen_url="https://media-cdn.tripadvisor.com/media/photo-s/0e/d1/3a/50/fachada-de-la-casa-ano.jpg"
+                nombre="Viejo Barrio",
+                descripcion="Este colorido restaurante está emplazado en una esquina estratégica frente a la Basílica del Santísimo Sacramento. Se caracteriza por su cocina honesta y casera, siendo especialmente valorado por sus pastas elaboradas y cortadas en el momento en que se piden. El entorno, con mesas en la vereda rodeadas de casas históricas y adoquines, ofrece una de las atmósferas más pintorescas del centro histórico para almorzar o cenar.\n\nHorario: Todos los días de 11:30 a 16:00 hs y de 19:30 a 23:30 hs.",
+                ubicacion="https://www.google.com/maps/search/Viejo+Barrio+Colonia",
+                tags=["pasta", "casero", "historico", "pintoresco", "centro_historico"],
+                imagen_url="https://tse1.mm.bing.net/th/id/OIP.oXWSNXj0OaU9jFbOsXZNywHaFj?cb=ucfimg2&ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3"
             )
         ],
         "comercios": [
             Excursion(
                 id="com_001",
-                ciudad="Canelones",
+                ciudad="Colonia",
                 categoria="comercios",
-                nombre="Otherside",
-                descripcion="Retail textil con prendas casuales y contemporáneas. Ideal para ropa urbana de temporada.",
-                ubicacion="Treinta y Tres 598, Canelones",
-                tags=["ropa", "urbana", "casual", "contemporaneo"],
+                nombre="Manos del Uruguay",
+                descripcion="Cooperativa nacional sin fines de lucro integrada a la Organización Mundial del Comercio Justo. Ofrece prendas de lana tejidas a mano de alta gama, accesorios de cuero, mantas de diseño y joyería artesanal de exportación.\n\nHorario: Lun-Dom 10:00-19:00 hs.",
+                ubicacion="https://www.google.com/maps/search/Manos+del+Uruguay+Colonia",
+                tags=["artesanias", "lana", "cuero", "joyeria", "comercio_justo", "premium"],
                 imagen_url=None
             ),
             Excursion(
                 id="com_002",
-                ciudad="Canelones",
+                ciudad="Colonia",
                 categoria="comercios",
-                nombre="Manos del Uruguay",
-                descripcion="Cooperativas de mujeres rurales que producen lana, cuero y joyería de exportación bajo comercio justo.",
-                ubicacion="Costa Urbana Shopping",
-                tags=["artesanias", "lana", "cuero", "joyeria", "comercio_justo"],
+                nombre="Mercado Artesanal",
+                descripcion="Espacio cultural ubicado en un antiguo galpón ferroviario recuperado cerca del puerto. Ofrece cerámica esmaltada, joyería de autor, textiles regionales, objetos de madera y vitrofusión realizados por artistas locales.\n\nHorario: Jue-Lun 10:00-20:00 hs.",
+                ubicacion="https://www.google.com/maps/search/Mercado+Artesanal+Colonia",
+                tags=["artesanias", "ceramica", "joyeria", "textiles", "cultural", "local"],
                 imagen_url=None
             ),
             Excursion(
                 id="com_003",
-                ciudad="Canelones",
+                ciudad="Colonia",
                 categoria="comercios",
-                nombre="Feria Artesanal de Atlántida",
-                descripcion="Paseo clásico para comprar souvenirs de cerámica, cuero, lana y mates trabajados por artesanos locales.",
-                ubicacion="Centro de Atlántida",
-                tags=["feria", "artesanias", "souvenirs", "local", "ceramica"],
+                nombre="Feria de Emprendedores",
+                descripcion="Feria tradicional al aire libre donde productores de todo el departamento exhiben su trabajo. Se pueden encontrar dulces regionales, manualidades, antigüedades, mates trabajados y piezas únicas de decoración criolla.\n\nHorario: Domingos 07:00-14:00 hs.",
+                ubicacion="https://www.google.com/maps/search/Feria+Productores+Colonia",
+                tags=["feria", "artesanias", "dulces", "antiguedades", "decoracion", "tradicional"],
                 imagen_url=None
             )
         ],
         "recreacion": [
             Excursion(
                 id="rec_001",
-                ciudad="Canelones",
+                ciudad="Colonia",
                 categoria="recreacion",
-                nombre="Parque Roosevelt",
-                descripcion="Pulmón verde con tren eléctrico y deportes. Ideal para actividades al aire libre y recreación familiar.",
-                ubicacion="Av. Giannattasio km 21",
-                tags=["parque", "naturaleza", "deportes", "familiar", "tren"],
-                imagen_url=None
+                nombre="Rambla de las Américas",
+                descripcion="Es el paseo marítimo más extenso de la ciudad, con más de 7 kilómetros que bordean toda la bahía. Es el lugar preferido por turistas y locales para caminar, andar en bicicleta o simplemente sentarse a tomar mate mientras cae el sol. Al inicio del recorrido se encuentra el famoso cartel de letras de 'COLONIA', punto obligatorio para fotografías.\n\nHorario: Abierto las 24 hs.",
+                ubicacion="https://www.google.com/maps/search/Rambla+Colonia+Sacramento",
+                tags=["paseo", "maritimo", "naturaleza", "fotografia", "familiar", "gratis"],
+                imagen_url="https://tse2.mm.bing.net/th/id/OIP.gq7cBke5qj6EDObvwUxwbwHaFh?cb=ucfimg2&ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3"
             ),
             Excursion(
                 id="rec_002",
-                ciudad="Canelones",
+                ciudad="Colonia",
                 categoria="recreacion",
-                nombre="Quinta Capurro",
-                descripcion="Jardín histórico con especies exóticas del siglo XIX. Espacio verde con valor patrimonial y botánico.",
-                ubicacion="Bv. Federico Capurro 555",
-                tags=["jardin", "historico", "patrimonio", "botanico", "tranquilo"],
-                imagen_url=None
+                nombre="Playa Ferrando",
+                descripcion="Ubicada a pocos minutos del centro, es considerada la playa más linda y valorada de la ciudad. Se encuentra rodeada por un bosque de pinos y eucaliptos que proporcionan sombra natural, ideal para pasar el día en familia haciendo picnic. Sus arenas son finas y doradas, con aguas mansas que permiten un baño seguro en el río.\n\nHorario: Abierto las 24 hs.",
+                ubicacion="https://www.google.com/maps/search/Playa+Ferrando+Colonia",
+                tags=["playa", "naturaleza", "familiar", "picnic", "bosque", "gratis"],
+                imagen_url="https://th.bing.com/th/id/R.4796de3daafd59c21249428e9da345e3?rik=7ZwfeqS9p1i%2blA&pid=ImgRaw&r=0"
             )
         ],
         "cultura": [
             Excursion(
                 id="cul_001",
-                ciudad="Canelones",
+                ciudad="Colonia",
                 categoria="cultura",
-                nombre="Iglesia Cristo Obrero",
-                descripcion="Patrimonio UNESCO, obra de Eladio Dieste. Arquitectura única en ladrillo visto, referente de la arquitectura moderna uruguaya.",
-                ubicacion="Ruta 11 km 164",
-                tags=["iglesia", "unesco", "arquitectura", "dieste", "patrimonio", "gratis"],
-                imagen_url=None
+                nombre="Plaza de Toros Real de San Carlos",
+                descripcion="Inaugurada en 1910 y recientemente restaurada, es hoy el mayor ícono cultural del departamento. Este imponente estadio de estilo neomudéjar ya no realiza corridas de toros, sino que funciona como un centro de espectáculos y museo taurino donde se puede recorrer su impactante arquitectura circular.\n\nCosto: Pago ($150 - $200 UYU).\nHorario: Lun-Dom 10:00-18:30 hs (Sábados hasta las 19:00).",
+                ubicacion="https://www.google.com/maps/search/Plaza+de+Toros+Colonia",
+                tags=["museo", "arquitectura", "historico", "espectaculos", "neomudejar"],
+                imagen_url="https://www.civitatis.com/f/uruguay/colonia-del-sacramento/galeria/fachada-plaza-toros-real-san-carlos.jpg"
             ),
             Excursion(
                 id="cul_002",
-                ciudad="Canelones",
+                ciudad="Colonia",
                 categoria="cultura",
-                nombre="Museo de la Uva",
-                descripcion="Museo que muestra la historia de la vitivinicultura uruguaya. Exposiciones sobre el cultivo de la vid y la producción de vino en la región.",
-                ubicacion="Ruta 48 km 18.500",
-                tags=["museo", "vino", "historia", "vitivinicultura", "gratis"],
-                imagen_url=None
+                nombre="Bastión del Carmen",
+                descripcion="Este complejo cultural funciona en un antiguo fuerte militar y posteriormente fue fábrica. Actualmente es el epicentro de la movida cultural de Colonia, albergando salas de teatro, exposiciones de arte y música en vivo. Su patio trasero cuenta con un jardín de esculturas frente al río que es uno de los rincones más tranquilos y bellos de la ciudad.\n\nCosto: Entrada libre para el predio y jardines.\nHorario: Todos los días de 10:00 a 18:00 hs (dependiendo de funciones).",
+                ubicacion="https://www.google.com/maps/search/Bastion+del+Carmen+Colonia",
+                tags=["teatro", "arte", "musica", "jardin", "esculturas", "gratis", "cultural"],
+                imagen_url="https://th.bing.com/th/id/R.ac549ad43f254f69a12695c3c7b387f7?rik=oXipcCMAOBqJlg&pid=ImgRaw&r=0"
             )
         ],
         "compras": [
             Excursion(
                 id="compr_001",
-                ciudad="Canelones",
+                ciudad="Colonia",
                 categoria="compras",
-                nombre="Costa Urbana Shopping",
-                descripcion="Centro comercial con cine, tiendas y Centro Cívico Público. Oferta variada de compras, entretenimiento y servicios.",
-                ubicacion="Av. Giannattasio km 21",
-                tags=["shopping", "cine", "tiendas", "entretenimiento", "variedad"],
+                nombre="Colonia Shopping",
+                descripcion="El centro comercial cerrado más importante de la ciudad. Cuenta con más de cien marcas nacionales e internacionales, salas de cine, un gran supermercado (Ta-Ta) y una plaza de comidas variada.\n\nHorario: Lun-Dom 10:00-22:00 hs.",
+                ubicacion="https://www.google.com/maps/search/Colonia+Shopping",
+                tags=["shopping", "marcas", "cine", "supermercado", "comida", "variedad"],
                 imagen_url=None
             ),
             Excursion(
                 id="compr_002",
-                ciudad="Canelones",
+                ciudad="Colonia",
                 categoria="compras",
-                nombre="Las Piedras Shopping",
-                descripcion="Centro comercial con tiendas de moda, cines y gastronomía. Oferta completa para compras y entretenimiento.",
-                ubicacion="Bulevar del Bicentenario",
-                tags=["shopping", "moda", "cine", "gastronomia", "variedad"],
+                nombre="Av. General Flores",
+                descripcion="Es el 'shopping a cielo abierto' y la arteria principal de la ciudad. Concentra las mayores tiendas de ropa, zapaterías, bancos y farmacias, además de ser el eje central donde se desarrolla la vida social de Colonia.\n\nHorario: Variable (aprox. 10:00-19:00 hs).",
+                ubicacion="https://www.google.com/maps/search/Avenida+General+Flores+Colonia",
+                tags=["avenida", "tiendas", "ropa", "zapatos", "bancos", "social"],
                 imagen_url=None
             )
         ]

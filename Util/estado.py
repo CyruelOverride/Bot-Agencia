@@ -6,6 +6,7 @@ No se persisten en BD, son temporales por sesión.
 # Estados del bot de viaje
 ESTADOS_BOT = {
     "INICIO": "INICIO",
+    "ESPERANDO_CONFIRMACION": "ESPERANDO_CONFIRMACION",
     "SELECCION_INTERESES": "SELECCION_INTERESES",
     "ARMANDO_PERFIL": "ARMANDO_PERFIL",
     "GENERANDO_PLAN": "GENERANDO_PLAN",

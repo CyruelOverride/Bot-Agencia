@@ -7,7 +7,6 @@ class PerfilUsuario:
         tipo_viaje: Optional[str] = None,  # "solo", "pareja", "familia", "amigos", "negocios"
         acompanantes: Optional[str] = None,  # "solo", "pareja", "familia", "amigos"
         preferencias_comida: Optional[str] = None,  # "local", "internacional", "vegetariano", "vegano", "sin_restricciones"
-        presupuesto: Optional[str] = None,  # "economico", "medio", "alto", "premium"
         interes_regalos: Optional[bool] = None,
         interes_ropa: Optional[bool] = None,  # True si le interesa comprar ropa
         interes_tipo_recreacion: Optional[str] = None,  # "activa", "pasiva", "familiar", "romantica"
@@ -17,7 +16,6 @@ class PerfilUsuario:
         self.tipo_viaje = tipo_viaje
         self.acompanantes = acompanantes
         self.preferencias_comida = preferencias_comida
-        self.presupuesto = presupuesto
         self.interes_regalos = interes_regalos
         self.interes_ropa = interes_ropa
         self.interes_tipo_recreacion = interes_tipo_recreacion
@@ -37,7 +35,6 @@ class PerfilUsuario:
         Campos obligatorios siempre:
         - tipo_viaje
         - acompanantes
-        - presupuesto
         - duracion_estadia
         
         Campos condicionales:
@@ -53,7 +50,6 @@ class PerfilUsuario:
         campos_obligatorios = [
             "tipo_viaje",
             "acompanantes",
-            "presupuesto",
             "duracion_estadia"
         ]
         
@@ -85,7 +81,6 @@ class PerfilUsuario:
             "tipo_viaje": self.tipo_viaje,
             "acompanantes": self.acompanantes,
             "preferencias_comida": self.preferencias_comida,
-            "presupuesto": self.presupuesto,
             "interes_regalos": self.interes_regalos,
             "interes_ropa": self.interes_ropa,
             "interes_tipo_recreacion": self.interes_tipo_recreacion,

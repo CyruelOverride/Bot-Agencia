@@ -180,9 +180,8 @@ class PlanViajeService:
     @staticmethod
     def enviar_plan_con_imagen(numero: str, plan: PlanViaje, ruta_imagen: Optional[str] = None):
         """
-        Envía el plan con una imagen principal y el resumen como caption.
-        Prioriza imágenes de las excursiones del plan. Si no hay, busca imagen local por defecto.
-        Si falla la imagen, continúa enviando el texto sin interrumpir el flujo.
+        Envía el plan seccionado por categorías en mensajes separados.
+        Primero envía imagen con resumen, luego cada categoría en mensajes separados.
         
         Args:
             numero: Número de teléfono del usuario
@@ -217,7 +216,7 @@ class PlanViajeService:
                 elif os.path.exists(ruta_default):
                     imagen_a_enviar = ruta_default
         
-        # Intentar enviar imagen solo si existe (evitar errores)
+        # Mensaje 1: Enviar imagen con resumen (si existe)
         if imagen_a_enviar:
             try:
                 # Caption con resumen corto (500-700 chars recomendado, usamos 700 como máximo seguro)
@@ -226,16 +225,68 @@ class PlanViajeService:
                 resultado = enviar_imagen_whatsapp(numero, imagen_a_enviar, caption)
                 
                 if resultado.get("success"):
-                    # Pequeña pausa para mejor UX
-                    time.sleep(1)
+                    # Pausa para mejor UX
+                    time.sleep(2)
                 else:
                     logger.warning(f"No se pudo enviar imagen del plan: {resultado.get('error', 'Error desconocido')}")
+                    # Si falla la imagen, enviar resumen como texto
+                    mensaje_resumen = f"🎯 *Tu Plan Personalizado para {plan.ciudad}*\n\n{plan.resumen_ia[:700]}"
+                    enviar_mensaje_whatsapp(numero, mensaje_resumen)
+                    time.sleep(1)
                     
             except Exception as e:
-                # Error silencioso: no interrumpir el flujo si falla la imagen
+                # Error silencioso: enviar resumen como texto
                 logger.warning(f"No se pudo enviar imagen del plan: {e}")
+                mensaje_resumen = f"🎯 *Tu Plan Personalizado para {plan.ciudad}*\n\n{plan.resumen_ia[:700]}"
+                enviar_mensaje_whatsapp(numero, mensaje_resumen)
+                time.sleep(1)
+        else:
+            # Si no hay imagen, enviar resumen como texto
+            mensaje_resumen = f"🎯 *Tu Plan Personalizado para {plan.ciudad}*\n\n{plan.resumen_ia[:700]}"
+            enviar_mensaje_whatsapp(numero, mensaje_resumen)
+            time.sleep(1)
         
-        # Siempre enviar el plan detallado como texto (incluso si no hay imagen o falló)
-        mensaje_plan = PlanViajeService.formatear_plan_para_whatsapp(plan)
-        enviar_mensaje_whatsapp(numero, mensaje_plan)
+        # Mensajes 2-N: Enviar cada categoría en mensajes separados
+        excursiones_por_categoria = plan.obtener_excursiones_por_categoria()
+        
+        # Emojis por categoría
+        emojis_categoria = {
+            "restaurantes": "🍽️",
+            "comercios": "🛍️",
+            "recreacion": "🌳",
+            "cultura": "🏛️",
+            "compras": "🛒"
+        }
+        
+        # Nombres de categoría en español
+        nombres_categoria = {
+            "restaurantes": "Restaurantes",
+            "comercios": "Comercios",
+            "recreacion": "Zonas de Recreación",
+            "cultura": "Cultura y Paseos",
+            "compras": "Compras"
+        }
+        
+        # Orden de envío (priorizar según importancia)
+        orden_categorias = ["restaurantes", "comercios", "recreacion", "cultura", "compras"]
+        
+        for categoria in orden_categorias:
+            if categoria in excursiones_por_categoria and excursiones_por_categoria[categoria]:
+                excursiones = excursiones_por_categoria[categoria]
+                emoji = emojis_categoria.get(categoria, "📍")
+                nombre = nombres_categoria.get(categoria, categoria.capitalize())
+                
+                # Formatear mensaje de categoría
+                mensaje_categoria = f"{emoji} *{nombre}*\n\n"
+                
+                for exc in excursiones:
+                    mensaje_categoria += f"• *{exc.nombre}*"
+                    if exc.ubicacion:
+                        mensaje_categoria += f" - {exc.ubicacion}"
+                    mensaje_categoria += f"\n  {exc.descripcion}\n\n"
+                
+                # Enviar mensaje de categoría
+                enviar_mensaje_whatsapp(numero, mensaje_categoria.strip())
+                # Pausa entre mensajes para mejor UX
+                time.sleep(1.5)
 
