@@ -140,13 +140,13 @@ class Chat:
             set_intereses_seleccionados(numero, [])
             
             # Limpiar datos del usuario en BD
-            usuario.estado_conversacion = ESTADOS_BOT["SELECCION_INTERESES"]
+            usuario.estado_conversacion = ESTADOS_BOT["INICIO"]
             usuario.intereses = []
             usuario.perfil = None
             UsuarioService.actualizar_usuario(usuario)
             
-            # Asegurar que el estado del bot esté en SELECCION_INTERESES
-            set_estado_bot(numero, ESTADOS_BOT["SELECCION_INTERESES"])
+            # Asegurar que el estado del bot esté en INICIO
+            set_estado_bot(numero, ESTADOS_BOT["INICIO"])
             clear_waiting_for(numero)
             
             # Obtener usuario actualizado para asegurar que los cambios se aplicaron
@@ -158,8 +158,8 @@ class Chat:
                 UsuarioService.actualizar_usuario(usuario)
                 usuario = UsuarioService.obtener_usuario_por_telefono(numero)
             
-            # Ir directamente a flujo_seleccion_intereses para enviar el mensaje de apertura
-            return self.flujo_seleccion_intereses(numero, "")
+            # Ir a flujo_inicio para enviar el mensaje de apertura
+            return self.flujo_inicio(numero, "")
         
         if texto_lower in ("cancelar", "salir", "cancel"):
             self.clear_state(numero)
@@ -327,8 +327,7 @@ class Chat:
         
         if es_negativo:
             mensaje = (
-                "Entendido. Si cambias de opinión, solo escribime y estaré aquí para ayudarte. "
-                "¡Que tengas un excelente viaje! 🎉"
+                "Está bien de todas formas por cualquier consulta durante tu viaje no dudes en escribir."
             )
             set_estado_bot(numero, ESTADOS_BOT["INICIO"])
             usuario.estado_conversacion = ESTADOS_BOT["INICIO"]
@@ -353,14 +352,14 @@ class Chat:
         return enviar_mensaje_whatsapp(numero, mensaje)
     
     def flujo_seleccion_intereses(self, numero, texto):
-        """Flujo de selección de intereses con menú interactivo"""
+        """Flujo de selección de intereses con texto simple (1 2 3)"""
         usuario = UsuarioService.obtener_o_crear_usuario(numero)
         
         # Validar estado: si no estamos en SELECCION_INTERESES, verificar si es un botón obsoleto
         estado_actual = get_estado_bot(numero)
         if estado_actual != ESTADOS_BOT["SELECCION_INTERESES"]:
             # Si es un botón de intereses pero el estado cambió, redirigir apropiadamente
-            if texto in ("agregar_mas_intereses", "continuar_intereses"):
+            if texto in ("confirmar_intereses", "agregar_mas_intereses"):
                 # Si estamos en ARMANDO_PERFIL, rechazar el botón obsoleto
                 if estado_actual == ESTADOS_BOT["ARMANDO_PERFIL"]:
                     # Ya estamos en otro flujo, ignorar el botón obsoleto
@@ -373,39 +372,15 @@ class Chat:
                     set_estado_bot(numero, ESTADOS_BOT["INICIO"])
                     return self.flujo_inicio(numero, texto)
         
-        # Si el texto es una selección interactiva de interés
-        if texto.startswith("interes_"):
-            interes = texto.replace("interes_", "")
-            intereses_validos = ["restaurantes", "comercios", "recreacion", "cultura", "compras"]
+        # Verificar si el usuario presionó "Confirmar" (botón interactivo)
+        if texto == "confirmar_intereses":
+            # Marcar que el botón fue presionado (desactivar botones)
+            self.set_waiting_for(numero, "flujo_seleccion_intereses_confirmado")
             
-            if interes in intereses_validos:
-                # Toggle: si ya está seleccionado, quitarlo; si no, agregarlo
-                if interes in usuario.intereses:
-                    usuario.intereses.remove(interes)
-                else:
-                    usuario.agregar_interes(interes)
-                UsuarioService.actualizar_usuario(usuario)
-                
-                # Actualizar estado local
-                intereses_actuales = usuario.intereses.copy()
-                set_intereses_seleccionados(numero, intereses_actuales)
-                
-                # Mostrar menú actualizado
-                return self.flujo_seleccion_intereses(numero, "actualizar")
-        
-        # Si el texto es "actualizar", solo refrescar el menú sin cambiar estado
-        if texto == "actualizar":
-            # Continuar para mostrar menú actualizado
-            pass
-        
-        # Verificar si el usuario quiere continuar (debe tener al menos un interés)
-        texto_lower = texto.lower().strip()
-        # Manejar botón interactivo o texto libre
-        if (texto == "continuar_intereses" or 
-            texto_lower in ("continuar", "listo", "siguiente", "listo, continuar")):
+            # Verificar que tenga intereses
             if not usuario.intereses or len(usuario.intereses) == 0:
-                # No tiene intereses, mostrar el interactive list de nuevo
-                return self.flujo_seleccion_intereses(numero, "actualizar")
+                # No tiene intereses, mostrar mensaje de intereses de nuevo
+                return self._mostrar_mensaje_intereses(numero, usuario, False)
             
             # Tiene intereses, continuar al siguiente flujo
             set_estado_bot(numero, ESTADOS_BOT["ARMANDO_PERFIL"])
@@ -415,193 +390,111 @@ class Chat:
             # Llamar a flujo_armando_perfil con texto vacío para que muestre la primera pregunta
             return self.flujo_armando_perfil(numero, "")
         
-        # Si el usuario quiere agregar más intereses (botón interactivo)
+        # Verificar si el usuario presionó "Agregar más intereses" (botón interactivo)
         if texto == "agregar_mas_intereses":
-            # Verificar que estamos en el estado correcto
-            if estado_actual != ESTADOS_BOT["SELECCION_INTERESES"]:
-                # Estado incorrecto, redirigir
-                set_estado_bot(numero, ESTADOS_BOT["SELECCION_INTERESES"])
-                usuario.estado_conversacion = ESTADOS_BOT["SELECCION_INTERESES"]
-                UsuarioService.actualizar_usuario(usuario)
+            # Resetear waiting_for para permitir mostrar botones de nuevo después de agregar más intereses
+            clear_waiting_for(numero)
             
-            # Mostrar el interactive list de nuevo para agregar más intereses
-            return self.flujo_seleccion_intereses(numero, "actualizar")
+            # Mostrar mensaje de intereses excluyendo los ya seleccionados
+            return self._mostrar_mensaje_intereses(numero, usuario, True)
         
-        # ============================================================
-        # CÓDIGO DEL INTERACTIVE LIST - COMENTADO PARA REFERENCIA
-        # ============================================================
-        # # Si el texto es "actualizar", solo refrescar el menú sin cambiar estado
-        # if texto == "actualizar":
-        #     # Continuar para mostrar menú actualizado
-        #     pass
-        # 
-        # # Mostrar menú de intereses
-        # intereses_actuales = usuario.intereses
-        # rows = []
-        # 
-        # intereses_opciones = [
-        #     {"id": "restaurantes", "title": "🍽️ Restaurantes", "description": "Lugares para comer"},
-        #     {"id": "comercios", "title": "🛍️ Comercios", "description": "Tiendas y negocios"},
-        #     {"id": "recreacion", "title": "🌳 Zonas de Recreación", "description": "Parques y espacios al aire libre"},
-        #     {"id": "cultura", "title": "🏛️ Cultura / Paseos", "description": "Museos, teatros, plazas"},
-        #     {"id": "compras", "title": "🛒 Compras / Regalos", "description": "Shopping y souvenirs"}
-        # ]
-        # 
-        # for opcion in intereses_opciones:
-        #     esta_seleccionado = opcion["id"] in intereses_actuales
-        #     titulo = f"{'✅ ' if esta_seleccionado else ''}{opcion['title']}"
-        #     rows.append({
-        #         "id": f"interes_{opcion['id']}",
-        #         "title": titulo,
-        #         "description": opcion["description"]
-        #     })
-        # 
-        # # Agregar opción para continuar si hay al menos un interés seleccionado
-        # if intereses_actuales:
-        #     rows.append({
-        #         "id": "continuar_intereses",
-        #         "title": "✅ Continuar",
-        #         "description": f"Listo con {len(intereses_actuales)} interés/es seleccionado/s"
-        #     })
-        # 
-        # secciones = [{
-        #     "title": "Seleccioná tus intereses",
-        #     "rows": rows
-        # }]
-        # 
-        # mensaje_inicial = (
-        #     f"Hola {usuario.nombre or 'viajero'} 👋\n\n"
-        #     f"Te ayudo a armar tu plan para {usuario.ciudad or 'la ciudad'}.\n\n"
-        #     f"¿Qué te interesa? 👇"
-        # ) if not intereses_actuales else (
-        #     f"Seleccionaste: {', '.join([i.capitalize() for i in intereses_actuales])}\n\n"
-        #     f"¿Agregar más o continuar?"
-        # )
-        # 
-        # payload = {
-        #     "messaging_product": "whatsapp",
-        #     "to": numero,
-        #     "type": "interactive",
-        #     "interactive": {
-        #         "type": "list",
-        #         "header": {
-        #             "type": "text",
-        #             "text": "🎯 ¿Qué te interesa?"
-        #         },
-        #         "body": {
-        #             "text": mensaje_inicial
-        #         },
-        #         "footer": {
-        #             "text": "Podés seleccionar múltiples opciones"
-        #         },
-        #         "action": {
-        #             "button": "Ver opciones",
-        #             "sections": secciones
-        #         }
-        #     }
-        # }
-        # 
-        # set_estado_bot(numero, ESTADOS_BOT["SELECCION_INTERESES"])
-        # usuario.estado_conversacion = ESTADOS_BOT["SELECCION_INTERESES"]
-        # UsuarioService.actualizar_usuario(usuario)
-        # 
-        # return enviar_mensaje_whatsapp(numero, payload)
-        # ============================================================
-        # FIN DEL CÓDIGO COMENTADO
-        # ============================================================
+        # Detectar intereses del texto del usuario (formato: "1 2 3" o texto libre)
+        intereses_detectados = self._detectar_intereses_texto(texto)
         
-        # IMPLEMENTACIÓN CON INTERACTIVE LIST/BUTTONS
-        # Mostrar menú de intereses
+        if intereses_detectados:
+            # Agregar intereses detectados (sin duplicar)
+            intereses_nuevos = []
+            for interes in intereses_detectados:
+                if interes not in usuario.intereses:
+                    usuario.agregar_interes(interes)
+                    intereses_nuevos.append(interes)
+            UsuarioService.actualizar_usuario(usuario)
+            
+            # Actualizar estado local
+            intereses_actuales = usuario.intereses.copy()
+            set_intereses_seleccionados(numero, intereses_actuales)
+            
+            # Mostrar confirmación con botones
+            return self._mostrar_confirmacion_intereses(numero, usuario)
+        
+        # Si no se detectaron intereses, mostrar mensaje inicial
+        return self._mostrar_mensaje_intereses(numero, usuario, False)
+    
+    def _mostrar_mensaje_intereses(self, numero, usuario, excluir_seleccionados=False):
+        """Muestra el mensaje de selección de intereses con opciones numeradas"""
         intereses_actuales = usuario.intereses if usuario.intereses else []
-        rows = []
         
+        # Lista de todos los intereses disponibles
         intereses_opciones = [
-            {"id": "restaurantes", "title": "🍽️ Restaurantes", "description": "Lugares para comer"},
-            {"id": "comercios", "title": "🛍️ Comercios", "description": "Tiendas y negocios"},
-            {"id": "recreacion", "title": "🌳 Zonas de Recreación", "description": "Parques y espacios al aire libre"},
-            {"id": "cultura", "title": "🏛️ Cultura / Paseos", "description": "Museos, teatros, plazas"},
-            {"id": "compras", "title": "🛒 Compras / Regalos", "description": "Shopping y souvenirs"}
+            {"id": "restaurantes", "nombre": "Restaurantes", "emoji": "🍽️"},
+            {"id": "comercios", "nombre": "Comercios", "emoji": "🛍️"},
+            {"id": "recreacion", "nombre": "Recreación", "emoji": "🌳"},
+            {"id": "cultura", "nombre": "Cultura", "emoji": "🏛️"},
+            {"id": "compras", "nombre": "Compras", "emoji": "🛒"}
         ]
         
-        for opcion in intereses_opciones:
-            esta_seleccionado = opcion["id"] in intereses_actuales
-            titulo = f"{'✅ ' if esta_seleccionado else ''}{opcion['title']}"
-            rows.append({
-                "id": f"interes_{opcion['id']}",
-                "title": titulo,
-                "description": opcion["description"]
-            })
-        
-        # Agregar opción para continuar si hay al menos un interés seleccionado
-        if intereses_actuales:
-            rows.append({
-                "id": "continuar_intereses",
-                "title": "✅ Continuar",
-                "description": f"Listo con {len(intereses_actuales)} interés/es seleccionado/s"
-            })
-        
-        secciones = [{
-            "title": "Seleccioná tus intereses",
-            "rows": rows
-        }]
-        
-        # Fallback: también detectar intereses del texto si el usuario escribió algo (no es un botón)
-        if texto and texto != "actualizar" and not texto.startswith("interes_") and texto not in ("continuar_intereses", "agregar_mas_intereses"):
-            intereses_detectados = self._detectar_intereses_texto(texto)
-            
-            if intereses_detectados:
-                # Agregar intereses detectados (sin duplicar)
-                intereses_nuevos = []
-                for interes in intereses_detectados:
-                    if interes not in usuario.intereses:
-                        usuario.agregar_interes(interes)
-                        intereses_nuevos.append(interes)
-                UsuarioService.actualizar_usuario(usuario)
-                # Actualizar lista local
-                intereses_actuales = usuario.intereses.copy()
-                set_intereses_seleccionados(numero, intereses_actuales)
-                # Recargar el menú con los nuevos intereses
-                return self.flujo_seleccion_intereses(numero, "actualizar")
-        
-        # Mensaje inicial: si viene de #Iniciar o no tiene intereses, mostrar mensaje de apertura
-        if not intereses_actuales and (not texto or texto == "" or texto == "actualizar"):
-            mensaje_inicial = (
-                f"¡Hola! 👋\n\n"
-                f"Soy tu asistente virtual en este viaje. Te ayudo a armar un plan personalizado "
-                f"para que disfrutes al máximo tu estadía en {usuario.ciudad or 'Colonia'}.\n\n"
-                f"¿Qué te interesa? 👇"
-            )
-        elif intereses_actuales:
-            nombres_intereses = [self._obtener_nombre_interes(i) for i in intereses_actuales]
-            mensaje_inicial = (
-                f"Seleccionaste: {', '.join(nombres_intereses)}\n\n"
-                f"¿Agregar más o continuar?"
-            )
+        # Si excluir_seleccionados es True, filtrar los ya seleccionados
+        if excluir_seleccionados:
+            intereses_disponibles = [op for op in intereses_opciones if op["id"] not in intereses_actuales]
         else:
-            mensaje_inicial = (
-                f"¿Qué te interesa? 👇"
-            )
+            intereses_disponibles = intereses_opciones
         
-        # Crear payload con interactive list
+        # Construir mensaje con opciones numeradas
+        mensaje = "¿Qué te interesa? Podés elegir varios separados por espacios o comas:\n\n"
+        for idx, opcion in enumerate(intereses_disponibles, 1):
+            mensaje += f"{idx}. {opcion['emoji']} {opcion['nombre']}\n"
+        
+        mensaje += "\nEjemplo: \"1 2 3\" o \"restaurantes compras recreacion\""
+        
+        set_estado_bot(numero, ESTADOS_BOT["SELECCION_INTERESES"])
+        usuario.estado_conversacion = ESTADOS_BOT["SELECCION_INTERESES"]
+        UsuarioService.actualizar_usuario(usuario)
+        self.set_waiting_for(numero, "flujo_seleccion_intereses")
+        
+        return enviar_mensaje_whatsapp(numero, mensaje)
+    
+    def _mostrar_confirmacion_intereses(self, numero, usuario):
+        """Muestra la confirmación de intereses seleccionados con botones"""
+        intereses_actuales = usuario.intereses if usuario.intereses else []
+        nombres_intereses = [self._obtener_nombre_interes(i) for i in intereses_actuales]
+        
+        mensaje = f"Tus intereses son: {', '.join(nombres_intereses)}\n\n¿Confirmar o agregar más intereses?"
+        
+        # Verificar si los botones ya fueron presionados (usando waiting_for como flag)
+        waiting_for = get_waiting_for(numero)
+        # Si waiting_for contiene "confirmado", significa que ya se presionó el botón de confirmar
+        # (no verificamos "agregar_mas" porque queremos permitir agregar más intereses múltiples veces)
+        if waiting_for and "confirmado" in waiting_for:
+            # Botón de confirmar ya fue presionado, no mostrar botones de nuevo, solo el mensaje
+            return enviar_mensaje_whatsapp(numero, mensaje)
+        
+        # Crear payload con botones interactivos
         payload = {
             "messaging_product": "whatsapp",
             "to": numero,
             "type": "interactive",
             "interactive": {
-                "type": "list",
-                "header": {
-                    "type": "text",
-                    "text": "🎯 ¿Qué te interesa?"
-                },
+                "type": "button",
                 "body": {
-                    "text": mensaje_inicial
-                },
-                "footer": {
-                    "text": "Podés seleccionar múltiples opciones"
+                    "text": mensaje
                 },
                 "action": {
-                    "button": "Ver opciones",
-                    "sections": secciones
+                    "buttons": [
+                        {
+                            "type": "reply",
+                            "reply": {
+                                "id": "confirmar_intereses",
+                                "title": "✅ Confirmar"
+                            }
+                        },
+                        {
+                            "type": "reply",
+                            "reply": {
+                                "id": "agregar_mas_intereses",
+                                "title": "➕ Agregar más intereses"
+                            }
+                        }
+                    ]
                 }
             }
         }
@@ -612,7 +505,6 @@ class Chat:
         self.set_waiting_for(numero, "flujo_seleccion_intereses")
         
         return enviar_mensaje_whatsapp(numero, payload)
-        
     
     def _crear_pregunta_interactiva(self, numero: str, campo: str) -> dict:
         """Crea un mensaje interactivo según el campo del perfil"""
