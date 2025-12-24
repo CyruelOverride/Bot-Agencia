@@ -132,9 +132,12 @@ class Chat:
         
         # Comando #Iniciar para testing: reinicia todo y envía mensaje de apertura
         if texto_lower == "#iniciar" or texto_strip == "#Iniciar":
-            # Limpiar todo el estado temporal
-            self.clear_state(numero)
+            # RESETEAR COMPLETAMENTE EL ESTADO DE SESIÓN
+            # reset_estado ya limpia todo: estado_bot, waiting_for, context_data, pregunta_actual, intereses_seleccionados
             reset_estado(numero)
+            
+            # Asegurar que el estado del bot esté en INICIO (reset_estado ya lo hace, pero por si acaso)
+            set_estado_bot(numero, ESTADOS_BOT["INICIO"])
             clear_waiting_for(numero)
             clear_pregunta_actual(numero)
             set_intereses_seleccionados(numero, [])
@@ -145,10 +148,6 @@ class Chat:
             usuario.perfil = None
             UsuarioService.actualizar_usuario(usuario)
             
-            # Asegurar que el estado del bot esté en INICIO
-            set_estado_bot(numero, ESTADOS_BOT["INICIO"])
-            clear_waiting_for(numero)
-            
             # Obtener usuario actualizado para asegurar que los cambios se aplicaron
             usuario = UsuarioService.obtener_usuario_por_telefono(numero)
             
@@ -157,6 +156,15 @@ class Chat:
                 usuario.intereses = []
                 UsuarioService.actualizar_usuario(usuario)
                 usuario = UsuarioService.obtener_usuario_por_telefono(numero)
+            
+            # Verificar que el estado esté realmente en INICIO
+            estado_verificacion = get_estado_bot(numero)
+            waiting_verificacion = get_waiting_for(numero)
+            if estado_verificacion != ESTADOS_BOT["INICIO"] or waiting_verificacion is not None:
+                # Forzar reset si no está limpio
+                reset_estado(numero)
+                set_estado_bot(numero, ESTADOS_BOT["INICIO"])
+                clear_waiting_for(numero)
             
             # Ir a flujo_inicio para enviar el mensaje de apertura
             return self.flujo_inicio(numero, "")
@@ -337,6 +345,10 @@ class Chat:
         
         if es_afirmativo:
             # Continuar con selección de intereses
+            # Actualizar estado a SELECCION_INTERESES
+            set_estado_bot(numero, ESTADOS_BOT["SELECCION_INTERESES"])
+            usuario.estado_conversacion = ESTADOS_BOT["SELECCION_INTERESES"]
+            UsuarioService.actualizar_usuario(usuario)
             clear_waiting_for(numero)
             return self.flujo_seleccion_intereses(numero, texto)
         
@@ -371,6 +383,26 @@ class Chat:
                 else:
                     set_estado_bot(numero, ESTADOS_BOT["INICIO"])
                     return self.flujo_inicio(numero, texto)
+            # Si el texto parece ser selección de intereses (números o nombres), corregir el estado y procesar
+            elif texto and texto.strip():
+                # Verificar si el texto parece ser intereses (contiene números o palabras clave)
+                intereses_detectados = self._detectar_intereses_texto(texto)
+                if intereses_detectados:
+                    # Es texto de intereses, corregir el estado y continuar con el procesamiento normal
+                    set_estado_bot(numero, ESTADOS_BOT["SELECCION_INTERESES"])
+                    usuario.estado_conversacion = ESTADOS_BOT["SELECCION_INTERESES"]
+                    UsuarioService.actualizar_usuario(usuario)
+                    # Continuar con el procesamiento normal más abajo (no hacer return aquí)
+                else:
+                    # No es texto de intereses, redirigir según estado
+                    if estado_actual == ESTADOS_BOT["INICIO"]:
+                        return self.flujo_inicio(numero, texto)
+                    else:
+                        # Corregir el estado a SELECCION_INTERESES y mostrar mensaje inicial
+                        set_estado_bot(numero, ESTADOS_BOT["SELECCION_INTERESES"])
+                        usuario.estado_conversacion = ESTADOS_BOT["SELECCION_INTERESES"]
+                        UsuarioService.actualizar_usuario(usuario)
+                        return self._mostrar_mensaje_intereses(numero, usuario, False)
         
         # Verificar si el usuario presionó "Confirmar" (botón interactivo)
         if texto == "confirmar_intereses":
