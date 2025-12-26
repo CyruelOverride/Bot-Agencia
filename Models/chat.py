@@ -968,7 +968,20 @@ class Chat:
             usuario.estado_conversacion = ESTADOS_BOT["SEGUIMIENTO"]
             UsuarioService.actualizar_usuario(usuario)
         
-        return self.flujo_seguimiento(numero, texto)
+        # NO llamar a flujo_seguimiento automáticamente después de enviar el plan
+        # Solo esperar a que el usuario escriba algo
+        # Si el usuario tiene perfil completo, enviar mensaje de seguimiento apropiado
+        if usuario and usuario.tiene_perfil_completo():
+            # Enviar mensaje de seguimiento solo si el perfil está completo
+            mensaje_seguimiento = (
+                "¡Perfecto! Teniendo en cuenta que viajan con niños, ajustaremos el plan para incluir actividades y lugares que disfruten en Colonia. "
+                "¿Les gustaría explorar opciones como el Museo del Chocolate o el Zoo de Colonia?"
+            )
+            return enviar_mensaje_whatsapp(numero, mensaje_seguimiento)
+        
+        # Si el perfil no está completo, no hacer nada más (no continuar con armar perfil)
+        # El usuario puede escribir algo si quiere
+        return None
     
     def flujo_seguimiento(self, numero, texto):
         """Ofrece ayuda adicional después de presentar el plan"""
@@ -1029,9 +1042,23 @@ class Chat:
             
             return enviar_mensaje_whatsapp(numero, respuesta_amigable)
         else:
-            # Si el perfil NO está completo, continuar armándolo
-            # Esto puede pasar si hay algún error o si se perdió información
-            set_estado_bot(numero, ESTADOS_BOT["ARMANDO_PERFIL"])
-            usuario.estado_conversacion = ESTADOS_BOT["ARMANDO_PERFIL"]
+            # Si el perfil NO está completo y el usuario escribe algo, NO continuar automáticamente
+            # Solo procesar si el usuario escribe un comando específico o consulta
+            # Si el texto está vacío o es muy corto, no hacer nada
+            if not texto or len(texto.strip()) < 2:
+                return None
+            
+            # Si el usuario escribe algo específico, procesarlo
+            # Pero NO continuar automáticamente con armar perfil después de enviar el plan
+            # Solo usar Gemini para responder amigablemente
+            respuesta_amigable = GeminiOrchestratorService.generar_respuesta_amigable(
+                texto,
+                usuario,
+                contexto_estado=f"El usuario tiene un plan pero el perfil no está completo. Ciudad: {usuario.ciudad}"
+            )
+            
+            set_estado_bot(numero, ESTADOS_BOT["SEGUIMIENTO"])
+            usuario.estado_conversacion = ESTADOS_BOT["SEGUIMIENTO"]
             UsuarioService.actualizar_usuario(usuario)
-            return self.flujo_armando_perfil(numero, texto)
+            
+            return enviar_mensaje_whatsapp(numero, respuesta_amigable)
