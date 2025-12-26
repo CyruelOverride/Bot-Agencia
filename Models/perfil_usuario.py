@@ -7,6 +7,7 @@ class PerfilUsuario:
         tipo_viaje: Optional[str] = None,  # "solo", "pareja", "familia", "amigos", "negocios"
         acompanantes: Optional[str] = None,  # "solo", "pareja", "familia", "amigos"
         preferencias_comida: Optional[str] = None,  # "local", "internacional", "vegetariano", "vegano", "sin_restricciones"
+        interes_regalos: Optional[bool] = None,
         interes_ropa: Optional[bool] = None,  # True si le interesa comprar ropa
         interes_tipo_recreacion: Optional[str] = None,  # "activa", "pasiva", "familiar", "romantica"
         interes_tipo_cultura: Optional[str] = None,  # "museos", "arquitectura", "arte", "historia"
