@@ -1,5 +1,6 @@
 from typing import Any, Optional, Dict, Callable, List
 from datetime import datetime
+import re
 from whatsapp_api import enviar_mensaje_whatsapp, extraer_nombre_del_webhook
 from Util.estado import (
     get_estado, reset_estado, get_waiting_for, set_waiting_for, clear_waiting_for,
@@ -471,7 +472,7 @@ class Chat:
             intereses_disponibles = intereses_opciones
         
         # Construir mensaje con opciones numeradas
-        mensaje = "¿Qué te interesa? Podés elegir varios separados por espacios o comas:\n\n"
+        mensaje = "¿Qué te interesa? (Por favor elegí separando por , o espacios)\n\n"
         for idx, opcion in enumerate(intereses_disponibles, 1):
             mensaje += f"{idx}. {opcion['emoji']} {opcion['nombre']}\n"
         
@@ -623,7 +624,8 @@ class Chat:
                     {"id": "comercios_artesanias", "title": "Artesanías"},
                     {"id": "comercios_souvenirs", "title": "Souvenirs"},
                     {"id": "comercios_productos_locales", "title": "Productos locales"},
-                    {"id": "comercios_joyeria", "title": "Joyería"}
+                    {"id": "comercios_joyeria", "title": "Joyería"},
+                    {"id": "comercios_tienda_ropa", "title": "Tienda de ropa"}
                 ]
             },
             "viaja_con_ninos": {
@@ -758,7 +760,18 @@ class Chat:
         
         # Dividir el texto por espacios, comas, puntos o punto y coma
         # Manejar tanto "1 2 3" como "1,2,3" o "1.2.3" o "1;2;3"
-        palabras = texto_lower.replace(",", " ").replace(".", " ").replace(";", " ").split()
+        texto_limpio = texto_lower.replace(",", " ").replace(".", " ").replace(";", " ")
+        
+        # Separar números mayores a 9 en dígitos individuales (ej: "15" → "1 5", "123" → "1 2 3")
+        # Solo hay 5 intereses, así que cualquier número con más de 1 dígito debe separarse
+        # Encontrar números de 2 o más dígitos y separarlos en dígitos individuales
+        def separar_digitos(match):
+            numero = match.group(0)
+            return " ".join(list(numero))
+        
+        texto_limpio = re.sub(r'\d{2,}', separar_digitos, texto_limpio)
+        
+        palabras = texto_limpio.split()
         
         for palabra in palabras:
             palabra_limpia = palabra.strip()
@@ -830,6 +843,7 @@ class Chat:
             "comercios_souvenirs": ("interes_tipo_comercios", "souvenirs"),
             "comercios_productos_locales": ("interes_tipo_comercios", "productos_locales"),
             "comercios_joyeria": ("interes_tipo_comercios", "joyeria"),
+            "comercios_tienda_ropa": ("interes_tipo_comercios", "tienda_ropa"),
             # Viaja con niños
             "ninos_si": ("viaja_con_ninos", True),
             "ninos_no": ("viaja_con_ninos", False)
@@ -1000,25 +1014,8 @@ class Chat:
             usuario.estado_conversacion = ESTADOS_BOT["SEGUIMIENTO"]
             UsuarioService.actualizar_usuario(usuario)
         
-        # NO llamar a flujo_seguimiento automáticamente después de enviar el plan
+        # NO enviar mensaje de seguimiento automáticamente
         # Solo esperar a que el usuario escriba algo
-        # Si el usuario tiene perfil completo, enviar mensaje de seguimiento apropiado
-        if usuario and usuario.tiene_perfil_completo():
-            # Enviar mensaje de seguimiento solo si el perfil está completo
-            # Solo mencionar niños si realmente viaja con niños
-            if usuario.perfil and usuario.perfil.viaja_con_ninos:
-                mensaje_seguimiento = (
-                    "¡Perfecto! Teniendo en cuenta que viajan con niños, ajustaremos el plan para incluir actividades y lugares que disfruten en Colonia. "
-                    "¿Les gustaría explorar opciones como el Museo del Chocolate o el Zoo de Colonia?"
-                )
-            else:
-                mensaje_seguimiento = (
-                    "¡Perfecto! ¿Te gustaría explorar más opciones o hacer algún ajuste al plan?"
-                )
-            return enviar_mensaje_whatsapp(numero, mensaje_seguimiento)
-        
-        # Si el perfil no está completo, no hacer nada más (no continuar con armar perfil)
-        # El usuario puede escribir algo si quiere
         return None
     
     def flujo_seguimiento(self, numero, texto):
@@ -1066,6 +1063,51 @@ class Chat:
                 usuario.estado_conversacion = ESTADOS_BOT["GENERANDO_PLAN"]
                 UsuarioService.actualizar_usuario(usuario)
                 return self.flujo_generando_plan(numero, texto)
+            
+            # Detectar keywords para "más opciones" sin usar Gemini
+            keywords_mas_opciones = [
+                "mas opciones", "más opciones", "otras opciones", "otra opcion", "otra opción",
+                "mas lugares", "más lugares", "otros lugares", "otro lugar",
+                "mas recomendaciones", "más recomendaciones", "otras recomendaciones",
+                "ver mas", "ver más", "mostrar mas", "mostrar más"
+            ]
+            
+            if any(keyword in texto_lower for keyword in keywords_mas_opciones):
+                # Opción 1: Mostrar lista de intereses de nuevo
+                # Opción 2: Enviar un lugar random de los intereses del usuario
+                import random
+                plan = self.conversation_data.get('plan_viaje')
+                
+                if plan and plan.excursiones:
+                    # Enviar un lugar random del plan
+                    lugar_random = random.choice(plan.excursiones)
+                    
+                    if lugar_random.imagen_url:
+                        caption = f"*{lugar_random.nombre}*\n\n{lugar_random.descripcion}"
+                        if lugar_random.ubicacion:
+                            caption += f"\n\n📍 {lugar_random.ubicacion}"
+                        
+                        if len(caption) > 1024:
+                            caption = caption[:1021] + "..."
+                        
+                        from whatsapp_api import enviar_imagen_whatsapp
+                        resultado = enviar_imagen_whatsapp(numero, lugar_random.imagen_url, caption)
+                        if not resultado.get("success"):
+                            # Si falla, enviar solo texto
+                            mensaje = f"*{lugar_random.nombre}*\n\n{lugar_random.descripcion}"
+                            if lugar_random.ubicacion:
+                                mensaje += f"\n\n📍 {lugar_random.ubicacion}"
+                            return enviar_mensaje_whatsapp(numero, mensaje)
+                        return resultado
+                    else:
+                        # Enviar solo texto
+                        mensaje = f"*{lugar_random.nombre}*\n\n{lugar_random.descripcion}"
+                        if lugar_random.ubicacion:
+                            mensaje += f"\n\n📍 {lugar_random.ubicacion}"
+                        return enviar_mensaje_whatsapp(numero, mensaje)
+                else:
+                    # Si no hay plan, mostrar lista de intereses
+                    return self._mostrar_mensaje_intereses(numero, usuario, False)
             
             # Si no es un comando específico, usar Gemini para generar respuesta amigable
             respuesta_amigable = GeminiOrchestratorService.generar_respuesta_amigable(

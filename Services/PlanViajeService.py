@@ -218,30 +218,13 @@ class PlanViajeService:
         from whatsapp_api import enviar_imagen_whatsapp, enviar_mensaje_whatsapp
         import time
         
-        # Determinar imagen a usar
-        imagen_a_enviar = None
+        # Determinar imagen a usar para el primer mensaje (resumen del plan)
+        # Usar imagen hardcodeada específica para el mensaje de introducción
+        imagen_a_enviar = "https://www.clarin.com/img/2019/07/03/k2EHmOpGl_1256x620__1.jpg"
         
-        # Prioridad 1: Imagen proporcionada explícitamente
+        # Si se proporciona una imagen explícitamente, usar esa en su lugar
         if ruta_imagen:
             imagen_a_enviar = ruta_imagen
-        else:
-            # Prioridad 2: Buscar imagen_url en las excursiones del plan (solo si tienen URL)
-            for excursion in plan.excursiones:
-                if excursion.imagen_url:
-                    imagen_a_enviar = excursion.imagen_url
-                    break  # Usar la primera que encuentre
-            
-            # Prioridad 3: Si no hay imagen en excursiones, buscar imagen local por defecto
-            if not imagen_a_enviar:
-                base_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "imagenes")
-                ciudad_lower = plan.ciudad.lower().replace(" ", "_")
-                ruta_especifica = os.path.join(base_path, f"plan_{ciudad_lower}.png")
-                ruta_default = os.path.join(base_path, "plan_default.png")
-                
-                if os.path.exists(ruta_especifica):
-                    imagen_a_enviar = ruta_especifica
-                elif os.path.exists(ruta_default):
-                    imagen_a_enviar = ruta_default
         
         # Mensaje 1: Enviar imagen con resumen (si existe)
         if imagen_a_enviar:

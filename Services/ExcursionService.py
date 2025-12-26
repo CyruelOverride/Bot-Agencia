@@ -36,6 +36,7 @@ class ExcursionService:
         # Primero filtrar por intereses (categorías)
         excursiones_filtradas = []
         categorias_interes = [interes.lower() for interes in intereses]
+        ids_agregados = set()
         
         for exc in excursiones:
             # Si la categoría de la excursión coincide con algún interés
@@ -45,6 +46,16 @@ class ExcursionService:
                 # Verificar si coincide con el perfil
                 if exc.coincide_con_perfil(perfil):
                     excursiones_filtradas.append(exc)
+                    ids_agregados.add(exc.id)
+        
+        # Si el usuario tiene interés en comercios y seleccionó "tienda_ropa",
+        # también incluir lugares de otras categorías que tengan el tag "ropa"
+        if "comercios" in intereses and perfil.interes_tipo_comercios == "tienda_ropa":
+            for exc in excursiones:
+                if exc.id not in ids_agregados and exc.tiene_tag("ropa"):
+                    if exc.coincide_con_perfil(perfil):
+                        excursiones_filtradas.append(exc)
+                        ids_agregados.add(exc.id)
         
         # Si no hay coincidencias exactas, retornar todas las de los intereses
         if not excursiones_filtradas:
@@ -53,6 +64,14 @@ class ExcursionService:
                     cat in exc.categoria.lower() for cat in categorias_interes
                 ):
                     excursiones_filtradas.append(exc)
+                    ids_agregados.add(exc.id)
+            
+            # También agregar lugares con tag "ropa" si es tienda_ropa
+            if "comercios" in intereses and perfil.interes_tipo_comercios == "tienda_ropa":
+                for exc in excursiones:
+                    if exc.id not in ids_agregados and exc.tiene_tag("ropa"):
+                        excursiones_filtradas.append(exc)
+                        ids_agregados.add(exc.id)
         
         return excursiones_filtradas
     
