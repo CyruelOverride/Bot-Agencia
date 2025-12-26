@@ -342,7 +342,8 @@ class Chat:
             usuario.estado_conversacion = ESTADOS_BOT["SELECCION_INTERESES"]
             UsuarioService.actualizar_usuario(usuario)
             clear_waiting_for(numero)
-            return self.flujo_seleccion_intereses(numero, texto)
+            # Llamar con texto vacío para evitar que se detecte como interés
+            return self.flujo_seleccion_intereses(numero, "")
         
         # Si no es claro, usar Gemini para interpretar y responder amigablemente
         respuesta_amigable = GeminiOrchestratorService.generar_respuesta_amigable(
@@ -553,11 +554,12 @@ class Chat:
             return enviar_mensaje_whatsapp(numero, mensaje)
     
     def _crear_pregunta_interactiva(self, numero: str, campo: str) -> dict:
-        """Crea un mensaje interactivo según el campo del perfil"""
+        """Crea un mensaje interactivo según el campo del perfil.
+        Usa botones si hay 3 o menos opciones, lista interactiva si hay más de 3."""
         preguntas_interactivas = {
             "tipo_viaje": {
                 "body": "¿Qué tipo de viaje estás haciendo?",
-                "buttons": [
+                "options": [
                     {"id": "tipo_viaje_solo", "title": "Solo"},
                     {"id": "tipo_viaje_pareja", "title": "Con pareja"},
                     {"id": "tipo_viaje_familia", "title": "Con familia"},
@@ -567,7 +569,7 @@ class Chat:
             },
             "acompanantes": {
                 "body": "¿Viajás solo o acompañado?",
-                "buttons": [
+                "options": [
                     {"id": "acompanantes_solo", "title": "Solo"},
                     {"id": "acompanantes_pareja", "title": "Pareja"},
                     {"id": "acompanantes_familia", "title": "Familia"},
@@ -576,7 +578,7 @@ class Chat:
             },
             "duracion_estadia": {
                 "body": "¿Cuántos días vas a estar?",
-                "buttons": [
+                "options": [
                     {"id": "duracion_1_2", "title": "1-2 días"},
                     {"id": "duracion_3_5", "title": "3-5 días"},
                     {"id": "duracion_mas_5", "title": "Más de 5 días"}
@@ -584,7 +586,7 @@ class Chat:
             },
             "preferencias_comida": {
                 "body": "¿Qué tipo de comida preferís?",
-                "buttons": [
+                "options": [
                     {"id": "comida_local", "title": "Local"},
                     {"id": "comida_internacional", "title": "Internacional"},
                     {"id": "comida_vegetariano", "title": "Vegetariano"},
@@ -594,21 +596,21 @@ class Chat:
             },
             "interes_regalos": {
                 "body": "¿Buscás algo para vos o para regalar?",
-                "buttons": [
+                "options": [
                     {"id": "regalos_si", "title": "Sí, para regalar"},
                     {"id": "regalos_no", "title": "No, para mí"}
                 ]
             },
             "interes_ropa": {
                 "body": "¿Te interesa comprar ropa?",
-                "buttons": [
+                "options": [
                     {"id": "ropa_si", "title": "Sí"},
                     {"id": "ropa_no", "title": "No"}
                 ]
             },
             "interes_tipo_recreacion": {
                 "body": "¿Qué tipo de recreación preferís?",
-                "buttons": [
+                "options": [
                     {"id": "recreacion_activa", "title": "Activa"},
                     {"id": "recreacion_pasiva", "title": "Pasiva"},
                     {"id": "recreacion_familiar", "title": "Familiar"},
@@ -617,7 +619,7 @@ class Chat:
             },
             "viaja_con_ninos": {
                 "body": "¿Viajás con niños o familiares chicos?",
-                "buttons": [
+                "options": [
                     {"id": "ninos_si", "title": "Sí"},
                     {"id": "ninos_no", "title": "No"}
                 ]
@@ -628,30 +630,63 @@ class Chat:
             return None
         
         pregunta_data = preguntas_interactivas[campo]
+        opciones = pregunta_data["options"]
         
-        payload = {
-            "messaging_product": "whatsapp",
-            "to": numero,
-            "type": "interactive",
-            "interactive": {
-                "type": "button",
-                "body": {
-                    "text": pregunta_data["body"]
-                },
-                "action": {
-                    "buttons": [
-                        {
-                            "type": "reply",
-                            "reply": {
-                                "id": btn["id"],
-                                "title": btn["title"]
+        # Si hay 3 o menos opciones, usar botones interactivos
+        if len(opciones) <= 3:
+            payload = {
+                "messaging_product": "whatsapp",
+                "to": numero,
+                "type": "interactive",
+                "interactive": {
+                    "type": "button",
+                    "body": {
+                        "text": pregunta_data["body"]
+                    },
+                    "action": {
+                        "buttons": [
+                            {
+                                "type": "reply",
+                                "reply": {
+                                    "id": opt["id"],
+                                    "title": opt["title"]
+                                }
                             }
-                        }
-                        for btn in pregunta_data["buttons"]
-                    ]
+                            for opt in opciones
+                        ]
+                    }
                 }
             }
-        }
+        else:
+            # Si hay más de 3 opciones, usar lista interactiva
+            # Limitar a 10 opciones (límite de WhatsApp)
+            opciones_limitadas = opciones[:10]
+            payload = {
+                "messaging_product": "whatsapp",
+                "to": numero,
+                "type": "interactive",
+                "interactive": {
+                    "type": "list",
+                    "body": {
+                        "text": pregunta_data["body"]
+                    },
+                    "action": {
+                        "button": "Seleccionar",
+                        "sections": [
+                            {
+                                "title": "Opciones",
+                                "rows": [
+                                    {
+                                        "id": opt["id"],
+                                        "title": opt["title"][:24]  # Limitar título a 24 caracteres
+                                    }
+                                    for opt in opciones_limitadas
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
         
         return payload
     
