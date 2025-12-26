@@ -34,7 +34,6 @@ class PerfilUsuario:
         
         Campos obligatorios siempre:
         - tipo_viaje
-        - acompanantes
         - duracion_estadia
         
         Campos condicionales:
@@ -49,7 +48,6 @@ class PerfilUsuario:
         # Campos obligatorios siempre
         campos_obligatorios = [
             "tipo_viaje",
-            "acompanantes",
             "duracion_estadia"
         ]
         
@@ -67,7 +65,7 @@ class PerfilUsuario:
             campos_condicionales.append("interes_tipo_recreacion")
         
         # Si viaja con familia, preguntar si hay niños
-        if self.acompanantes == "familia" and self.viaja_con_ninos is None:
+        if self.tipo_viaje == "familia" and self.viaja_con_ninos is None:
             campos_condicionales.append("viaja_con_ninos")
         
         # Combinar todos los campos requeridos

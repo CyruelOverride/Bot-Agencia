@@ -567,15 +567,6 @@ class Chat:
                     {"id": "tipo_viaje_negocios", "title": "Negocios"}
                 ]
             },
-            "acompanantes": {
-                "body": "¿Viajás solo o acompañado?",
-                "options": [
-                    {"id": "acompanantes_solo", "title": "Solo"},
-                    {"id": "acompanantes_pareja", "title": "Pareja"},
-                    {"id": "acompanantes_familia", "title": "Familia"},
-                    {"id": "acompanantes_amigos", "title": "Amigos"}
-                ]
-            },
             "duracion_estadia": {
                 "body": "¿Cuántos días vas a estar?",
                 "options": [
@@ -790,11 +781,6 @@ class Chat:
             "tipo_viaje_familia": ("tipo_viaje", "familia"),
             "tipo_viaje_amigos": ("tipo_viaje", "amigos"),
             "tipo_viaje_negocios": ("tipo_viaje", "negocios"),
-            # Acompañantes
-            "acompanantes_solo": ("acompanantes", "solo"),
-            "acompanantes_pareja": ("acompanantes", "pareja"),
-            "acompanantes_familia": ("acompanantes", "familia"),
-            "acompanantes_amigos": ("acompanantes", "amigos"),
             # Duración
             "duracion_1_2": ("duracion_estadia", 2),
             "duracion_3_5": ("duracion_estadia", 4),
@@ -902,8 +888,6 @@ class Chat:
             campo_pregunta = None
             if "tipo de viaje" in siguiente_pregunta.lower():
                 campo_pregunta = "tipo_viaje"
-            elif "acompañado" in siguiente_pregunta.lower() or ("solo" in siguiente_pregunta.lower() and "viajás" in siguiente_pregunta.lower()):
-                campo_pregunta = "acompanantes"
             elif "comida" in siguiente_pregunta.lower():
                 campo_pregunta = "preferencias_comida"
             elif "regalar" in siguiente_pregunta.lower():

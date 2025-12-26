@@ -220,7 +220,6 @@ Responde SOLO con JSON:
         # Mapeo de campos a preguntas (tono directo, amigable, medio formal)
         preguntas_map = {
             "tipo_viaje": "¿Qué tipo de viaje estás haciendo? (solo, con pareja, con familia, con amigos, negocios)",
-            "acompanantes": "¿Viajás solo o acompañado?",
             "duracion_estadia": "¿Cuántos días vas a estar?",
             "preferencias_comida": "¿Qué tipo de comida preferís?",
             "interes_regalos": "¿Buscás algo para vos o para regalar?",
@@ -230,7 +229,7 @@ Responde SOLO con JSON:
         }
         
         # Priorizar: primero campos obligatorios, luego condicionales
-        campos_obligatorios = ["tipo_viaje", "acompanantes", "duracion_estadia"]
+        campos_obligatorios = ["tipo_viaje", "duracion_estadia"]
         campos_condicionales = ["preferencias_comida", "interes_regalos", "interes_ropa", "interes_tipo_recreacion", "viaja_con_ninos"]
         
         # Buscar primero campos obligatorios faltantes
@@ -265,7 +264,6 @@ Responde SOLO con JSON:
             perfil_texto = f"""
 Perfil:
 - Tipo de viaje: {perfil.tipo_viaje or 'No especificado'}
-- Acompañantes: {perfil.acompanantes or 'No especificado'}
 - Duración: {perfil.duracion_estadia or 'No especificado'} días"""
             
             # Agregar campos condicionales según intereses
