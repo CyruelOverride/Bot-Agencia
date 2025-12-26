@@ -267,41 +267,69 @@ class PlanViajeService:
             enviar_mensaje_whatsapp(numero, mensaje_resumen)
             time.sleep(1)
         
-        # Mensajes 2-N: Enviar un mensaje individual por cada excursión del plan
-        for excursion in plan.excursiones:
-            if excursion.imagen_url:
-                # Enviar imagen con caption
-                caption = f"*{excursion.nombre}*\n\n{excursion.descripcion}"
-                if excursion.ubicacion:
-                    caption += f"\n\n📍 {excursion.ubicacion}"
-                
-                # Limitar caption a 1024 caracteres (límite de WhatsApp)
-                if len(caption) > 1024:
-                    caption = caption[:1021] + "..."
-                
+        # Mensajes 2-N: Enviar un mensaje individual por cada lugar de cada interés
+        # Agrupar excursiones por categoría (interés)
+        excursiones_por_categoria = plan.obtener_excursiones_por_categoria()
+        
+        # Emojis por categoría
+        emojis_categoria = {
+            "restaurantes": "🍽️",
+            "comercios": "🛍️",
+            "recreacion": "🌳",
+            "cultura": "🏛️",
+            "compras": "🛒"
+        }
+        
+        # Recorrer cada categoría (interés)
+        for categoria, excursiones in excursiones_por_categoria.items():
+            emoji = emojis_categoria.get(categoria, "📍")
+            
+            # Para cada lugar (excursión) de este interés, enviar un mensaje individual
+            for excursion in excursiones:
                 try:
-                    resultado = enviar_imagen_whatsapp(numero, excursion.imagen_url, caption)
-                    if not resultado.get("success"):
-                        # Si falla la imagen, enviar solo texto
-                        logger.warning(f"No se pudo enviar imagen de {excursion.nombre}: {resultado.get('error', 'Error desconocido')}")
+                    if excursion.imagen_url:
+                        # Enviar imagen con caption
+                        caption = f"*{excursion.nombre}*\n\n{excursion.descripcion}"
+                        if excursion.ubicacion:
+                            caption += f"\n\n📍 {excursion.ubicacion}"
+                        
+                        # Limitar caption a 1024 caracteres (límite de WhatsApp)
+                        if len(caption) > 1024:
+                            caption = caption[:1021] + "..."
+                        
+                        try:
+                            resultado = enviar_imagen_whatsapp(numero, excursion.imagen_url, caption)
+                            if not resultado.get("success"):
+                                # Si falla la imagen, enviar solo texto
+                                error_msg = resultado.get('error', 'Error desconocido')
+                                print(f"❌ Error al enviar imagen de {excursion.nombre} (categoría: {categoria}): {error_msg}")
+                                logger.warning(f"No se pudo enviar imagen de {excursion.nombre}: {error_msg}")
+                                mensaje = f"*{excursion.nombre}*\n\n{excursion.descripcion}"
+                                if excursion.ubicacion:
+                                    mensaje += f"\n\n📍 {excursion.ubicacion}"
+                                enviar_mensaje_whatsapp(numero, mensaje)
+                        except Exception as e:
+                            # Error al enviar imagen
+                            print(f"❌ Error al enviar imagen de {excursion.nombre} (categoría: {categoria}): {e}")
+                            logger.warning(f"No se pudo enviar imagen de {excursion.nombre}: {e}")
+                            mensaje = f"*{excursion.nombre}*\n\n{excursion.descripcion}"
+                            if excursion.ubicacion:
+                                mensaje += f"\n\n📍 {excursion.ubicacion}"
+                            enviar_mensaje_whatsapp(numero, mensaje)
+                    else:
+                        # Enviar solo texto (sin imagen)
                         mensaje = f"*{excursion.nombre}*\n\n{excursion.descripcion}"
                         if excursion.ubicacion:
                             mensaje += f"\n\n📍 {excursion.ubicacion}"
                         enviar_mensaje_whatsapp(numero, mensaje)
+                    
+                    # Pausa entre mensajes para mejor UX
+                    time.sleep(1.5)
+                    
                 except Exception as e:
-                    # Error silencioso: enviar solo texto
-                    logger.warning(f"No se pudo enviar imagen de {excursion.nombre}: {e}")
-                    mensaje = f"*{excursion.nombre}*\n\n{excursion.descripcion}"
-                    if excursion.ubicacion:
-                        mensaje += f"\n\n📍 {excursion.ubicacion}"
-                    enviar_mensaje_whatsapp(numero, mensaje)
-            else:
-                # Enviar solo texto
-                mensaje = f"*{excursion.nombre}*\n\n{excursion.descripcion}"
-                if excursion.ubicacion:
-                    mensaje += f"\n\n📍 {excursion.ubicacion}"
-                enviar_mensaje_whatsapp(numero, mensaje)
-            
-            # Pausa entre mensajes para mejor UX
-            time.sleep(1.5)
+                    # Error general al procesar la excursión
+                    print(f"❌ Error al enviar mensaje de {excursion.nombre} (categoría: {categoria}): {e}")
+                    logger.error(f"Error al enviar mensaje de {excursion.nombre}: {e}")
+                    # Continuar con el siguiente lugar aunque haya error
+                    continue
 
