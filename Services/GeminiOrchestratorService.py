@@ -225,12 +225,18 @@ Responde SOLO con JSON:
             "interes_regalos": "¿Buscás algo para vos o para regalar?",
             "interes_ropa": "¿Te interesa comprar ropa?",
             "interes_tipo_recreacion": "¿Qué tipo de recreación preferís?",
+            "interes_tipo_cultura": "¿Qué tipo de cultura te interesa más?",
+            "interes_tipo_comercios": "¿Qué tipo de comercios te interesan?",
             "viaja_con_ninos": "¿Viajás con niños o familiares chicos?"
         }
         
         # Priorizar: primero campos obligatorios, luego condicionales
         campos_obligatorios = ["tipo_viaje", "duracion_estadia"]
-        campos_condicionales = ["preferencias_comida", "interes_regalos", "interes_ropa", "interes_tipo_recreacion", "viaja_con_ninos"]
+        campos_condicionales = ["preferencias_comida", "interes_regalos", "interes_ropa", "interes_tipo_recreacion", "interes_tipo_cultura", "interes_tipo_comercios"]
+        
+        # Solo agregar "viaja_con_ninos" si el tipo de viaje es "familia"
+        if perfil.tipo_viaje == "familia":
+            campos_condicionales.append("viaja_con_ninos")
         
         # Buscar primero campos obligatorios faltantes
         for campo in campos_obligatorios:

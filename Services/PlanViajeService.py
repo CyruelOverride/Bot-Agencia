@@ -67,15 +67,8 @@ class PlanViajeService:
                     excursiones.append(exc)
                     ids_existentes.add(exc.id)
         
-        # Filtrar excursiones: priorizar las que tienen imagen, permitir máximo 1-2 sin imagen
-        excursiones_con_imagen = [exc for exc in excursiones if exc.imagen_url]
-        excursiones_sin_imagen = [exc for exc in excursiones if not exc.imagen_url]
-        
-        # Limitar a máximo 2 lugares sin imagen
-        excursiones_sin_imagen = excursiones_sin_imagen[:2]
-        
-        # Combinar: primero las que tienen imagen, luego máximo 2 sin imagen
-        excursiones = excursiones_con_imagen + excursiones_sin_imagen
+        # Filtrar excursiones: solo incluir las que tienen imagen
+        excursiones = [exc for exc in excursiones if exc.imagen_url]
         
         # Limitar total a 15
         excursiones = excursiones[:15]

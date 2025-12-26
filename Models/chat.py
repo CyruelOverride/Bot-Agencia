@@ -263,10 +263,10 @@ class Chat:
         # (sin importar qué texto envió el usuario, incluso "Hola")
         mensaje = (
             f"¡Hola! 👋\n\n"
-            f"Soy tu asistente virtual en este viaje. Te ayudo a armar un plan personalizado "
-            f"para que disfrutes al máximo tu estadía en {usuario.ciudad}.\n\n"
-            f"Puedo recomendarte restaurantes, lugares para visitar, actividades y mucho más, "
-            f"todo adaptado a tus gustos y necesidades.\n\n"
+            f"Soy tu asistente virtual de viaje y estoy acá para ayudarte a aprovechar al máximo tu estadía en {usuario.ciudad}.\n\n"
+            f"A continuación te voy a hacer unas breves preguntas para conocerte mejor y poder recomendarte "
+            f"lugares, actividades y opciones que se adapten a tus gustos.\n\n"
+            f"La idea es sacarte de un apuro y ahorrarte horas buscando en Google \n\n"
             f"¿Quieres que te proporcione este servicio sin costo adicional?"
         )
         
@@ -608,6 +608,24 @@ class Chat:
                     {"id": "recreacion_romantica", "title": "Romántica"}
                 ]
             },
+            "interes_tipo_cultura": {
+                "body": "¿Qué tipo de cultura te interesa más?",
+                "options": [
+                    {"id": "cultura_museos", "title": "Museos"},
+                    {"id": "cultura_arquitectura", "title": "Arquitectura"},
+                    {"id": "cultura_arte", "title": "Arte"},
+                    {"id": "cultura_historia", "title": "Historia"}
+                ]
+            },
+            "interes_tipo_comercios": {
+                "body": "¿Qué tipo de comercios te interesan?",
+                "options": [
+                    {"id": "comercios_artesanias", "title": "Artesanías"},
+                    {"id": "comercios_souvenirs", "title": "Souvenirs"},
+                    {"id": "comercios_productos_locales", "title": "Productos locales"},
+                    {"id": "comercios_joyeria", "title": "Joyería"}
+                ]
+            },
             "viaja_con_ninos": {
                 "body": "¿Viajás con niños o familiares chicos?",
                 "options": [
@@ -802,6 +820,16 @@ class Chat:
             "recreacion_pasiva": ("interes_tipo_recreacion", "pasiva"),
             "recreacion_familiar": ("interes_tipo_recreacion", "familiar"),
             "recreacion_romantica": ("interes_tipo_recreacion", "romantica"),
+            # Tipo cultura
+            "cultura_museos": ("interes_tipo_cultura", "museos"),
+            "cultura_arquitectura": ("interes_tipo_cultura", "arquitectura"),
+            "cultura_arte": ("interes_tipo_cultura", "arte"),
+            "cultura_historia": ("interes_tipo_cultura", "historia"),
+            # Tipo comercios
+            "comercios_artesanias": ("interes_tipo_comercios", "artesanias"),
+            "comercios_souvenirs": ("interes_tipo_comercios", "souvenirs"),
+            "comercios_productos_locales": ("interes_tipo_comercios", "productos_locales"),
+            "comercios_joyeria": ("interes_tipo_comercios", "joyeria"),
             # Viaja con niños
             "ninos_si": ("viaja_con_ninos", True),
             "ninos_no": ("viaja_con_ninos", False)
@@ -896,6 +924,10 @@ class Chat:
                 campo_pregunta = "interes_ropa"
             elif "recreación" in siguiente_pregunta.lower() or "recreacion" in siguiente_pregunta.lower():
                 campo_pregunta = "interes_tipo_recreacion"
+            elif "cultura" in siguiente_pregunta.lower():
+                campo_pregunta = "interes_tipo_cultura"
+            elif "comercios" in siguiente_pregunta.lower() or "comercio" in siguiente_pregunta.lower():
+                campo_pregunta = "interes_tipo_comercios"
             elif "niños" in siguiente_pregunta.lower() or "ninos" in siguiente_pregunta.lower() or "chicos" in siguiente_pregunta.lower():
                 campo_pregunta = "viaja_con_ninos"
             elif "días" in siguiente_pregunta.lower() or "dias" in siguiente_pregunta.lower():
@@ -973,10 +1005,16 @@ class Chat:
         # Si el usuario tiene perfil completo, enviar mensaje de seguimiento apropiado
         if usuario and usuario.tiene_perfil_completo():
             # Enviar mensaje de seguimiento solo si el perfil está completo
-            mensaje_seguimiento = (
-                "¡Perfecto! Teniendo en cuenta que viajan con niños, ajustaremos el plan para incluir actividades y lugares que disfruten en Colonia. "
-                "¿Les gustaría explorar opciones como el Museo del Chocolate o el Zoo de Colonia?"
-            )
+            # Solo mencionar niños si realmente viaja con niños
+            if usuario.perfil and usuario.perfil.viaja_con_ninos:
+                mensaje_seguimiento = (
+                    "¡Perfecto! Teniendo en cuenta que viajan con niños, ajustaremos el plan para incluir actividades y lugares que disfruten en Colonia. "
+                    "¿Les gustaría explorar opciones como el Museo del Chocolate o el Zoo de Colonia?"
+                )
+            else:
+                mensaje_seguimiento = (
+                    "¡Perfecto! ¿Te gustaría explorar más opciones o hacer algún ajuste al plan?"
+                )
             return enviar_mensaje_whatsapp(numero, mensaje_seguimiento)
         
         # Si el perfil no está completo, no hacer nada más (no continuar con armar perfil)
