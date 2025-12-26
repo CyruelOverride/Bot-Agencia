@@ -142,9 +142,12 @@ class PlanViajeService:
             
             for exc in excursiones:
                 descripcion_corta = exc.descripcion[:60] + "..." if len(exc.descripcion) > 60 else exc.descripcion
+                # Limitar título a 24 caracteres (límite de WhatsApp para listas interactivas)
+                titulo_completo = f"{emoji} {exc.nombre}"
+                titulo_limitado = titulo_completo[:24] if len(titulo_completo) > 24 else titulo_completo
                 rows.append({
                     "id": f"exc_{exc.id}",
-                    "title": f"{emoji} {exc.nombre}",
+                    "title": titulo_limitado,
                     "description": descripcion_corta
                 })
         
@@ -168,7 +171,7 @@ class PlanViajeService:
                     "text": plan.resumen_ia[:200] + "..." if len(plan.resumen_ia) > 200 else plan.resumen_ia
                 },
                 "footer": {
-                    "text": f"{plan.ciudad} - {len(plan.excursiones)} recomendaciones"
+                    "text": (f"{plan.ciudad} - {len(plan.excursiones)} recomendaciones")[:60]
                 },
                 "action": {
                     "button": "Ver lugares",

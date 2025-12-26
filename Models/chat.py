@@ -286,7 +286,7 @@ class Chat:
                             "type": "reply",
                             "reply": {
                                 "id": "confirmar_servicio_si",
-                                "title": "✅ Sí, quiero el servicio"
+                                "title": "✅ Sí, quiero"
                             }
                         },
                         {

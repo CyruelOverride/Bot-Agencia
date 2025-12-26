@@ -32,7 +32,7 @@ def enviar_solicitud_calificacion(numero_cliente):
         },
         {
             "id": "calificar_5",
-            "title": "⭐⭐⭐⭐⭐ 5 estrellas",
+            "title": "⭐⭐⭐⭐⭐ 5⭐",
             "description": "Excelente"
         }
     ]
