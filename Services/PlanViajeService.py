@@ -271,6 +271,9 @@ class PlanViajeService:
         # Agrupar excursiones por categoría (interés)
         excursiones_por_categoria = plan.obtener_excursiones_por_categoria()
         
+        print(f"📋 Iniciando envío de mensajes individuales. Total de categorías: {len(excursiones_por_categoria)}")
+        print(f"📋 Excursiones en el plan: {len(plan.excursiones)}")
+        
         # Emojis por categoría
         emojis_categoria = {
             "restaurantes": "🍽️",
@@ -283,53 +286,73 @@ class PlanViajeService:
         # Recorrer cada categoría (interés)
         for categoria, excursiones in excursiones_por_categoria.items():
             emoji = emojis_categoria.get(categoria, "📍")
+            print(f"📤 Procesando categoría: {categoria} ({emoji}) - {len(excursiones)} lugares")
             
             # Para cada lugar (excursión) de este interés, enviar un mensaje individual
             for excursion in excursiones:
+                print(f"  → Enviando lugar: {excursion.nombre}")
+                print(f"     - Tiene imagen: {excursion.imagen_url is not None}")
+                print(f"     - Tiene descripción: {len(excursion.descripcion) > 0 if excursion.descripcion else False}")
+                print(f"     - Tiene ubicación: {excursion.ubicacion is not None}")
                 try:
+                    # Construir mensaje con descripción y ubicación
+                    descripcion = excursion.descripcion if excursion.descripcion else "Sin descripción disponible"
+                    ubicacion = excursion.ubicacion if excursion.ubicacion else None
+                    
                     if excursion.imagen_url:
                         # Enviar imagen con caption
-                        caption = f"*{excursion.nombre}*\n\n{excursion.descripcion}"
-                        if excursion.ubicacion:
-                            caption += f"\n\n📍 {excursion.ubicacion}"
+                        caption = f"*{excursion.nombre}*\n\n{descripcion}"
+                        if ubicacion:
+                            caption += f"\n\n📍 {ubicacion}"
                         
                         # Limitar caption a 1024 caracteres (límite de WhatsApp)
                         if len(caption) > 1024:
                             caption = caption[:1021] + "..."
                         
                         try:
+                            print(f"     📷 Enviando imagen: {excursion.imagen_url[:50]}...")
                             resultado = enviar_imagen_whatsapp(numero, excursion.imagen_url, caption)
-                            if not resultado.get("success"):
+                            if resultado.get("success"):
+                                print(f"     ✅ Imagen enviada exitosamente")
+                            else:
                                 # Si falla la imagen, enviar solo texto
                                 error_msg = resultado.get('error', 'Error desconocido')
-                                print(f"❌ Error al enviar imagen de {excursion.nombre} (categoría: {categoria}): {error_msg}")
+                                print(f"     ❌ Error al enviar imagen: {error_msg}")
                                 logger.warning(f"No se pudo enviar imagen de {excursion.nombre}: {error_msg}")
-                                mensaje = f"*{excursion.nombre}*\n\n{excursion.descripcion}"
-                                if excursion.ubicacion:
-                                    mensaje += f"\n\n📍 {excursion.ubicacion}"
+                                mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
+                                if ubicacion:
+                                    mensaje += f"\n\n📍 {ubicacion}"
                                 enviar_mensaje_whatsapp(numero, mensaje)
+                                print(f"     📝 Mensaje de texto enviado como fallback")
                         except Exception as e:
                             # Error al enviar imagen
-                            print(f"❌ Error al enviar imagen de {excursion.nombre} (categoría: {categoria}): {e}")
+                            print(f"     ❌ Excepción al enviar imagen: {e}")
                             logger.warning(f"No se pudo enviar imagen de {excursion.nombre}: {e}")
-                            mensaje = f"*{excursion.nombre}*\n\n{excursion.descripcion}"
-                            if excursion.ubicacion:
-                                mensaje += f"\n\n📍 {excursion.ubicacion}"
+                            mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
+                            if ubicacion:
+                                mensaje += f"\n\n📍 {ubicacion}"
                             enviar_mensaje_whatsapp(numero, mensaje)
+                            print(f"     📝 Mensaje de texto enviado como fallback")
                     else:
                         # Enviar solo texto (sin imagen)
-                        mensaje = f"*{excursion.nombre}*\n\n{excursion.descripcion}"
-                        if excursion.ubicacion:
-                            mensaje += f"\n\n📍 {excursion.ubicacion}"
+                        print(f"     📝 Enviando mensaje de texto (sin imagen)")
+                        mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
+                        if ubicacion:
+                            mensaje += f"\n\n📍 {ubicacion}"
                         enviar_mensaje_whatsapp(numero, mensaje)
+                        print(f"     ✅ Mensaje de texto enviado")
                     
                     # Pausa entre mensajes para mejor UX
                     time.sleep(1.5)
                     
                 except Exception as e:
                     # Error general al procesar la excursión
-                    print(f"❌ Error al enviar mensaje de {excursion.nombre} (categoría: {categoria}): {e}")
+                    print(f"     ❌ Error general al procesar {excursion.nombre}: {e}")
                     logger.error(f"Error al enviar mensaje de {excursion.nombre}: {e}")
+                    import traceback
+                    print(f"     Traceback: {traceback.format_exc()}")
                     # Continuar con el siguiente lugar aunque haya error
                     continue
+        
+        print(f"✅ Finalizado envío de mensajes individuales")
 

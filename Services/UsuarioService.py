@@ -18,15 +18,15 @@ class UsuarioService:
             usuario.actualizar_ultima_interaccion()
             # Asegurar que tenga ciudad asignada
             if not usuario.ciudad:
-                usuario.ciudad = "Canelones"
+                usuario.ciudad = "Colonia"
                 UsuarioService.actualizar_usuario(usuario)
             return usuario
         
-        # Crear nuevo usuario con Canelones por defecto
+        # Crear nuevo usuario con Colonia por defecto
         usuario = Usuario(
             telefono=telefono_normalizado,
             nombre=nombre,
-            ciudad="Canelones",  # Ciudad por defecto
+            ciudad="Colonia",  # Ciudad por defecto
             estado_conversacion="INICIO"
         )
         USUARIOS[telefono_normalizado] = usuario
