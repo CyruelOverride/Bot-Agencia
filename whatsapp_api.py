@@ -17,6 +17,9 @@ def normalizar_numero_telefono(numero: str) -> str:
 
 
 def enviar_mensaje_whatsapp(numero, mensaje):
+    # Normalizar número de teléfono
+    numero = normalizar_numero_telefono(numero)
+    
     url = f"{WHATSAPP_API_URL}/{WHATSAPP_PHONE_NUMBER_ID}/messages"
     headers = {
         "Authorization": f"Bearer {WHATSAPP_ACCESS_TOKEN}",
@@ -66,6 +69,10 @@ def enviar_imagen_whatsapp(numero, ruta_o_url_imagen, caption=""):
         ruta_o_url_imagen: Ruta local del archivo o URL pública de la imagen
         caption: Texto opcional que acompaña la imagen (máx 1024 caracteres)
     """
+    # Normalizar número de teléfono
+    numero = normalizar_numero_telefono(numero)
+    print(f"📞 Número normalizado: {numero}")
+    
     url = f"{WHATSAPP_API_URL}/{WHATSAPP_PHONE_NUMBER_ID}/messages"
     headers = {
         "Authorization": f"Bearer {WHATSAPP_ACCESS_TOKEN}",
