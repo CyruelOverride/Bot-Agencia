@@ -219,17 +219,24 @@ class Chat:
                     if resultado.get("success"):
                         print(f"🧪 [TEST] ✅ Imagen del restaurante enviada")
                         
-                        # Enviar QR después
+                        # Enviar QR después en mensaje separado
                         if ruta_qr and os.path.exists(ruta_qr):
-                            time.sleep(1)
-                            caption_qr = f"📱 Código QR - Descuento 5% en {restaurante.nombre}"
+                            time.sleep(2)  # Pausa más larga para evitar problemas con WhatsApp
+                            caption_qr = f"📱 *Código QR - {restaurante.nombre}*\n\nEscanea este código para obtener un descuento del 5%"
+                            print(f"🧪 [TEST] 📱 Enviando QR en mensaje separado: {ruta_qr}")
+                            print(f"🧪 [TEST] 📱 Archivo existe: {os.path.exists(ruta_qr)}")
                             resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr, caption_qr)
                             if resultado_qr.get("success"):
-                                print(f"🧪 [TEST] ✅ QR enviado exitosamente")
+                                print(f"🧪 [TEST] ✅ QR enviado exitosamente en mensaje separado")
                             else:
-                                print(f"🧪 [TEST] ⚠️ Error al enviar QR: {resultado_qr.get('error')}")
+                                error_qr = resultado_qr.get('error', 'Error desconocido')
+                                print(f"🧪 [TEST] ❌ Error al enviar QR: {error_qr}")
+                                print(f"🧪 [TEST] Respuesta completa: {resultado_qr}")
                         else:
-                            print(f"🧪 [TEST] ⚠️ QR no disponible")
+                            print(f"🧪 [TEST] ⚠️ QR no disponible o no existe")
+                            if ruta_qr:
+                                print(f"🧪 [TEST] Ruta QR: {ruta_qr}")
+                                print(f"🧪 [TEST] Existe: {os.path.exists(ruta_qr) if ruta_qr else 'N/A'}")
                     else:
                         # Fallback a texto
                         mensaje = f"*{restaurante.nombre}*\n\n{descripcion}"
@@ -240,8 +247,14 @@ class Chat:
                         enviar_mensaje_whatsapp(numero, mensaje)
                         
                         if ruta_qr and os.path.exists(ruta_qr):
-                            time.sleep(1)
-                            enviar_imagen_whatsapp(numero, ruta_qr, f"📱 Código QR - Descuento 5%")
+                            time.sleep(2)
+                            caption_qr = f"📱 *Código QR - {restaurante.nombre}*\n\nEscanea este código para obtener un descuento del 5%"
+                            print(f"🧪 [TEST] 📱 Enviando QR después del texto: {ruta_qr}")
+                            resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr, caption_qr)
+                            if resultado_qr.get("success"):
+                                print(f"🧪 [TEST] ✅ QR enviado exitosamente")
+                            else:
+                                print(f"🧪 [TEST] ❌ Error: {resultado_qr.get('error')}")
                 else:
                     # Sin imagen, solo texto + QR
                     mensaje = f"*{restaurante.nombre}*\n\n{descripcion}"
