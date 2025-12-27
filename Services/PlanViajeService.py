@@ -6,6 +6,7 @@ from Models.usuario import Usuario
 from Models.excursion import Excursion
 from Services.ExcursionService import ExcursionService
 from Services.GeminiOrchestratorService import GeminiOrchestratorService
+from Util.qr_helper import obtener_ruta_qr, debe_enviar_qr
 
 logger = logging.getLogger(__name__)
 
@@ -330,6 +331,30 @@ class PlanViajeService:
                             mensaje += f"\n\n📍 {ubicacion}"
                         enviar_mensaje_whatsapp(numero, mensaje)
                         print(f"     ✅ Mensaje de texto enviado")
+                    
+                    # Si es restaurante o comercio, enviar QR
+                    if debe_enviar_qr(excursion.categoria):
+                        try:
+                            print(f"     📱 Verificando QR para {excursion.nombre} (ID: {excursion.id})")
+                            ruta_qr = obtener_ruta_qr(excursion.id)
+                            if ruta_qr and os.path.exists(ruta_qr):
+                                caption_qr = f"📱 Escanea este código para obtener un descuento del 5% en {excursion.nombre}"
+                                print(f"     📱 Enviando QR desde: {ruta_qr}")
+                                resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr, caption_qr)
+                                if resultado_qr.get("success"):
+                                    print(f"     ✅ QR enviado exitosamente para {excursion.nombre}")
+                                    time.sleep(1)  # Pausa adicional después del QR
+                                else:
+                                    error_qr = resultado_qr.get('error', 'Error desconocido')
+                                    print(f"     ⚠️ No se pudo enviar QR: {error_qr}")
+                                    logger.warning(f"No se pudo enviar QR para {excursion.nombre}: {error_qr}")
+                            else:
+                                print(f"     ⚠️ QR no encontrado o no se pudo generar para {excursion.id}")
+                                logger.warning(f"QR no disponible para {excursion.nombre} (ID: {excursion.id})")
+                        except Exception as e:
+                            print(f"     ⚠️ Error al procesar QR para {excursion.nombre}: {e}")
+                            logger.warning(f"No se pudo enviar QR para {excursion.nombre}: {e}")
+                            # Continuar sin interrumpir el flujo
                     
                     # Pausa entre mensajes para mejor UX
                     time.sleep(1.5)

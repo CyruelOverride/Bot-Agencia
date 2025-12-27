@@ -10,3 +10,4 @@ networkx>=3.0
 pillow>=10.0
 matplotlib>=3.8.0
 google-genai
+qrcode[pil]==7.4.2
