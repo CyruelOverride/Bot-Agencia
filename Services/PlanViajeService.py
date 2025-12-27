@@ -409,16 +409,21 @@ class PlanViajeService:
                         mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
                         if ubicacion:
                             mensaje += f"\n\n📍 {ubicacion}"
-                        if ruta_qr:
-                            mensaje += f"\n\n📱 Escanea el código QR para obtener un descuento del 5%"
-                        enviar_mensaje_whatsapp(numero, mensaje)
+                        # NO incluir mensaje del QR en el texto principal, se enviará después
+                        
+                        resultado_texto = enviar_mensaje_whatsapp(numero, mensaje)
+                        if resultado_texto.get("success"):
+                            print(f"     ✅ Mensaje de texto enviado exitosamente")
+                        else:
+                            print(f"     ⚠️ Error al enviar mensaje de texto: {resultado_texto.get('error')}")
+                            logger.warning(f"Error al enviar mensaje de texto para {excursion.nombre}")
                         
                         # Enviar QR después del texto en mensaje separado
-                        if ruta_qr:
+                        if ruta_qr and os.path.exists(ruta_qr):
                             try:
                                 time.sleep(2)
-                                # Simplificar caption para evitar problemas con formato
-                                caption_qr = f"Código QR - {excursion.nombre}\n\nEscanea este código para obtener un descuento del 5%"
+                                # Caption del QR con información del restaurante
+                                caption_qr = f"📱 *Código QR - {excursion.nombre}*\n\nEscanea este código para obtener un descuento del 5%"
                                 print(f"     📱 Enviando QR después del texto: {ruta_qr}")
                                 print(f"     📱 Verificando que el archivo existe: {os.path.exists(ruta_qr)}")
                                 print(f"     📱 Caption del QR: {caption_qr}")
@@ -435,7 +440,9 @@ class PlanViajeService:
                                 import traceback
                                 print(f"     Traceback: {traceback.format_exc()}")
                                 logger.error(f"Excepción al enviar QR para {excursion.nombre}: {e}")
-                        print(f"     ✅ Mensaje de texto enviado")
+                        elif ruta_qr:
+                            print(f"     ⚠️ QR no existe en ruta: {ruta_qr}")
+                        print(f"     ✅ Proceso completado para {excursion.nombre}")
                     
                     # Pausa entre mensajes para mejor UX
                     time.sleep(1.5)

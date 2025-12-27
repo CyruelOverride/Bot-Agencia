@@ -217,15 +217,7 @@ class Chat:
                     resultado = enviar_imagen_whatsapp(numero, restaurante.imagen_url, caption)
                     
                     if resultado.get("success"):
-                        print(f"🧪 [TEST] ✅ Imagen del restaurante enviada")
-                        
-                        # Enviar información completa del restaurante como mensaje de texto para asegurar que llegue
-                        time.sleep(1)
-                        mensaje_info = f"*{restaurante.nombre}*\n\n{descripcion}"
-                        if ubicacion:
-                            mensaje_info += f"\n\n📍 {ubicacion}"
-                        enviar_mensaje_whatsapp(numero, mensaje_info)
-                        print(f"🧪 [TEST] ✅ Información del restaurante enviada como texto")
+                        print(f"🧪 [TEST] ✅ Imagen del restaurante enviada con información completa")
                         
                         # Enviar QR después en mensaje separado
                         if ruta_qr and os.path.exists(ruta_qr):

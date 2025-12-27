@@ -155,6 +155,29 @@ async def receive(request: Request):
         numero, mensaje, tipo = resultado
         print(f"Mensaje recibido ({tipo}) de {numero}: {mensaje}")
 
+        # Verificar que el mensaje no sea del bot mismo (verificación adicional)
+        # Los mensajes del bot pueden venir con ciertos patrones que debemos ignorar
+        # También verificar si el mensaje parece ser una respuesta automática del bot
+        if mensaje:
+            mensaje_lower = mensaje.lower()
+            patrones_bot = [
+                "código qr -",
+                "escanea este código",
+                "escanea el código qr",
+                "tu plan personalizado",
+                "plan personalizado para",
+                "situado en la icónica",
+                "horario:",
+                "lunes a domingo",
+                "todos los días"
+            ]
+            
+            # Si el mensaje contiene varios de estos patrones, probablemente es del bot
+            coincidencias = sum(1 for patron in patrones_bot if patron in mensaje_lower)
+            if coincidencias >= 2:
+                print(f"⚠️ Ignorando mensaje que parece ser del bot (coincidencias: {coincidencias}): {mensaje[:100]}...")
+                return PlainTextResponse("EVENT_RECEIVED", status_code=200)
+
         # Extraer nombre del contacto del webhook si está disponible
         nombre_contacto = extraer_nombre_del_webhook(data)
         if nombre_contacto:
