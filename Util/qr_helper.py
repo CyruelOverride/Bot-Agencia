@@ -53,10 +53,18 @@ def _generar_qr_directo(excursion_id: str, base_url: Optional[str] = None, usar_
         if base_url is None:
             base_url = QR_BASE_URL
         
+        # Asegurar que la URL tenga protocolo https://
+        if not base_url.startswith(('http://', 'https://')):
+            base_url = f"https://{base_url}"
+        
         if usar_html_estatico:
-            url = base_url.rstrip('/')
+            # Incluir el ID del restaurante en la URL para que el HTML estático sepa qué mostrar
+            # Formato: https://agencia-qr.vercel.app?rest=rest_001
+            url = f"{base_url.rstrip('/')}?rest={excursion_id}"
         else:
-            url = f"{base_url}/{excursion_id}"
+            url = f"{base_url.rstrip('/')}/{excursion_id}"
+        
+        print(f"🔗 URL generada para QR: {url}")
         
         # Generar QR con configuración mejorada (tamaño mayor para mejor legibilidad)
         qr = qrcode.QRCode(
@@ -132,6 +140,8 @@ def obtener_ruta_qr(excursion_id: str, base_url: Optional[str] = None, usar_html
     qr_filepath = os.path.join(QR_CODES_DIR, filename)
     
     # Si el archivo ya existe, verificar que sea válido antes de retornarlo
+    # NOTA: Los QRs antiguos pueden tener URLs incorrectas (sin el ID del restaurante)
+    # Si necesitas regenerar todos los QRs, elimina la carpeta qr_codes
     if os.path.exists(qr_filepath):
         file_size = os.path.getsize(qr_filepath)
         # Si el archivo es muy pequeño (menos de 100 bytes), probablemente está corrupto
@@ -148,6 +158,7 @@ def obtener_ruta_qr(excursion_id: str, base_url: Optional[str] = None, usar_html
                     header = f.read(8)
                     if header[:8] == b'\x89PNG\r\n\x1a\n':
                         print(f"✅ QR existente válido: {qr_filepath} ({file_size} bytes)")
+                        print(f"⚠️ NOTA: Si el QR no funciona correctamente, elimina este archivo para regenerarlo con la nueva URL")
                         return os.path.abspath(qr_filepath)
                     else:
                         print(f"⚠️ Archivo QR no es un PNG válido. Regenerando...")

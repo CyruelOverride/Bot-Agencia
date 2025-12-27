@@ -219,37 +219,38 @@ class Chat:
                     if resultado.get("success"):
                         print(f"🧪 [TEST] ✅ Imagen del restaurante enviada")
                         
+                        # Enviar información completa del restaurante como mensaje de texto para asegurar que llegue
+                        time.sleep(1)
+                        mensaje_info = f"*{restaurante.nombre}*\n\n{descripcion}"
+                        if ubicacion:
+                            mensaje_info += f"\n\n📍 {ubicacion}"
+                        enviar_mensaje_whatsapp(numero, mensaje_info)
+                        print(f"🧪 [TEST] ✅ Información del restaurante enviada como texto")
+                        
                         # Enviar QR después en mensaje separado
                         if ruta_qr and os.path.exists(ruta_qr):
                             time.sleep(2)  # Pausa más larga para evitar problemas con WhatsApp
                             print(f"🧪 [TEST] 📱 Enviando QR en mensaje separado: {ruta_qr}")
                             print(f"🧪 [TEST] 📱 Archivo existe: {os.path.exists(ruta_qr)}")
                             
-                            # Intentar primero sin caption para ver si el problema es el caption
-                            print(f"🧪 [TEST] 📱 Intentando enviar QR SIN caption primero...")
-                            resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr, "")
-                            print(f"🧪 [TEST] 📱 Resultado del envío QR (sin caption): {resultado_qr}")
+                            # Enviar QR con caption simple
+                            caption_qr = f"📱 Código QR - {restaurante.nombre}\n\nEscanea este código para obtener un descuento del 5%"
+                            print(f"🧪 [TEST] 📱 Enviando QR con caption...")
+                            resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr, caption_qr)
+                            print(f"🧪 [TEST] 📱 Resultado del envío QR: {resultado_qr}")
                             
                             if resultado_qr.get("success"):
-                                print(f"🧪 [TEST] ✅ QR enviado exitosamente (sin caption)")
-                                # Si funciona sin caption, enviar la información en un mensaje de texto separado
-                                time.sleep(1)
-                                mensaje_qr = f"📱 *Código QR - {restaurante.nombre}*\n\nEscanea el código QR anterior para obtener un descuento del 5%"
-                                enviar_mensaje_whatsapp(numero, mensaje_qr)
-                                print(f"🧪 [TEST] ✅ Mensaje informativo del QR enviado")
+                                print(f"🧪 [TEST] ✅ QR enviado exitosamente")
                             else:
-                                error_qr = resultado_qr.get('error', 'Error desconocido')
-                                print(f"🧪 [TEST] ❌ Error al enviar QR: {error_qr}")
-                                print(f"🧪 [TEST] Respuesta completa: {resultado_qr}")
-                                
-                                # Si falla sin caption, intentar con caption simple
-                                print(f"🧪 [TEST] 📱 Intentando con caption simple...")
-                                caption_qr = f"Código QR - {restaurante.nombre}"
-                                resultado_qr2 = enviar_imagen_whatsapp(numero, ruta_qr, caption_qr)
-                                if resultado_qr2.get("success"):
-                                    print(f"🧪 [TEST] ✅ QR enviado exitosamente con caption simple")
+                                # Si falla con caption, intentar sin caption
+                                print(f"🧪 [TEST] ⚠️ Falló con caption, intentando sin caption...")
+                                resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr, "")
+                                if resultado_qr.get("success"):
+                                    print(f"🧪 [TEST] ✅ QR enviado exitosamente (sin caption)")
                                 else:
-                                    print(f"🧪 [TEST] ❌ También falló con caption: {resultado_qr2.get('error')}")
+                                    error_qr = resultado_qr.get('error', 'Error desconocido')
+                                    print(f"🧪 [TEST] ❌ Error al enviar QR: {error_qr}")
+                                    print(f"🧪 [TEST] Respuesta completa: {resultado_qr}")
                         else:
                             print(f"🧪 [TEST] ⚠️ QR no disponible o no existe")
                             if ruta_qr:
