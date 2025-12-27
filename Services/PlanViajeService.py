@@ -358,20 +358,6 @@ class PlanViajeService:
                             if resultado.get("success"):
                                 print(f"     ✅ Imagen enviada exitosamente")
                                 
-                                # Si hay QR, enviar texto ANTES del QR para asegurar que la información llegue
-                                # Esto es necesario porque a veces WhatsApp no muestra la imagen o el caption
-                                if ruta_qr and os.path.exists(ruta_qr):
-                                    time.sleep(1)
-                                    mensaje_respaldo = f"*{excursion.nombre}*\n\n{descripcion}"
-                                    if ubicacion:
-                                        mensaje_respaldo += f"\n\n📍 {ubicacion}"
-                                    print(f"     📝 Enviando texto antes del QR para asegurar que la información llegue...")
-                                    resultado_respaldo = enviar_mensaje_whatsapp(numero, mensaje_respaldo)
-                                    if resultado_respaldo.get("success"):
-                                        print(f"     ✅ Texto enviado exitosamente antes del QR")
-                                    else:
-                                        print(f"     ⚠️ Error al enviar texto: {resultado_respaldo.get('error')}")
-                                
                                 # Si hay QR, enviarlo en un mensaje separado después de una pausa
                                 if ruta_qr and os.path.exists(ruta_qr):
                                     try:

@@ -188,6 +188,23 @@ async def receive(request: Request):
             # DETECCIÓN AGRESIVA: Si contiene "QR" y "escanea" en cualquier parte, es del bot
             es_mensaje_qr_agresivo = ("qr" in mensaje_lower or "codigo" in mensaje_lower) and "escanea" in mensaje_lower and mensaje_len < 150
             
+            # DETECCIÓN DE RESPUESTAS DE GEMINI INCORRECTAS
+            # Patrones que indican respuestas de Gemini que no tienen sentido (platos alemanes en Colonia, etc.)
+            patrones_gemini_incorrecto = [
+                "himmel un ääd",
+                "halve hahn",
+                "rheinischer sauerbraten",
+                "salchichas kölsch",
+                "cerveza kölsch",
+                "brauhaus",
+                "le sugiero probar",
+                "le recomiendo",
+                "podemos integrar",
+                "si desea, puedo",
+                "si desea puedo",
+            ]
+            es_respuesta_gemini_incorrecta = any(patron in mensaje_lower for patron in patrones_gemini_incorrecto)
+            
             # Patrones que aparecen en descripciones de restaurantes
             patrones_descripcion = [
                 "situado en la icónica",
@@ -207,13 +224,14 @@ async def receive(request: Request):
             # Si el mensaje es muy largo (>200 caracteres) y tiene patrones de descripción, es del bot
             es_mensaje_largo_bot = mensaje_len > 200 and coincidencias_descripcion >= 2
             
-            # Si empieza con patrón del bot, es mensaje corto con QR, contiene patrón completo de QR, es mensaje QR agresivo, o es un mensaje largo con descripción
-            if empieza_con_bot or es_mensaje_corto_qr or es_mensaje_qr_completo or es_mensaje_qr_agresivo or es_mensaje_largo_bot:
+            # Si empieza con patrón del bot, es mensaje corto con QR, contiene patrón completo de QR, es mensaje QR agresivo, es respuesta de Gemini incorrecta, o es un mensaje largo con descripción
+            if empieza_con_bot or es_mensaje_corto_qr or es_mensaje_qr_completo or es_mensaje_qr_agresivo or es_respuesta_gemini_incorrecta or es_mensaje_largo_bot:
                 print(f"⚠️ Ignorando mensaje que parece ser del bot:")
                 print(f"   - Empieza con patrón bot: {empieza_con_bot}")
                 print(f"   - Mensaje corto con QR: {es_mensaje_corto_qr}")
                 print(f"   - Mensaje QR completo: {es_mensaje_qr_completo}")
                 print(f"   - Mensaje QR agresivo: {es_mensaje_qr_agresivo}")
+                print(f"   - Respuesta Gemini incorrecta: {es_respuesta_gemini_incorrecta}")
                 print(f"   - Mensaje largo con descripción: {es_mensaje_largo_bot}")
                 print(f"   - Coincidencias descripción: {coincidencias_descripcion}")
                 print(f"   - Longitud: {mensaje_len} caracteres")

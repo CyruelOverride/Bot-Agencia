@@ -141,13 +141,30 @@ class Chat:
             # DETECCIÓN AGRESIVA: Si contiene "QR" y "escanea" en cualquier parte, es del bot
             es_mensaje_qr_agresivo_early = ("qr" in texto_lower or "codigo" in texto_lower) and "escanea" in texto_lower and texto_len < 150
             
+            # DETECCIÓN DE RESPUESTAS DE GEMINI INCORRECTAS
+            patrones_gemini_incorrecto_early = [
+                "himmel un ääd",
+                "halve hahn",
+                "rheinischer sauerbraten",
+                "salchichas kölsch",
+                "cerveza kölsch",
+                "brauhaus",
+                "le sugiero probar",
+                "le recomiendo",
+                "podemos integrar",
+                "si desea, puedo",
+                "si desea puedo",
+            ]
+            es_respuesta_gemini_incorrecta_early = any(patron in texto_lower for patron in patrones_gemini_incorrecto_early)
+            
             # Si parece ser mensaje del bot, NO procesar
-            if empieza_con_bot_early or es_mensaje_qr_completo_early or es_mensaje_corto_qr_early or es_mensaje_qr_agresivo_early:
+            if empieza_con_bot_early or es_mensaje_qr_completo_early or es_mensaje_corto_qr_early or es_mensaje_qr_agresivo_early or es_respuesta_gemini_incorrecta_early:
                 print(f"🚫 [handle_text] BLOQUEANDO mensaje del bot antes de procesar:")
                 print(f"   - Empieza con patrón bot: {empieza_con_bot_early}")
                 print(f"   - Mensaje QR completo: {es_mensaje_qr_completo_early}")
                 print(f"   - Mensaje corto con QR: {es_mensaje_corto_qr_early}")
                 print(f"   - Mensaje QR agresivo: {es_mensaje_qr_agresivo_early}")
+                print(f"   - Respuesta Gemini incorrecta: {es_respuesta_gemini_incorrecta_early}")
                 print(f"   - Mensaje: {texto[:100]}...")
                 return None  # No procesar, no responder
         
@@ -1300,13 +1317,30 @@ class Chat:
             # DETECCIÓN AGRESIVA: Si contiene "QR" y "escanea" en cualquier parte, es del bot
             es_mensaje_qr_agresivo = ("qr" in texto_lower or "codigo" in texto_lower) and "escanea" in texto_lower and texto_len < 150
             
+            # DETECCIÓN DE RESPUESTAS DE GEMINI INCORRECTAS
+            patrones_gemini_incorrecto = [
+                "himmel un ääd",
+                "halve hahn",
+                "rheinischer sauerbraten",
+                "salchichas kölsch",
+                "cerveza kölsch",
+                "brauhaus",
+                "le sugiero probar",
+                "le recomiendo",
+                "podemos integrar",
+                "si desea, puedo",
+                "si desea puedo",
+            ]
+            es_respuesta_gemini_incorrecta = any(patron in texto_lower for patron in patrones_gemini_incorrecto)
+            
             # Si parece ser un mensaje del bot, NO llamar a Gemini
-            if empieza_con_bot or es_mensaje_corto_qr or es_mensaje_qr_completo or es_mensaje_qr_agresivo:
+            if empieza_con_bot or es_mensaje_corto_qr or es_mensaje_qr_completo or es_mensaje_qr_agresivo or es_respuesta_gemini_incorrecta:
                 print(f"⚠️ [flujo_seguimiento] Ignorando mensaje que parece ser del bot:")
                 print(f"   - Empieza con patrón bot: {empieza_con_bot}")
                 print(f"   - Mensaje corto con QR: {es_mensaje_corto_qr}")
                 print(f"   - Mensaje QR completo: {es_mensaje_qr_completo}")
                 print(f"   - Mensaje QR agresivo: {es_mensaje_qr_agresivo}")
+                print(f"   - Respuesta Gemini incorrecta: {es_respuesta_gemini_incorrecta}")
                 print(f"   - Mensaje: {texto[:100]}...")
                 return None  # No procesar, no responder
             
@@ -1358,13 +1392,30 @@ class Chat:
             # DETECCIÓN AGRESIVA: Si contiene "QR" y "escanea" en cualquier parte, es del bot
             es_mensaje_qr_agresivo_check = ("qr" in texto_lower_check or "codigo" in texto_lower_check) and "escanea" in texto_lower_check and texto_len_check < 150
             
+            # DETECCIÓN DE RESPUESTAS DE GEMINI INCORRECTAS
+            patrones_gemini_incorrecto_check = [
+                "himmel un ääd",
+                "halve hahn",
+                "rheinischer sauerbraten",
+                "salchichas kölsch",
+                "cerveza kölsch",
+                "brauhaus",
+                "le sugiero probar",
+                "le recomiendo",
+                "podemos integrar",
+                "si desea, puedo",
+                "si desea puedo",
+            ]
+            es_respuesta_gemini_incorrecta_check = any(patron in texto_lower_check for patron in patrones_gemini_incorrecto_check)
+            
             # Si parece ser un mensaje del bot, NO llamar a Gemini
-            if empieza_con_bot_check or es_mensaje_corto_qr_check or es_mensaje_qr_completo_check or es_mensaje_qr_agresivo_check:
+            if empieza_con_bot_check or es_mensaje_corto_qr_check or es_mensaje_qr_completo_check or es_mensaje_qr_agresivo_check or es_respuesta_gemini_incorrecta_check:
                 print(f"⚠️ [flujo_seguimiento] Ignorando mensaje que parece ser del bot (perfil incompleto):")
                 print(f"   - Empieza con patrón bot: {empieza_con_bot_check}")
                 print(f"   - Mensaje corto con QR: {es_mensaje_corto_qr_check}")
                 print(f"   - Mensaje QR completo: {es_mensaje_qr_completo_check}")
                 print(f"   - Mensaje QR agresivo: {es_mensaje_qr_agresivo_check}")
+                print(f"   - Respuesta Gemini incorrecta: {es_respuesta_gemini_incorrecta_check}")
                 print(f"   - Mensaje: {texto[:100]}...")
                 return None  # No procesar, no responder
             

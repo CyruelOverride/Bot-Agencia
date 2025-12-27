@@ -42,26 +42,6 @@ DATOS_LUGARES = {
                 tags=["pizza", "horno_barro", "atardecer", "bohemio", "terraza"],
                 imagen_url="https://th.bing.com/th/id/R.fd97452e324b98f82067527e105c3cae?rik=iP76bvNh%2fnrOhQ&pid=ImgRaw&r=0"
             ),
-            Excursion(
-                id="rest_004",
-                ciudad="Colonia",
-                categoria="restaurantes",
-                nombre="Parrillada El Portón",
-                descripcion="Establecido en 1984, es un clásico ineludible ubicado en la avenida principal de la ciudad. Es el lugar de referencia para quienes desean probar la auténtica parrilla uruguaya en un ambiente familiar y cálido. Destaca por sus cortes de carne abundantes, como el asado de tira y el vacío, servidos con rapidez y una atención cordial que lo ha mantenido como uno de los favoritos de los locales y turistas por décadas.\n\nHorario: Todos los días de 12:00 a 16:00 hs y de 20:00 a 00:00 hs.",
-                ubicacion="https://www.google.com/maps/search/Parrillada+El+Porton+Colonia",
-                tags=["parrilla", "clasico", "familiar", "carne", "local"],
-                imagen_url="https://tse1.mm.bing.net/th/id/OIP.U2qtt2MN4ULv4Qk1NhE2mQHaCf?cb=ucfimg2&ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3"
-            ),
-            Excursion(
-                id="rest_005",
-                ciudad="Colonia",
-                categoria="restaurantes",
-                nombre="Viejo Barrio",
-                descripcion="Este colorido restaurante está emplazado en una esquina estratégica frente a la Basílica del Santísimo Sacramento. Se caracteriza por su cocina honesta y casera, siendo especialmente valorado por sus pastas elaboradas y cortadas en el momento en que se piden. El entorno, con mesas en la vereda rodeadas de casas históricas y adoquines, ofrece una de las atmósferas más pintorescas del centro histórico para almorzar o cenar.\n\nHorario: Todos los días de 11:30 a 16:00 hs y de 19:30 a 23:30 hs.",
-                ubicacion="https://www.google.com/maps/search/Viejo+Barrio+Colonia",
-                tags=["pasta", "casero", "historico", "pintoresco", "centro_historico"],
-                imagen_url="https://tse1.mm.bing.net/th/id/OIP.oXWSNXj0OaU9jFbOsXZNywHaFj?cb=ucfimg2&ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3"
-            )
         ],
         "comercios": [
             Excursion(
