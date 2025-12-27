@@ -13,7 +13,7 @@ QR_BACK_DIR = os.path.join(BASE_DIR, "AGENCIA QR BACK")
 QR_CODES_DIR = os.path.join(QR_BACK_DIR, "qr_codes")
 
 # URL base para los QRs (configurable mediante variable de entorno)
-QR_BASE_URL = os.getenv("QR_BASE_URL", "http://localhost:8000")
+QR_BASE_URL = os.getenv("QR_BASE_URL", "https://agencia-qr.vercel.app")
 
 
 def debe_enviar_qr(categoria: str) -> bool:
