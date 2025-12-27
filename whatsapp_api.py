@@ -1,5 +1,6 @@
 import os
 import requests
+import inspect
 from typing import Optional
 from Util.get_type import get_type
 
@@ -17,6 +18,14 @@ def normalizar_numero_telefono(numero: str) -> str:
 
 
 def enviar_mensaje_whatsapp(numero, mensaje):
+    # Obtener el archivo que llama a esta función
+    stack = inspect.stack()
+    archivo_llamador = "desconocido"
+    if len(stack) > 1:
+        frame_llamador = stack[1]
+        archivo_llamador = os.path.basename(frame_llamador.filename)
+        linea_llamador = frame_llamador.lineno
+    
     # Normalizar número de teléfono
     numero = normalizar_numero_telefono(numero)
     
@@ -33,12 +42,17 @@ def enviar_mensaje_whatsapp(numero, mensaje):
             "type": "text",
             "text": {"body": mensaje},
         }
+        mensaje_preview = mensaje[:100] + "..." if len(mensaje) > 100 else mensaje
     else:
-        data = mensaje  
+        data = mensaje
+        mensaje_preview = "mensaje interactivo/dict"
 
+    print(f"📤 [SALGO DE {archivo_llamador}:{linea_llamador}] Enviando mensaje de texto a {numero}")
+    print(f"   📝 Contenido: {mensaje_preview}")
+    
     response = requests.post(url, headers=headers, json=data)
-    print(f" Enviado a {numero}")
-    print(" Estado:", response.status_code)
+    print(f"   ✅ Enviado a {numero}")
+    print(f"   📊 Estado: {response.status_code}")
     
     # Si hay error, imprimir detalles
     if response.status_code != 200:
@@ -69,9 +83,22 @@ def enviar_imagen_whatsapp(numero, ruta_o_url_imagen, caption=""):
         ruta_o_url_imagen: Ruta local del archivo o URL pública de la imagen
         caption: Texto opcional que acompaña la imagen (máx 1024 caracteres)
     """
+    # Obtener el archivo que llama a esta función
+    stack = inspect.stack()
+    archivo_llamador = "desconocido"
+    linea_llamador = 0
+    if len(stack) > 1:
+        frame_llamador = stack[1]
+        archivo_llamador = os.path.basename(frame_llamador.filename)
+        linea_llamador = frame_llamador.lineno
+    
     # Normalizar número de teléfono
     numero = normalizar_numero_telefono(numero)
-    print(f"📞 Número normalizado: {numero}")
+    print(f"📤 [SALGO DE {archivo_llamador}:{linea_llamador}] Enviando imagen a {numero}")
+    print(f"   🖼️ Imagen: {ruta_o_url_imagen[:80]}...")
+    if caption:
+        caption_preview = caption[:100] + "..." if len(caption) > 100 else caption
+        print(f"   📝 Caption: {caption_preview}")
     
     url = f"{WHATSAPP_API_URL}/{WHATSAPP_PHONE_NUMBER_ID}/messages"
     headers = {

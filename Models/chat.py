@@ -157,42 +157,15 @@ class Chat:
             ]
             es_respuesta_gemini_incorrecta_early = any(patron in texto_lower for patron in patrones_gemini_incorrecto_early)
             
-            # Patrones que aparecen en descripciones de restaurantes (mensajes largos del bot)
-            patrones_descripcion_early = [
-                "situado en la icónica",
-                "horario:",
-                "lunes a domingo",
-                "todos los días",
-                "a partir de las",
-                "este restaurante",
-                "este local",
-                "ubicada sobre",
-                "establecido en",
-                "reconocida por",
-                "especialidad son",
-                "ambiente",
-                "destaca por",
-                "servidos con",
-            ]
-            
-            # Verificar si contiene múltiples patrones de descripción (mensajes largos del bot)
-            coincidencias_descripcion_early = sum(1 for patron in patrones_descripcion_early if patron in texto_lower)
-            
-            # Si el mensaje es muy largo (>200 caracteres) y tiene patrones de descripción, es del bot
-            es_mensaje_largo_bot_early = texto_len > 200 and coincidencias_descripcion_early >= 2
-            
             # Si parece ser mensaje del bot, NO procesar
-            if empieza_con_bot_early or es_mensaje_qr_completo_early or es_mensaje_corto_qr_early or es_mensaje_qr_agresivo_early or es_respuesta_gemini_incorrecta_early or es_mensaje_largo_bot_early:
+            if empieza_con_bot_early or es_mensaje_qr_completo_early or es_mensaje_corto_qr_early or es_mensaje_qr_agresivo_early or es_respuesta_gemini_incorrecta_early:
                 print(f"🚫 [handle_text] BLOQUEANDO mensaje del bot antes de procesar:")
                 print(f"   - Empieza con patrón bot: {empieza_con_bot_early}")
                 print(f"   - Mensaje QR completo: {es_mensaje_qr_completo_early}")
                 print(f"   - Mensaje corto con QR: {es_mensaje_corto_qr_early}")
                 print(f"   - Mensaje QR agresivo: {es_mensaje_qr_agresivo_early}")
                 print(f"   - Respuesta Gemini incorrecta: {es_respuesta_gemini_incorrecta_early}")
-                print(f"   - Mensaje largo con descripción: {es_mensaje_largo_bot_early}")
-                print(f"   - Coincidencias descripción: {coincidencias_descripcion_early}")
-                print(f"   - Longitud: {texto_len} caracteres")
-                print(f"   - Mensaje: {texto[:150]}...")
+                print(f"   - Mensaje: {texto[:100]}...")
                 return None  # No procesar, no responder
         
         # Manejar calificaciones (mantener funcionalidad existente)
@@ -1360,42 +1333,15 @@ class Chat:
             ]
             es_respuesta_gemini_incorrecta = any(patron in texto_lower for patron in patrones_gemini_incorrecto)
             
-            # Patrones que aparecen en descripciones de restaurantes (mensajes largos del bot)
-            patrones_descripcion = [
-                "situado en la icónica",
-                "horario:",
-                "lunes a domingo",
-                "todos los días",
-                "a partir de las",
-                "este restaurante",
-                "este local",
-                "ubicada sobre",
-                "establecido en",
-                "reconocida por",
-                "especialidad son",
-                "ambiente",
-                "destaca por",
-                "servidos con",
-            ]
-            
-            # Verificar si contiene múltiples patrones de descripción (mensajes largos del bot)
-            coincidencias_descripcion = sum(1 for patron in patrones_descripcion if patron in texto_lower)
-            
-            # Si el mensaje es muy largo (>200 caracteres) y tiene patrones de descripción, es del bot
-            es_mensaje_largo_bot = texto_len > 200 and coincidencias_descripcion >= 2
-            
             # Si parece ser un mensaje del bot, NO llamar a Gemini
-            if empieza_con_bot or es_mensaje_corto_qr or es_mensaje_qr_completo or es_mensaje_qr_agresivo or es_respuesta_gemini_incorrecta or es_mensaje_largo_bot:
+            if empieza_con_bot or es_mensaje_corto_qr or es_mensaje_qr_completo or es_mensaje_qr_agresivo or es_respuesta_gemini_incorrecta:
                 print(f"⚠️ [flujo_seguimiento] Ignorando mensaje que parece ser del bot:")
                 print(f"   - Empieza con patrón bot: {empieza_con_bot}")
                 print(f"   - Mensaje corto con QR: {es_mensaje_corto_qr}")
                 print(f"   - Mensaje QR completo: {es_mensaje_qr_completo}")
                 print(f"   - Mensaje QR agresivo: {es_mensaje_qr_agresivo}")
                 print(f"   - Respuesta Gemini incorrecta: {es_respuesta_gemini_incorrecta}")
-                print(f"   - Mensaje largo con descripción: {es_mensaje_largo_bot}")
-                print(f"   - Coincidencias descripción: {coincidencias_descripcion}")
-                print(f"   - Longitud: {texto_len} caracteres")
-                print(f"   - Mensaje: {texto[:150]}...")
+                print(f"   - Mensaje: {texto[:100]}...")
                 return None  # No procesar, no responder
             
             # Si no es un comando específico, usar Gemini para generar respuesta amigable
@@ -1462,42 +1408,15 @@ class Chat:
             ]
             es_respuesta_gemini_incorrecta_check = any(patron in texto_lower_check for patron in patrones_gemini_incorrecto_check)
             
-            # Patrones que aparecen en descripciones de restaurantes (mensajes largos del bot)
-            patrones_descripcion_check = [
-                "situado en la icónica",
-                "horario:",
-                "lunes a domingo",
-                "todos los días",
-                "a partir de las",
-                "este restaurante",
-                "este local",
-                "ubicada sobre",
-                "establecido en",
-                "reconocida por",
-                "especialidad son",
-                "ambiente",
-                "destaca por",
-                "servidos con",
-            ]
-            
-            # Verificar si contiene múltiples patrones de descripción (mensajes largos del bot)
-            coincidencias_descripcion_check = sum(1 for patron in patrones_descripcion_check if patron in texto_lower_check)
-            
-            # Si el mensaje es muy largo (>200 caracteres) y tiene patrones de descripción, es del bot
-            es_mensaje_largo_bot_check = texto_len_check > 200 and coincidencias_descripcion_check >= 2
-            
             # Si parece ser un mensaje del bot, NO llamar a Gemini
-            if empieza_con_bot_check or es_mensaje_corto_qr_check or es_mensaje_qr_completo_check or es_mensaje_qr_agresivo_check or es_respuesta_gemini_incorrecta_check or es_mensaje_largo_bot_check:
+            if empieza_con_bot_check or es_mensaje_corto_qr_check or es_mensaje_qr_completo_check or es_mensaje_qr_agresivo_check or es_respuesta_gemini_incorrecta_check:
                 print(f"⚠️ [flujo_seguimiento] Ignorando mensaje que parece ser del bot (perfil incompleto):")
                 print(f"   - Empieza con patrón bot: {empieza_con_bot_check}")
                 print(f"   - Mensaje corto con QR: {es_mensaje_corto_qr_check}")
                 print(f"   - Mensaje QR completo: {es_mensaje_qr_completo_check}")
                 print(f"   - Mensaje QR agresivo: {es_mensaje_qr_agresivo_check}")
                 print(f"   - Respuesta Gemini incorrecta: {es_respuesta_gemini_incorrecta_check}")
-                print(f"   - Mensaje largo con descripción: {es_mensaje_largo_bot_check}")
-                print(f"   - Coincidencias descripción: {coincidencias_descripcion_check}")
-                print(f"   - Longitud: {texto_len_check} caracteres")
-                print(f"   - Mensaje: {texto[:150]}...")
+                print(f"   - Mensaje: {texto[:100]}...")
                 return None  # No procesar, no responder
             
             # Si el usuario escribe algo específico, procesarlo
