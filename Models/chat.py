@@ -1234,6 +1234,37 @@ class Chat:
                     # Si no hay plan, mostrar lista de intereses
                     return self._mostrar_mensaje_intereses(numero, usuario, False)
             
+            # Verificar que el mensaje NO sea del bot antes de llamar a Gemini
+            texto_lower = texto.lower()
+            texto_stripped = texto.strip()
+            texto_len = len(texto_stripped)
+            
+            # Patrones específicos de mensajes del bot
+            patrones_bot_exactos = [
+                "código qr -",
+                "📱 código qr -",
+                "📱 *código qr -",
+                "escanea este código",
+                "escanea el código qr",
+            ]
+            
+            # Verificar si empieza con un patrón del bot
+            empieza_con_bot = any(texto_lower.startswith(patron) for patron in patrones_bot_exactos)
+            
+            # Verificar si contiene patrones de QR
+            contiene_qr = any(patron in texto_lower for patron in ["código qr", "codigo qr", "qr -"])
+            
+            # Si el mensaje es muy corto y contiene QR, probablemente es del bot
+            es_mensaje_corto_qr = texto_len < 50 and contiene_qr
+            
+            # Si parece ser un mensaje del bot, NO llamar a Gemini
+            if empieza_con_bot or es_mensaje_corto_qr:
+                print(f"⚠️ [flujo_seguimiento] Ignorando mensaje que parece ser del bot:")
+                print(f"   - Empieza con patrón bot: {empieza_con_bot}")
+                print(f"   - Mensaje corto con QR: {es_mensaje_corto_qr}")
+                print(f"   - Mensaje: {texto[:100]}...")
+                return None  # No procesar, no responder
+            
             # Si no es un comando específico, usar Gemini para generar respuesta amigable
             respuesta_amigable = GeminiOrchestratorService.generar_respuesta_amigable(
                 texto,
@@ -1252,6 +1283,37 @@ class Chat:
             # Si el texto está vacío o es muy corto, no hacer nada
             if not texto or len(texto.strip()) < 2:
                 return None
+            
+            # Verificar que el mensaje NO sea del bot antes de llamar a Gemini
+            texto_lower_check = texto.lower()
+            texto_stripped_check = texto.strip()
+            texto_len_check = len(texto_stripped_check)
+            
+            # Patrones específicos de mensajes del bot
+            patrones_bot_exactos_check = [
+                "código qr -",
+                "📱 código qr -",
+                "📱 *código qr -",
+                "escanea este código",
+                "escanea el código qr",
+            ]
+            
+            # Verificar si empieza con un patrón del bot
+            empieza_con_bot_check = any(texto_lower_check.startswith(patron) for patron in patrones_bot_exactos_check)
+            
+            # Verificar si contiene patrones de QR
+            contiene_qr_check = any(patron in texto_lower_check for patron in ["código qr", "codigo qr", "qr -"])
+            
+            # Si el mensaje es muy corto y contiene QR, probablemente es del bot
+            es_mensaje_corto_qr_check = texto_len_check < 50 and contiene_qr_check
+            
+            # Si parece ser un mensaje del bot, NO llamar a Gemini
+            if empieza_con_bot_check or es_mensaje_corto_qr_check:
+                print(f"⚠️ [flujo_seguimiento] Ignorando mensaje que parece ser del bot (perfil incompleto):")
+                print(f"   - Empieza con patrón bot: {empieza_con_bot_check}")
+                print(f"   - Mensaje corto con QR: {es_mensaje_corto_qr_check}")
+                print(f"   - Mensaje: {texto[:100]}...")
+                return None  # No procesar, no responder
             
             # Si el usuario escribe algo específico, procesarlo
             # Pero NO continuar automáticamente con armar perfil después de enviar el plan

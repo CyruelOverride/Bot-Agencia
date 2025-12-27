@@ -160,15 +160,27 @@ async def receive(request: Request):
         if mensaje:
             mensaje_lower = mensaje.lower()
             mensaje_stripped = mensaje.strip()
+            mensaje_len = len(mensaje_stripped)
             
-            # Patrones específicos de mensajes del bot
+            # Patrones específicos de mensajes del bot (QRs y mensajes del sistema)
             patrones_bot_exactos = [
                 "código qr -",
+                "📱 código qr -",
+                "📱 *código qr -",
                 "escanea este código",
                 "escanea el código qr",
                 "tu plan personalizado",
                 "plan personalizado para",
             ]
+            
+            # Verificar si empieza con un patrón exacto del bot
+            empieza_con_bot = any(mensaje_lower.startswith(patron) for patron in patrones_bot_exactos)
+            
+            # Verificar si contiene patrones de QR (incluso si no empieza con ellos)
+            contiene_qr = any(patron in mensaje_lower for patron in ["código qr", "codigo qr", "qr -"])
+            
+            # Si el mensaje es muy corto (< 50 caracteres) y contiene "QR" o "Código", probablemente es del bot
+            es_mensaje_corto_qr = mensaje_len < 50 and contiene_qr
             
             # Patrones que aparecen en descripciones de restaurantes
             patrones_descripcion = [
@@ -183,21 +195,20 @@ async def receive(request: Request):
                 "establecido en",
             ]
             
-            # Verificar si empieza con un patrón exacto del bot
-            empieza_con_bot = any(mensaje_lower.startswith(patron) for patron in patrones_bot_exactos)
-            
             # Verificar si contiene múltiples patrones de descripción (mensajes largos del bot)
             coincidencias_descripcion = sum(1 for patron in patrones_descripcion if patron in mensaje_lower)
             
             # Si el mensaje es muy largo (>200 caracteres) y tiene patrones de descripción, es del bot
-            es_mensaje_largo_bot = len(mensaje_stripped) > 200 and coincidencias_descripcion >= 2
+            es_mensaje_largo_bot = mensaje_len > 200 and coincidencias_descripcion >= 2
             
-            # Si empieza con patrón del bot O es un mensaje largo con patrones de descripción
-            if empieza_con_bot or es_mensaje_largo_bot:
+            # Si empieza con patrón del bot, es mensaje corto con QR, o es un mensaje largo con descripción
+            if empieza_con_bot or es_mensaje_corto_qr or es_mensaje_largo_bot:
                 print(f"⚠️ Ignorando mensaje que parece ser del bot:")
                 print(f"   - Empieza con patrón bot: {empieza_con_bot}")
+                print(f"   - Mensaje corto con QR: {es_mensaje_corto_qr}")
                 print(f"   - Mensaje largo con descripción: {es_mensaje_largo_bot}")
-                print(f"   - Coincidencias: {coincidencias_descripcion}")
+                print(f"   - Coincidencias descripción: {coincidencias_descripcion}")
+                print(f"   - Longitud: {mensaje_len} caracteres")
                 print(f"   - Mensaje: {mensaje[:150]}...")
                 return PlainTextResponse("EVENT_RECEIVED", status_code=200)
 
