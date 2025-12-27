@@ -114,6 +114,43 @@ class Chat:
         texto_strip = texto.strip()
         texto_lower = texto_strip.lower()
         
+        # VERIFICACIÓN TEMPRANA: Detectar mensajes del bot ANTES de procesar
+        # Esto previene que Gemini se active con mensajes del bot
+        if texto_strip:
+            texto_len = len(texto_strip)
+            
+            # Patrones específicos de mensajes del bot
+            patrones_bot_exactos_early = [
+                "código qr -",
+                "📱 código qr -",
+                "📱 *código qr -",
+                "escanea este código",
+                "escanea el código qr",
+            ]
+            
+            # Verificar si empieza con patrón del bot
+            empieza_con_bot_early = any(texto_lower.startswith(patron) for patron in patrones_bot_exactos_early)
+            
+            # Verificar si contiene patrón completo de QR
+            es_mensaje_qr_completo_early = ("código qr -" in texto_lower or "codigo qr -" in texto_lower) and "escanea" in texto_lower
+            
+            # Verificar si es mensaje corto con QR
+            contiene_qr_early = any(patron in texto_lower for patron in ["código qr", "codigo qr", "qr -", "📱 código", "📱 *código"])
+            es_mensaje_corto_qr_early = texto_len < 50 and contiene_qr_early
+            
+            # DETECCIÓN AGRESIVA: Si contiene "QR" y "escanea" en cualquier parte, es del bot
+            es_mensaje_qr_agresivo_early = ("qr" in texto_lower or "codigo" in texto_lower) and "escanea" in texto_lower and texto_len < 150
+            
+            # Si parece ser mensaje del bot, NO procesar
+            if empieza_con_bot_early or es_mensaje_qr_completo_early or es_mensaje_corto_qr_early or es_mensaje_qr_agresivo_early:
+                print(f"🚫 [handle_text] BLOQUEANDO mensaje del bot antes de procesar:")
+                print(f"   - Empieza con patrón bot: {empieza_con_bot_early}")
+                print(f"   - Mensaje QR completo: {es_mensaje_qr_completo_early}")
+                print(f"   - Mensaje corto con QR: {es_mensaje_corto_qr_early}")
+                print(f"   - Mensaje QR agresivo: {es_mensaje_qr_agresivo_early}")
+                print(f"   - Mensaje: {texto[:100]}...")
+                return None  # No procesar, no responder
+        
         # Manejar calificaciones (mantener funcionalidad existente)
         if texto_strip.startswith("calificar_"):
             return manejar_calificacion(numero, texto_strip)
@@ -1252,16 +1289,24 @@ class Chat:
             empieza_con_bot = any(texto_lower.startswith(patron) for patron in patrones_bot_exactos)
             
             # Verificar si contiene patrones de QR
-            contiene_qr = any(patron in texto_lower for patron in ["código qr", "codigo qr", "qr -"])
+            contiene_qr = any(patron in texto_lower for patron in ["código qr", "codigo qr", "qr -", "código qr -", "📱 código", "📱 *código"])
+            
+            # Verificar si contiene el patrón completo de QR con "escanea"
+            es_mensaje_qr_completo = ("código qr -" in texto_lower or "codigo qr -" in texto_lower) and "escanea" in texto_lower
             
             # Si el mensaje es muy corto y contiene QR, probablemente es del bot
             es_mensaje_corto_qr = texto_len < 50 and contiene_qr
             
+            # DETECCIÓN AGRESIVA: Si contiene "QR" y "escanea" en cualquier parte, es del bot
+            es_mensaje_qr_agresivo = ("qr" in texto_lower or "codigo" in texto_lower) and "escanea" in texto_lower and texto_len < 150
+            
             # Si parece ser un mensaje del bot, NO llamar a Gemini
-            if empieza_con_bot or es_mensaje_corto_qr:
+            if empieza_con_bot or es_mensaje_corto_qr or es_mensaje_qr_completo or es_mensaje_qr_agresivo:
                 print(f"⚠️ [flujo_seguimiento] Ignorando mensaje que parece ser del bot:")
                 print(f"   - Empieza con patrón bot: {empieza_con_bot}")
                 print(f"   - Mensaje corto con QR: {es_mensaje_corto_qr}")
+                print(f"   - Mensaje QR completo: {es_mensaje_qr_completo}")
+                print(f"   - Mensaje QR agresivo: {es_mensaje_qr_agresivo}")
                 print(f"   - Mensaje: {texto[:100]}...")
                 return None  # No procesar, no responder
             
@@ -1302,16 +1347,24 @@ class Chat:
             empieza_con_bot_check = any(texto_lower_check.startswith(patron) for patron in patrones_bot_exactos_check)
             
             # Verificar si contiene patrones de QR
-            contiene_qr_check = any(patron in texto_lower_check for patron in ["código qr", "codigo qr", "qr -"])
+            contiene_qr_check = any(patron in texto_lower_check for patron in ["código qr", "codigo qr", "qr -", "código qr -", "📱 código", "📱 *código"])
+            
+            # Verificar si contiene el patrón completo de QR con "escanea"
+            es_mensaje_qr_completo_check = ("código qr -" in texto_lower_check or "codigo qr -" in texto_lower_check) and "escanea" in texto_lower_check
             
             # Si el mensaje es muy corto y contiene QR, probablemente es del bot
             es_mensaje_corto_qr_check = texto_len_check < 50 and contiene_qr_check
             
+            # DETECCIÓN AGRESIVA: Si contiene "QR" y "escanea" en cualquier parte, es del bot
+            es_mensaje_qr_agresivo_check = ("qr" in texto_lower_check or "codigo" in texto_lower_check) and "escanea" in texto_lower_check and texto_len_check < 150
+            
             # Si parece ser un mensaje del bot, NO llamar a Gemini
-            if empieza_con_bot_check or es_mensaje_corto_qr_check:
+            if empieza_con_bot_check or es_mensaje_corto_qr_check or es_mensaje_qr_completo_check or es_mensaje_qr_agresivo_check:
                 print(f"⚠️ [flujo_seguimiento] Ignorando mensaje que parece ser del bot (perfil incompleto):")
                 print(f"   - Empieza con patrón bot: {empieza_con_bot_check}")
                 print(f"   - Mensaje corto con QR: {es_mensaje_corto_qr_check}")
+                print(f"   - Mensaje QR completo: {es_mensaje_qr_completo_check}")
+                print(f"   - Mensaje QR agresivo: {es_mensaje_qr_agresivo_check}")
                 print(f"   - Mensaje: {texto[:100]}...")
                 return None  # No procesar, no responder
             

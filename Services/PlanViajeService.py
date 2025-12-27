@@ -23,6 +23,10 @@ class PlanViajeService:
         if not usuario.intereses:
             raise ValueError("El usuario debe tener al menos un interés seleccionado")
         
+        # LOGGING: Intereses del usuario antes de generar plan
+        print(f"🔍 [GENERAR_PLAN] Intereses del usuario: {usuario.intereses}")
+        print(f"🔍 [GENERAR_PLAN] Ciudad: {usuario.ciudad}")
+        
         # Obtener excursiones filtradas por intereses y perfil
         excursiones = ExcursionService.obtener_excursiones_por_intereses(
             ciudad=usuario.ciudad,
@@ -30,15 +34,21 @@ class PlanViajeService:
             perfil=usuario.perfil
         )
         
+        print(f"🔍 [GENERAR_PLAN] Excursiones después de filtrar por intereses: {len(excursiones)}")
+        for exc in excursiones:
+            print(f"   - {exc.nombre} (ID: {exc.id}, Categoría: {exc.categoria})")
+        
         # Verificar que cada interés tenga al menos una excursión
         ids_existentes = {exc.id for exc in excursiones}
         excursiones_por_interes = {}
         for interes in usuario.intereses:
             excursiones_por_interes[interes] = [e for e in excursiones if e.categoria.lower() == interes.lower()]
+            print(f"🔍 [GENERAR_PLAN] Interés '{interes}': {len(excursiones_por_interes[interes])} excursiones")
         
-        # Completar intereses faltantes
+        # Completar intereses faltantes SOLO si el interés está en la lista del usuario
         for interes in usuario.intereses:
             if not excursiones_por_interes.get(interes):
+                print(f"🔍 [GENERAR_PLAN] Interés '{interes}' no tiene excursiones, buscando una...")
                 # Buscar al menos una excursión de este interés
                 excursiones_interes = ExcursionService.obtener_excursiones_por_categoria(usuario.ciudad, interes)
                 if excursiones_interes:
@@ -47,26 +57,35 @@ class PlanViajeService:
                         if exc.id not in ids_existentes:
                             excursiones.append(exc)
                             ids_existentes.add(exc.id)
+                            print(f"🔍 [GENERAR_PLAN] Agregada excursión para completar interés '{interes}': {exc.nombre} (ID: {exc.id})")
                             break
         
         # Limitar a máximo 15 excursiones para no sobrecargar
         excursiones = excursiones[:15]
         
-        # Si no hay suficientes, agregar más sin filtrar por perfil
+        # Si no hay suficientes, agregar más SOLO de los intereses del usuario
         if len(excursiones) < 5:
+            print(f"🔍 [GENERAR_PLAN] Solo hay {len(excursiones)} excursiones, agregando más de los intereses del usuario...")
             todas_las_excursiones = ExcursionService.obtener_excursiones_por_ciudad(usuario.ciudad)
             categorias_interes = [interes.lower() for interes in usuario.intereses]
+            print(f"🔍 [GENERAR_PLAN] Categorías de interés del usuario: {categorias_interes}")
+            
             excursiones_adicionales = [
                 exc for exc in todas_las_excursiones
                 if exc.categoria.lower() in categorias_interes or any(
                     cat in exc.categoria.lower() for cat in categorias_interes
                 )
             ]
-            # Agregar sin duplicar
+            print(f"🔍 [GENERAR_PLAN] Excursiones adicionales encontradas: {len(excursiones_adicionales)}")
+            
+            # Agregar sin duplicar SOLO de los intereses del usuario
             for exc in excursiones_adicionales:
                 if exc.id not in ids_existentes and len(excursiones) < 15:
-                    excursiones.append(exc)
-                    ids_existentes.add(exc.id)
+                    # VERIFICAR que la categoría coincida con algún interés del usuario
+                    if exc.categoria.lower() in categorias_interes:
+                        excursiones.append(exc)
+                        ids_existentes.add(exc.id)
+                        print(f"🔍 [GENERAR_PLAN] Agregada excursión adicional: {exc.nombre} (ID: {exc.id}, Categoría: {exc.categoria})")
         
         # Filtrar excursiones: solo incluir las que tienen imagen
         excursiones = [exc for exc in excursiones if exc.imagen_url]
@@ -258,11 +277,29 @@ class PlanViajeService:
             time.sleep(1)
         
         # Mensajes 2-N: Enviar un mensaje individual por cada lugar de cada interés
+        # Obtener usuario para loggear intereses
+        from Services.UsuarioService import UsuarioService
+        usuario = UsuarioService.obtener_usuario_por_telefono(numero)
+        
+        # LOGGING CRÍTICO: Intereses del cliente
+        if usuario:
+            print(f"🔍 [LOGGING] Intereses del cliente: {usuario.intereses}")
+            print(f"🔍 [LOGGING] Ciudad: {usuario.ciudad}")
+            if usuario.perfil:
+                print(f"🔍 [LOGGING] Perfil - Tipo viaje: {usuario.perfil.tipo_viaje}, Duración: {usuario.perfil.duracion_estadia}")
+        else:
+            print(f"⚠️ [LOGGING] No se pudo obtener usuario para {numero}")
+        
         # Agrupar excursiones por categoría (interés)
         excursiones_por_categoria = plan.obtener_excursiones_por_categoria()
         
         print(f"📋 Iniciando envío de mensajes individuales. Total de categorías: {len(excursiones_por_categoria)}")
         print(f"📋 Excursiones en el plan: {len(plan.excursiones)}")
+        
+        # LOGGING CRÍTICO: Qué excursiones se van a enviar
+        print(f"🔍 [LOGGING] Excursiones que se enviarán:")
+        for exc in plan.excursiones:
+            print(f"   - {exc.nombre} (ID: {exc.id}, Categoría: {exc.categoria})")
         
         # Emojis por categoría
         emojis_categoria = {
@@ -320,6 +357,20 @@ class PlanViajeService:
                             resultado = enviar_imagen_whatsapp(numero, excursion.imagen_url, caption)
                             if resultado.get("success"):
                                 print(f"     ✅ Imagen enviada exitosamente")
+                                
+                                # Si hay QR, enviar texto ANTES del QR para asegurar que la información llegue
+                                # Esto es necesario porque a veces WhatsApp no muestra la imagen o el caption
+                                if ruta_qr and os.path.exists(ruta_qr):
+                                    time.sleep(1)
+                                    mensaje_respaldo = f"*{excursion.nombre}*\n\n{descripcion}"
+                                    if ubicacion:
+                                        mensaje_respaldo += f"\n\n📍 {ubicacion}"
+                                    print(f"     📝 Enviando texto antes del QR para asegurar que la información llegue...")
+                                    resultado_respaldo = enviar_mensaje_whatsapp(numero, mensaje_respaldo)
+                                    if resultado_respaldo.get("success"):
+                                        print(f"     ✅ Texto enviado exitosamente antes del QR")
+                                    else:
+                                        print(f"     ⚠️ Error al enviar texto: {resultado_respaldo.get('error')}")
                                 
                                 # Si hay QR, enviarlo en un mensaje separado después de una pausa
                                 if ruta_qr and os.path.exists(ruta_qr):

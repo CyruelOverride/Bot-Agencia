@@ -177,10 +177,16 @@ async def receive(request: Request):
             empieza_con_bot = any(mensaje_lower.startswith(patron) for patron in patrones_bot_exactos)
             
             # Verificar si contiene patrones de QR (incluso si no empieza con ellos)
-            contiene_qr = any(patron in mensaje_lower for patron in ["código qr", "codigo qr", "qr -"])
+            contiene_qr = any(patron in mensaje_lower for patron in ["código qr", "codigo qr", "qr -", "código qr -", "📱 código", "📱 *código"])
+            
+            # Verificar si contiene el patrón completo de QR con "escanea"
+            es_mensaje_qr_completo = ("código qr -" in mensaje_lower or "codigo qr -" in mensaje_lower) and "escanea" in mensaje_lower
             
             # Si el mensaje es muy corto (< 50 caracteres) y contiene "QR" o "Código", probablemente es del bot
             es_mensaje_corto_qr = mensaje_len < 50 and contiene_qr
+            
+            # DETECCIÓN AGRESIVA: Si contiene "QR" y "escanea" en cualquier parte, es del bot
+            es_mensaje_qr_agresivo = ("qr" in mensaje_lower or "codigo" in mensaje_lower) and "escanea" in mensaje_lower and mensaje_len < 150
             
             # Patrones que aparecen en descripciones de restaurantes
             patrones_descripcion = [
@@ -201,11 +207,13 @@ async def receive(request: Request):
             # Si el mensaje es muy largo (>200 caracteres) y tiene patrones de descripción, es del bot
             es_mensaje_largo_bot = mensaje_len > 200 and coincidencias_descripcion >= 2
             
-            # Si empieza con patrón del bot, es mensaje corto con QR, o es un mensaje largo con descripción
-            if empieza_con_bot or es_mensaje_corto_qr or es_mensaje_largo_bot:
+            # Si empieza con patrón del bot, es mensaje corto con QR, contiene patrón completo de QR, es mensaje QR agresivo, o es un mensaje largo con descripción
+            if empieza_con_bot or es_mensaje_corto_qr or es_mensaje_qr_completo or es_mensaje_qr_agresivo or es_mensaje_largo_bot:
                 print(f"⚠️ Ignorando mensaje que parece ser del bot:")
                 print(f"   - Empieza con patrón bot: {empieza_con_bot}")
                 print(f"   - Mensaje corto con QR: {es_mensaje_corto_qr}")
+                print(f"   - Mensaje QR completo: {es_mensaje_qr_completo}")
+                print(f"   - Mensaje QR agresivo: {es_mensaje_qr_agresivo}")
                 print(f"   - Mensaje largo con descripción: {es_mensaje_largo_bot}")
                 print(f"   - Coincidencias descripción: {coincidencias_descripcion}")
                 print(f"   - Longitud: {mensaje_len} caracteres")
