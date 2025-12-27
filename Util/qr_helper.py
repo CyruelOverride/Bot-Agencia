@@ -53,14 +53,34 @@ def obtener_ruta_qr(excursion_id: str, base_url: Optional[str] = None, usar_html
     
     # Si no existe, generarlo
     try:
+        # Verificar que el directorio existe
+        if not os.path.exists(QR_BACK_DIR):
+            print(f"⚠️ Directorio QR BACK no encontrado: {QR_BACK_DIR}")
+            return None
+        
         # Agregar el directorio QR BACK al path para importar el módulo
         if QR_BACK_DIR not in sys.path:
             sys.path.insert(0, QR_BACK_DIR)
         
-        # Importar el módulo de generación de QR
-        from qr_generator import generar_qr
+        # Verificar que el archivo existe
+        qr_generator_path = os.path.join(QR_BACK_DIR, "qr_generator.py")
+        if not os.path.exists(qr_generator_path):
+            print(f"⚠️ Archivo qr_generator.py no encontrado en: {QR_BACK_DIR}")
+            return None
+        
+        # Importar el módulo de generación de QR usando importlib para mayor compatibilidad
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("qr_generator", qr_generator_path)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"No se pudo cargar el módulo desde {qr_generator_path}")
+        
+        qr_generator_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(qr_generator_module)
+        generar_qr = qr_generator_module.generar_qr
         
         # Generar el QR (todos apuntan al HTML estático, pero cada uno tiene su archivo)
+        if base_url is None:
+            base_url = QR_BASE_URL
         ruta_relativa = generar_qr(excursion_id, base_url, usar_html_estatico=usar_html_estatico)
         
         # Convertir a ruta absoluta
@@ -73,8 +93,12 @@ def obtener_ruta_qr(excursion_id: str, base_url: Optional[str] = None, usar_html
     except ImportError as e:
         print(f"⚠️ Error al importar qr_generator: {e}")
         print(f"   Asegúrate de que qrcode[pil] esté instalado")
+        import traceback
+        print(f"   Traceback: {traceback.format_exc()}")
         return None
     except Exception as e:
         print(f"⚠️ Error al generar QR para {excursion_id}: {e}")
+        import traceback
+        print(f"   Traceback: {traceback.format_exc()}")
         return None
 
