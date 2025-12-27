@@ -119,6 +119,15 @@ def enviar_imagen_whatsapp(numero, ruta_o_url_imagen, caption=""):
         _imagen = f"{WHATSAPP_API_URL}/{WHATSAPP_PHONE_NUMBER_ID}/media"
         
         try:
+            # Verificar tamaño del archivo (WhatsApp limita a 5MB para imágenes)
+            file_size = os.path.getsize(ruta_o_url_imagen)
+            file_size_mb = file_size / (1024 * 1024)
+            print(f"📏 Tamaño del archivo: {file_size_mb:.2f} MB ({file_size} bytes)")
+            
+            if file_size > 5 * 1024 * 1024:  # 5MB
+                print(f"❌ Archivo demasiado grande: {file_size_mb:.2f} MB (máximo 5MB)")
+                return {"success": False, "error": f"Archivo demasiado grande: {file_size_mb:.2f} MB"}
+            
             with open(ruta_o_url_imagen, 'rb') as img_file:
                 files = {
                     'file': (os.path.basename(ruta_o_url_imagen), img_file, 'image/png'),
@@ -131,12 +140,15 @@ def enviar_imagen_whatsapp(numero, ruta_o_url_imagen, caption=""):
                 print(f"📤 Subiendo imagen local: {ruta_o_url_imagen}")
                 respuesta = requests.post(_imagen, headers=upload_headers, files=files)
                 
+                print(f"📨 Respuesta de subida: Status {respuesta.status_code}")
                 if respuesta.status_code != 200:
                     print(f"❌ Error subiendo imagen: {respuesta.status_code}")
                     print(f"   Respuesta: {respuesta.text}")
                     return {"success": False, "error": f"Error al subir imagen: {respuesta.text}"}
                 
-                _imagen = respuesta.json().get("id")
+                respuesta_json = respuesta.json()
+                print(f"📨 Respuesta JSON de subida: {respuesta_json}")
+                _imagen = respuesta_json.get("id")
                 print(f"✅ Imagen subida. Media ID: {_imagen}")
             
             data = {
@@ -149,27 +161,37 @@ def enviar_imagen_whatsapp(numero, ruta_o_url_imagen, caption=""):
             }
             
             if caption:
-                data["image"]["caption"] = caption
+                # Limitar caption a 1024 caracteres y limpiar caracteres problemáticos
+                caption_limpio = caption[:1024] if len(caption) <= 1024 else caption[:1021] + "..."
+                data["image"]["caption"] = caption_limpio
+                print(f"📝 Caption a enviar ({len(caption_limpio)} chars): {caption_limpio[:100]}...")
             
+            print(f"📤 Payload completo: {data}")
             response = requests.post(url, headers=headers, json=data)
             print(f"➡️ Enviando imagen a {numero}")
             print("📨 Estado:", response.status_code)
             
             try:
                 res_json = response.json()
+                print(f"📨 Respuesta completa de WhatsApp: {res_json}")
                 if response.status_code == 200:
                     print("✅ Imagen enviada exitosamente")
+                    message_id = res_json.get("messages", [{}])[0].get("id")
+                    print(f"📨 Message ID recibido: {message_id}")
                     return {
                         "success": True,
-                        "message_id": res_json.get("messages", [{}])[0].get("id")
+                        "message_id": message_id
                     }
                 else:
+                    error_info = res_json.get("error", "Error desconocido")
+                    print(f"❌ Error en respuesta: {error_info}")
                     return {
                         "success": False,
-                        "error": res_json.get("error", "Error desconocido")
+                        "error": error_info
                     }
             except Exception as e:
                 print("⚠️ Error al interpretar la respuesta:", e)
+                print(f"⚠️ Respuesta raw: {response.text}")
                 return {"success": False, "error": str(e)}
                 
         except FileNotFoundError:

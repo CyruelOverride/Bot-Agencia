@@ -222,8 +222,9 @@ class Chat:
                         # Enviar QR después en mensaje separado
                         if ruta_qr and os.path.exists(ruta_qr):
                             time.sleep(2)  # Pausa más larga para evitar problemas con WhatsApp
-                            # Simplificar caption para evitar problemas con formato
-                            caption_qr = f"Código QR - {restaurante.nombre}\n\nEscanea este código para obtener un descuento del 5%"
+                            # Probar primero sin caption para aislar el problema
+                            # Si funciona sin caption, entonces el problema está en el caption
+                            caption_qr = f"Código QR - {restaurante.nombre}. Escanea para obtener un descuento del 5%"
                             print(f"🧪 [TEST] 📱 Enviando QR en mensaje separado: {ruta_qr}")
                             print(f"🧪 [TEST] 📱 Archivo existe: {os.path.exists(ruta_qr)}")
                             print(f"🧪 [TEST] 📱 Caption del QR: {caption_qr}")
