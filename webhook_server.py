@@ -157,25 +157,48 @@ async def receive(request: Request):
 
         # Verificar que el mensaje no sea del bot mismo (verificación adicional)
         # Los mensajes del bot pueden venir con ciertos patrones que debemos ignorar
-        # También verificar si el mensaje parece ser una respuesta automática del bot
         if mensaje:
             mensaje_lower = mensaje.lower()
-            patrones_bot = [
+            mensaje_stripped = mensaje.strip()
+            
+            # Patrones específicos de mensajes del bot
+            patrones_bot_exactos = [
                 "código qr -",
                 "escanea este código",
                 "escanea el código qr",
                 "tu plan personalizado",
                 "plan personalizado para",
+            ]
+            
+            # Patrones que aparecen en descripciones de restaurantes
+            patrones_descripcion = [
                 "situado en la icónica",
                 "horario:",
                 "lunes a domingo",
-                "todos los días"
+                "todos los días",
+                "a partir de las",
+                "este restaurante",
+                "este local",
+                "ubicada sobre",
+                "establecido en",
             ]
             
-            # Si el mensaje contiene varios de estos patrones, probablemente es del bot
-            coincidencias = sum(1 for patron in patrones_bot if patron in mensaje_lower)
-            if coincidencias >= 2:
-                print(f"⚠️ Ignorando mensaje que parece ser del bot (coincidencias: {coincidencias}): {mensaje[:100]}...")
+            # Verificar si empieza con un patrón exacto del bot
+            empieza_con_bot = any(mensaje_lower.startswith(patron) for patron in patrones_bot_exactos)
+            
+            # Verificar si contiene múltiples patrones de descripción (mensajes largos del bot)
+            coincidencias_descripcion = sum(1 for patron in patrones_descripcion if patron in mensaje_lower)
+            
+            # Si el mensaje es muy largo (>200 caracteres) y tiene patrones de descripción, es del bot
+            es_mensaje_largo_bot = len(mensaje_stripped) > 200 and coincidencias_descripcion >= 2
+            
+            # Si empieza con patrón del bot O es un mensaje largo con patrones de descripción
+            if empieza_con_bot or es_mensaje_largo_bot:
+                print(f"⚠️ Ignorando mensaje que parece ser del bot:")
+                print(f"   - Empieza con patrón bot: {empieza_con_bot}")
+                print(f"   - Mensaje largo con descripción: {es_mensaje_largo_bot}")
+                print(f"   - Coincidencias: {coincidencias_descripcion}")
+                print(f"   - Mensaje: {mensaje[:150]}...")
                 return PlainTextResponse("EVENT_RECEIVED", status_code=200)
 
         # Extraer nombre del contacto del webhook si está disponible

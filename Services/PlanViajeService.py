@@ -305,14 +305,11 @@ class PlanViajeService:
                             logger.warning(f"No se pudo generar QR para {excursion.nombre}: {e}")
                     
                     if excursion.imagen_url:
-                        # Enviar imagen del lugar con caption
+                        # Enviar imagen del lugar con caption (sin mencionar el QR aquí, se enviará después)
                         caption = f"*{excursion.nombre}*\n\n{descripcion}"
                         if ubicacion:
                             caption += f"\n\n📍 {ubicacion}"
-                        
-                        # Si hay QR, agregarlo al caption
-                        if ruta_qr:
-                            caption += f"\n\n📱 Escanea el código QR para obtener un descuento del 5%"
+                        # NO incluir mensaje del QR en el caption de la imagen para evitar duplicación
                         
                         # Limitar caption a 1024 caracteres (límite de WhatsApp)
                         if len(caption) > 1024:
@@ -325,12 +322,12 @@ class PlanViajeService:
                                 print(f"     ✅ Imagen enviada exitosamente")
                                 
                                 # Si hay QR, enviarlo en un mensaje separado después de una pausa
-                                if ruta_qr:
+                                if ruta_qr and os.path.exists(ruta_qr):
                                     try:
-                                        # Pausa para evitar problemas con WhatsApp
-                                        time.sleep(2)
-                                        # Simplificar caption para evitar problemas con formato
-                                        caption_qr = f"Código QR - {excursion.nombre}\n\nEscanea este código para obtener un descuento del 5%"
+                                        # Pausa más larga para asegurar que la imagen se procesó completamente
+                                        time.sleep(3)
+                                        # Caption del QR simple, sin duplicar información
+                                        caption_qr = f"📱 *Código QR - {excursion.nombre}*\n\nEscanea este código para obtener un descuento del 5%"
                                         print(f"     📱 Enviando QR en mensaje separado: {ruta_qr}")
                                         print(f"     📱 Verificando que el archivo existe: {os.path.exists(ruta_qr)}")
                                         print(f"     📱 Caption del QR: {caption_qr}")
@@ -338,6 +335,8 @@ class PlanViajeService:
                                         print(f"     📱 Resultado del envío QR: {resultado_qr}")
                                         if resultado_qr.get("success"):
                                             print(f"     ✅ QR enviado exitosamente en mensaje separado")
+                                            # Pausa adicional después del QR para asegurar que se procesó
+                                            time.sleep(2)
                                         else:
                                             error_qr = resultado_qr.get('error', 'Error desconocido')
                                             print(f"     ❌ Error al enviar QR: {error_qr}")
@@ -347,6 +346,11 @@ class PlanViajeService:
                                         import traceback
                                         print(f"     Traceback: {traceback.format_exc()}")
                                         logger.error(f"Excepción al enviar QR para {excursion.nombre}: {e}")
+                                elif ruta_qr:
+                                    print(f"     ⚠️ QR no existe en ruta: {ruta_qr}")
+                                else:
+                                    # Si no hay QR, pausa después de la imagen
+                                    time.sleep(2)
                             else:
                                 # Si falla la imagen, enviar solo texto
                                 error_msg = resultado.get('error', 'Error desconocido')
@@ -355,54 +359,82 @@ class PlanViajeService:
                                 mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
                                 if ubicacion:
                                     mensaje += f"\n\n📍 {ubicacion}"
-                                if ruta_qr:
-                                    mensaje += f"\n\n📱 Escanea el código QR para obtener un descuento del 5%"
-                                enviar_mensaje_whatsapp(numero, mensaje)
+                                # NO incluir mensaje del QR en el texto principal, se enviará después
+                                
+                                resultado_fallback = enviar_mensaje_whatsapp(numero, mensaje)
+                                if resultado_fallback.get("success"):
+                                    print(f"     ✅ Mensaje de texto enviado como fallback")
+                                else:
+                                    print(f"     ❌ Error al enviar mensaje de texto fallback: {resultado_fallback.get('error')}")
+                                    logger.error(f"Error crítico: No se pudo enviar ni imagen ni texto para {excursion.nombre}")
                                 
                                 # Enviar QR después del texto en mensaje separado
-                                if ruta_qr:
+                                if ruta_qr and os.path.exists(ruta_qr):
                                     try:
-                                        time.sleep(2)
-                                        # Simplificar caption para evitar problemas con formato
-                                        caption_qr = f"Código QR - {excursion.nombre}\n\nEscanea este código para obtener un descuento del 5%"
-                                        print(f"     📱 Enviando QR después del texto: {ruta_qr}")
+                                        # Pausa más larga para asegurar que el texto se procesó completamente
+                                        time.sleep(3)
+                                        # Caption del QR con información del restaurante
+                                        caption_qr = f"📱 *Código QR - {excursion.nombre}*\n\nEscanea este código para obtener un descuento del 5%"
+                                        print(f"     📱 Enviando QR después del texto (fallback): {ruta_qr}")
                                         print(f"     📱 Caption del QR: {caption_qr}")
                                         resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr, caption_qr)
                                         print(f"     📱 Resultado del envío QR: {resultado_qr}")
                                         if resultado_qr.get("success"):
                                             print(f"     ✅ QR enviado exitosamente")
+                                            # Pausa adicional después del QR
+                                            time.sleep(2)
                                         else:
                                             print(f"     ❌ Error al enviar QR: {resultado_qr.get('error')}")
                                     except Exception as e:
                                         print(f"     ❌ Error al enviar QR: {e}")
                                         import traceback
                                         traceback.print_exc()
-                                print(f"     📝 Mensaje de texto enviado como fallback")
+                                elif ruta_qr:
+                                    print(f"     ⚠️ QR no existe en ruta: {ruta_qr}")
+                                else:
+                                    # Si no hay QR, pausa después del texto
+                                    time.sleep(2)
                         except Exception as e:
                             # Error al enviar imagen
                             print(f"     ❌ Excepción al enviar imagen: {e}")
+                            import traceback
+                            print(f"     Traceback: {traceback.format_exc()}")
                             logger.warning(f"No se pudo enviar imagen de {excursion.nombre}: {e}")
                             mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
                             if ubicacion:
                                 mensaje += f"\n\n📍 {ubicacion}"
-                            if ruta_qr:
-                                mensaje += f"\n\n📱 Escanea el código QR para obtener un descuento del 5%"
-                            enviar_mensaje_whatsapp(numero, mensaje)
+                            # NO incluir mensaje del QR en el texto principal, se enviará después
+                            
+                            resultado_excepcion = enviar_mensaje_whatsapp(numero, mensaje)
+                            if resultado_excepcion.get("success"):
+                                print(f"     ✅ Mensaje de texto enviado como fallback (excepción)")
+                            else:
+                                print(f"     ❌ Error al enviar mensaje de texto fallback: {resultado_excepcion.get('error')}")
+                                logger.error(f"Error crítico: No se pudo enviar ni imagen ni texto para {excursion.nombre}")
                             
                             # Enviar QR después del texto
-                            if ruta_qr:
+                            if ruta_qr and os.path.exists(ruta_qr):
                                 try:
-                                    time.sleep(2)
-                                    # Simplificar caption para evitar problemas con formato
-                                    caption_qr = f"Código QR - Descuento 5%"
-                                    print(f"     📱 Enviando QR después del texto: {ruta_qr}")
+                                    # Pausa más larga para asegurar que el texto se procesó completamente
+                                    time.sleep(3)
+                                    # Caption del QR con información del restaurante
+                                    caption_qr = f"📱 *Código QR - {excursion.nombre}*\n\nEscanea este código para obtener un descuento del 5%"
+                                    print(f"     📱 Enviando QR después del texto (excepción): {ruta_qr}")
                                     resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr, caption_qr)
                                     print(f"     📱 Resultado del envío QR: {resultado_qr}")
-                                    if not resultado_qr.get("success"):
+                                    if resultado_qr.get("success"):
+                                        # Pausa adicional después del QR
+                                        time.sleep(2)
+                                    else:
                                         print(f"     ❌ Error al enviar QR: {resultado_qr.get('error')}")
-                                except Exception as e:
-                                    print(f"     ❌ Excepción al enviar QR: {e}")
-                            print(f"     📝 Mensaje de texto enviado como fallback")
+                                except Exception as e_qr:
+                                    print(f"     ❌ Excepción al enviar QR: {e_qr}")
+                                    traceback.print_exc()
+                            elif ruta_qr:
+                                print(f"     ⚠️ QR no existe en ruta: {ruta_qr}")
+                            else:
+                                # Si no hay QR, pausa después del texto
+                                time.sleep(2)
                     else:
                         # Enviar solo texto (sin imagen del lugar)
                         print(f"     📝 Enviando mensaje de texto (sin imagen)")
@@ -415,13 +447,24 @@ class PlanViajeService:
                         if resultado_texto.get("success"):
                             print(f"     ✅ Mensaje de texto enviado exitosamente")
                         else:
-                            print(f"     ⚠️ Error al enviar mensaje de texto: {resultado_texto.get('error')}")
-                            logger.warning(f"Error al enviar mensaje de texto para {excursion.nombre}")
+                            error_texto = resultado_texto.get('error', 'Error desconocido')
+                            print(f"     ⚠️ Error al enviar mensaje de texto: {error_texto}")
+                            print(f"     📝 Mensaje que se intentó enviar: {mensaje[:100]}...")
+                            logger.warning(f"Error al enviar mensaje de texto para {excursion.nombre}: {error_texto}")
+                            # Intentar una vez más después de una pausa
+                            time.sleep(1)
+                            print(f"     🔄 Reintentando envío de mensaje de texto...")
+                            resultado_texto_retry = enviar_mensaje_whatsapp(numero, mensaje)
+                            if resultado_texto_retry.get("success"):
+                                print(f"     ✅ Mensaje de texto enviado exitosamente en reintento")
+                            else:
+                                print(f"     ❌ Error persistente al enviar mensaje de texto")
                         
                         # Enviar QR después del texto en mensaje separado
                         if ruta_qr and os.path.exists(ruta_qr):
                             try:
-                                time.sleep(2)
+                                # Pausa más larga para asegurar que el texto se procesó completamente
+                                time.sleep(3)
                                 # Caption del QR con información del restaurante
                                 caption_qr = f"📱 *Código QR - {excursion.nombre}*\n\nEscanea este código para obtener un descuento del 5%"
                                 print(f"     📱 Enviando QR después del texto: {ruta_qr}")
@@ -431,6 +474,8 @@ class PlanViajeService:
                                 print(f"     📱 Resultado del envío QR: {resultado_qr}")
                                 if resultado_qr.get("success"):
                                     print(f"     ✅ QR enviado exitosamente en mensaje separado")
+                                    # Pausa adicional después del QR para asegurar que se procesó
+                                    time.sleep(2)
                                 else:
                                     error_qr = resultado_qr.get('error', 'Error desconocido')
                                     print(f"     ❌ Error al enviar QR: {error_qr}")
@@ -442,10 +487,15 @@ class PlanViajeService:
                                 logger.error(f"Excepción al enviar QR para {excursion.nombre}: {e}")
                         elif ruta_qr:
                             print(f"     ⚠️ QR no existe en ruta: {ruta_qr}")
+                        else:
+                            # Si no hay QR, pausa después del texto
+                            time.sleep(2)
                         print(f"     ✅ Proceso completado para {excursion.nombre}")
                     
-                    # Pausa entre mensajes para mejor UX
-                    time.sleep(1.5)
+                    # Pausa más larga entre restaurantes para asegurar que todo se procesó completamente
+                    # Esto evita que WhatsApp procese mensajes fuera de orden
+                    print(f"     ⏳ Esperando antes de enviar el siguiente restaurante...")
+                    time.sleep(3)
                     
                 except Exception as e:
                     # Error general al procesar la excursión
