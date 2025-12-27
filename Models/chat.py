@@ -170,6 +170,99 @@ class Chat:
             # Ir a flujo_inicio para enviar el mensaje de apertura
             return self.flujo_inicio(numero, "")
         
+        # Comando #QR para testing: envía info de restaurante predefinido con QR
+        if texto_lower == "#qr" or texto_strip == "#QR":
+            from Util.datos_lugares import DATOS_LUGARES
+            from Util.qr_helper import obtener_ruta_qr, debe_enviar_qr
+            from whatsapp_api import enviar_imagen_whatsapp
+            import os
+            import time
+            
+            # Restaurante predefinido para testing (rest_001 - El Buen Suspiro)
+            restaurante_id = "rest_001"
+            ciudad = "Colonia"
+            
+            # Buscar el restaurante en los datos
+            restaurante = None
+            if ciudad in DATOS_LUGARES:
+                for exc in DATOS_LUGARES[ciudad].get("restaurantes", []):
+                    if exc.id == restaurante_id:
+                        restaurante = exc
+                        break
+            
+            if not restaurante:
+                return enviar_mensaje_whatsapp(numero, "❌ Restaurante de prueba no encontrado")
+            
+            try:
+                # Obtener/generar QR
+                print(f"🧪 [TEST] Generando QR para {restaurante.nombre} (ID: {restaurante.id})")
+                ruta_qr = obtener_ruta_qr(restaurante.id)
+                
+                # Construir mensaje
+                descripcion = restaurante.descripcion if restaurante.descripcion else "Sin descripción disponible"
+                ubicacion = restaurante.ubicacion if restaurante.ubicacion else None
+                
+                # Enviar imagen del restaurante
+                if restaurante.imagen_url:
+                    caption = f"*{restaurante.nombre}*\n\n{descripcion}"
+                    if ubicacion:
+                        caption += f"\n\n📍 {ubicacion}"
+                    if ruta_qr:
+                        caption += f"\n\n📱 Escanea el código QR para obtener un descuento del 5%"
+                    
+                    # Limitar caption a 1024 caracteres
+                    if len(caption) > 1024:
+                        caption = caption[:1021] + "..."
+                    
+                    resultado = enviar_imagen_whatsapp(numero, restaurante.imagen_url, caption)
+                    
+                    if resultado.get("success"):
+                        print(f"🧪 [TEST] ✅ Imagen del restaurante enviada")
+                        
+                        # Enviar QR después
+                        if ruta_qr and os.path.exists(ruta_qr):
+                            time.sleep(1)
+                            caption_qr = f"📱 Código QR - Descuento 5% en {restaurante.nombre}"
+                            resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr, caption_qr)
+                            if resultado_qr.get("success"):
+                                print(f"🧪 [TEST] ✅ QR enviado exitosamente")
+                            else:
+                                print(f"🧪 [TEST] ⚠️ Error al enviar QR: {resultado_qr.get('error')}")
+                        else:
+                            print(f"🧪 [TEST] ⚠️ QR no disponible")
+                    else:
+                        # Fallback a texto
+                        mensaje = f"*{restaurante.nombre}*\n\n{descripcion}"
+                        if ubicacion:
+                            mensaje += f"\n\n📍 {ubicacion}"
+                        if ruta_qr:
+                            mensaje += f"\n\n📱 Escanea el código QR para obtener un descuento del 5%"
+                        enviar_mensaje_whatsapp(numero, mensaje)
+                        
+                        if ruta_qr and os.path.exists(ruta_qr):
+                            time.sleep(1)
+                            enviar_imagen_whatsapp(numero, ruta_qr, f"📱 Código QR - Descuento 5%")
+                else:
+                    # Sin imagen, solo texto + QR
+                    mensaje = f"*{restaurante.nombre}*\n\n{descripcion}"
+                    if ubicacion:
+                        mensaje += f"\n\n📍 {ubicacion}"
+                    if ruta_qr:
+                        mensaje += f"\n\n📱 Escanea el código QR para obtener un descuento del 5%"
+                    enviar_mensaje_whatsapp(numero, mensaje)
+                    
+                    if ruta_qr and os.path.exists(ruta_qr):
+                        time.sleep(1)
+                        enviar_imagen_whatsapp(numero, ruta_qr, f"📱 Código QR - Descuento 5% en {restaurante.nombre}")
+                
+                return None  # Ya se envió el mensaje
+                
+            except Exception as e:
+                import traceback
+                print(f"🧪 [TEST] ❌ Error: {e}")
+                print(traceback.format_exc())
+                return enviar_mensaje_whatsapp(numero, f"❌ Error al enviar restaurante de prueba: {str(e)}")
+        
         if texto_lower in ("cancelar", "salir", "cancel"):
             self.clear_state(numero)
             usuario.estado_conversacion = ESTADOS_BOT["INICIO"]
