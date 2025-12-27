@@ -126,14 +126,37 @@ def enviar_imagen_whatsapp(numero, ruta_o_url_imagen, caption=""):
         _imagen = f"{WHATSAPP_API_URL}/{WHATSAPP_PHONE_NUMBER_ID}/media"
         
         try:
+            # Verificar que el archivo existe
+            if not os.path.exists(ruta_o_url_imagen):
+                print(f"❌ Archivo no encontrado: {ruta_o_url_imagen}")
+                return {"success": False, "error": f"Archivo no encontrado: {ruta_o_url_imagen}"}
+            
             # Verificar tamaño del archivo (WhatsApp limita a 5MB para imágenes)
             file_size = os.path.getsize(ruta_o_url_imagen)
             file_size_mb = file_size / (1024 * 1024)
             print(f"📏 Tamaño del archivo: {file_size_mb:.2f} MB ({file_size} bytes)")
             
+            if file_size == 0:
+                print(f"❌ Archivo vacío: {ruta_o_url_imagen}")
+                return {"success": False, "error": "Archivo vacío"}
+            
+            if file_size < 100:
+                print(f"⚠️ Advertencia: Archivo muy pequeño ({file_size} bytes). Puede estar corrupto.")
+            
             if file_size > 5 * 1024 * 1024:  # 5MB
                 print(f"❌ Archivo demasiado grande: {file_size_mb:.2f} MB (máximo 5MB)")
                 return {"success": False, "error": f"Archivo demasiado grande: {file_size_mb:.2f} MB"}
+            
+            # Verificar que es una imagen PNG válida leyendo los primeros bytes
+            try:
+                with open(ruta_o_url_imagen, 'rb') as test_file:
+                    header = test_file.read(8)
+                    # PNG signature: 89 50 4E 47 0D 0A 1A 0A
+                    if header[:8] != b'\x89PNG\r\n\x1a\n':
+                        print(f"⚠️ Advertencia: El archivo no parece ser un PNG válido. Header: {header.hex()}")
+                        # No fallar, solo advertir, ya que WhatsApp puede aceptarlo
+            except Exception as e:
+                print(f"⚠️ No se pudo verificar el formato PNG: {e}")
             
             with open(ruta_o_url_imagen, 'rb') as img_file:
                 files = {

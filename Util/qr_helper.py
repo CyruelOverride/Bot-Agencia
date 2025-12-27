@@ -58,23 +58,38 @@ def _generar_qr_directo(excursion_id: str, base_url: Optional[str] = None, usar_
         else:
             url = f"{base_url}/{excursion_id}"
         
-        # Generar QR
+        # Generar QR con configuración mejorada (tamaño mayor para mejor legibilidad)
         qr = qrcode.QRCode(
             version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=10,
+            error_correction=qrcode.constants.ERROR_CORRECT_M,  # Mayor corrección de errores
+            box_size=15,  # Aumentado de 10 a 15 para mejor legibilidad
             border=4,
         )
         qr.add_data(url)
         qr.make(fit=True)
         
+        # Crear imagen con formato RGB explícito para mejor compatibilidad
         img = qr.make_image(fill_color="black", back_color="white")
         
-        # Guardar archivo
+        # Convertir a RGB si es necesario (algunas versiones de PIL devuelven imágenes en modo diferente)
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        # Guardar archivo con formato PNG explícito
         filename = f"{excursion_id}.png"
         filepath = os.path.join(QR_CODES_DIR, filename)
-        img.save(filepath)
+        img.save(filepath, format='PNG', optimize=False)
         
+        # Verificar que el archivo se guardó correctamente
+        if not os.path.exists(filepath):
+            print(f"⚠️ Error: El archivo QR no se guardó correctamente: {filepath}")
+            return None
+        
+        file_size = os.path.getsize(filepath)
+        if file_size < 100:  # Un QR válido debería tener al menos 100 bytes
+            print(f"⚠️ Advertencia: El archivo QR es muy pequeño ({file_size} bytes). Puede estar corrupto.")
+        
+        print(f"✅ QR generado: {filepath} ({file_size} bytes)")
         return os.path.abspath(filepath)
         
     except ImportError:
@@ -116,9 +131,36 @@ def obtener_ruta_qr(excursion_id: str, base_url: Optional[str] = None, usar_html
     filename = f"{excursion_id}.png"
     qr_filepath = os.path.join(QR_CODES_DIR, filename)
     
-    # Si el archivo ya existe, retornar su ruta absoluta
+    # Si el archivo ya existe, verificar que sea válido antes de retornarlo
     if os.path.exists(qr_filepath):
-        return os.path.abspath(qr_filepath)
+        file_size = os.path.getsize(qr_filepath)
+        # Si el archivo es muy pequeño (menos de 100 bytes), probablemente está corrupto
+        if file_size < 100:
+            print(f"⚠️ Archivo QR existente parece corrupto ({file_size} bytes). Regenerando...")
+            try:
+                os.remove(qr_filepath)
+            except Exception as e:
+                print(f"⚠️ No se pudo eliminar archivo corrupto: {e}")
+        else:
+            # Verificar que sea un PNG válido
+            try:
+                with open(qr_filepath, 'rb') as f:
+                    header = f.read(8)
+                    if header[:8] == b'\x89PNG\r\n\x1a\n':
+                        print(f"✅ QR existente válido: {qr_filepath} ({file_size} bytes)")
+                        return os.path.abspath(qr_filepath)
+                    else:
+                        print(f"⚠️ Archivo QR no es un PNG válido. Regenerando...")
+                        try:
+                            os.remove(qr_filepath)
+                        except Exception as e:
+                            print(f"⚠️ No se pudo eliminar archivo inválido: {e}")
+            except Exception as e:
+                print(f"⚠️ Error al verificar archivo QR: {e}. Regenerando...")
+                try:
+                    os.remove(qr_filepath)
+                except:
+                    pass
     
     # Si no existe, generarlo
     try:
