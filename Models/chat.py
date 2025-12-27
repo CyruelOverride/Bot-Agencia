@@ -1225,6 +1225,13 @@ class Chat:
                 UsuarioService.actualizar_usuario(usuario)
                 return enviar_mensaje_whatsapp(numero, mensaje)
         
+        # BLOQUEAR BOTONES INTERACTIVOS: Si el texto parece ser un ID de botón interactivo (contiene guión bajo)
+        # Ejemplos: "comida_local", "duracion_3_5", etc. - estos NO deben activar Gemini
+        if "_" in texto and len(texto.split()) == 1:
+            print(f"⚠️ [flujo_seguimiento] Ignorando botón interactivo: {texto}")
+            print(f"   Este es un ID de botón interactivo y no debe procesarse con Gemini")
+            return None  # No procesar, no responder
+        
         # IMPORTANTE: Si el perfil está completo, NO volver a preguntar
         # Solo procesar comandos específicos o consultas generales
         if usuario.tiene_perfil_completo():
@@ -1333,14 +1340,19 @@ class Chat:
             ]
             es_respuesta_gemini_incorrecta = any(patron in texto_lower for patron in patrones_gemini_incorrecto)
             
-            # Si parece ser un mensaje del bot, NO llamar a Gemini
-            if empieza_con_bot or es_mensaje_corto_qr or es_mensaje_qr_completo or es_mensaje_qr_agresivo or es_respuesta_gemini_incorrecta:
-                print(f"⚠️ [flujo_seguimiento] Ignorando mensaje que parece ser del bot:")
+            # DETECCIÓN DE BOTONES INTERACTIVOS: Si el texto parece ser un ID de botón (contiene guión bajo y es una sola palabra)
+            # Ejemplos: "comida_local", "duracion_3_5", "seguimiento_ajustar", etc.
+            es_boton_interactivo = "_" in texto and len(texto.split()) == 1 and texto.isalnum() or "_" in texto
+            
+            # Si parece ser un mensaje del bot o un botón interactivo, NO llamar a Gemini
+            if empieza_con_bot or es_mensaje_corto_qr or es_mensaje_qr_completo or es_mensaje_qr_agresivo or es_respuesta_gemini_incorrecta or es_boton_interactivo:
+                print(f"⚠️ [flujo_seguimiento] Ignorando mensaje que parece ser del bot o botón interactivo:")
                 print(f"   - Empieza con patrón bot: {empieza_con_bot}")
                 print(f"   - Mensaje corto con QR: {es_mensaje_corto_qr}")
                 print(f"   - Mensaje QR completo: {es_mensaje_qr_completo}")
                 print(f"   - Mensaje QR agresivo: {es_mensaje_qr_agresivo}")
                 print(f"   - Respuesta Gemini incorrecta: {es_respuesta_gemini_incorrecta}")
+                print(f"   - Botón interactivo: {es_boton_interactivo}")
                 print(f"   - Mensaje: {texto[:100]}...")
                 return None  # No procesar, no responder
             
@@ -1408,14 +1420,18 @@ class Chat:
             ]
             es_respuesta_gemini_incorrecta_check = any(patron in texto_lower_check for patron in patrones_gemini_incorrecto_check)
             
-            # Si parece ser un mensaje del bot, NO llamar a Gemini
-            if empieza_con_bot_check or es_mensaje_corto_qr_check or es_mensaje_qr_completo_check or es_mensaje_qr_agresivo_check or es_respuesta_gemini_incorrecta_check:
-                print(f"⚠️ [flujo_seguimiento] Ignorando mensaje que parece ser del bot (perfil incompleto):")
+            # DETECCIÓN DE BOTONES INTERACTIVOS: Si el texto parece ser un ID de botón (contiene guión bajo y es una sola palabra)
+            es_boton_interactivo_check = "_" in texto and len(texto.split()) == 1 and texto.isalnum() or "_" in texto
+            
+            # Si parece ser un mensaje del bot o un botón interactivo, NO llamar a Gemini
+            if empieza_con_bot_check or es_mensaje_corto_qr_check or es_mensaje_qr_completo_check or es_mensaje_qr_agresivo_check or es_respuesta_gemini_incorrecta_check or es_boton_interactivo_check:
+                print(f"⚠️ [flujo_seguimiento] Ignorando mensaje que parece ser del bot o botón interactivo (perfil incompleto):")
                 print(f"   - Empieza con patrón bot: {empieza_con_bot_check}")
                 print(f"   - Mensaje corto con QR: {es_mensaje_corto_qr_check}")
                 print(f"   - Mensaje QR completo: {es_mensaje_qr_completo_check}")
                 print(f"   - Mensaje QR agresivo: {es_mensaje_qr_agresivo_check}")
                 print(f"   - Respuesta Gemini incorrecta: {es_respuesta_gemini_incorrecta_check}")
+                print(f"   - Botón interactivo: {es_boton_interactivo_check}")
                 print(f"   - Mensaje: {texto[:100]}...")
                 return None  # No procesar, no responder
             
