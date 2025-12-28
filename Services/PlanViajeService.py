@@ -348,25 +348,11 @@ class PlanViajeService:
                             if resultado.get("success"):
                                 print(f"     ✅ Imagen enviada exitosamente")
                                 
-                                # SIEMPRE enviar texto informativo como respaldo, incluso si la imagen tuvo éxito
-                                # Esto garantiza que la información llegue aunque WhatsApp no muestre la imagen
-                                if ruta_qr and os.path.exists(ruta_qr):
-                                    time.sleep(1)  # Pequeña pausa después de la imagen
-                                    mensaje_info = f"*{excursion.nombre}*\n\n{descripcion}"
-                                    if ubicacion:
-                                        mensaje_info += f"\n\n📍 {ubicacion}"
-                                    print(f"     📝 Enviando texto informativo como respaldo (después de imagen exitosa)...")
-                                    resultado_info = enviar_mensaje_whatsapp(numero, mensaje_info)
-                                    if resultado_info.get("success"):
-                                        print(f"     ✅ Texto informativo enviado exitosamente")
-                                    else:
-                                        print(f"     ⚠️ Error al enviar texto informativo: {resultado_info.get('error')}")
-                                
                                 # Si hay QR, enviarlo en un mensaje separado después de una pausa
                                 if ruta_qr and os.path.exists(ruta_qr):
                                     try:
-                                        # Pausa más larga para asegurar que la imagen y el texto se procesaron completamente
-                                        time.sleep(3)
+                                        # Pausa para asegurar que la imagen se procesó completamente
+                                        time.sleep(2)
                                         # Caption del QR simple, sin duplicar información
                                         caption_qr = f"📱 *Código QR - {excursion.nombre}*\n\nEscanea este código para obtener un descuento del 5%"
                                         print(f"     📱 Enviando QR en mensaje separado: {ruta_qr}")
