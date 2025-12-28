@@ -639,8 +639,6 @@ class Chat:
         intereses_opciones = [
             {"id": "restaurantes", "nombre": "Restaurantes", "emoji": "🍽️"},
             {"id": "comercios", "nombre": "Comercios", "emoji": "🛍️"},
-            {"id": "recreacion", "nombre": "Recreación", "emoji": "🌳"},
-            {"id": "cultura", "nombre": "Cultura", "emoji": "🏛️"},
             {"id": "compras", "nombre": "Compras", "emoji": "🛒"}
         ]
         
@@ -655,7 +653,7 @@ class Chat:
         for idx, opcion in enumerate(intereses_disponibles, 1):
             mensaje += f"{idx}. {opcion['emoji']} {opcion['nombre']}\n"
         
-        mensaje += "\nEjemplo: \"1 2 3\" o \"restaurantes compras recreacion\""
+        mensaje += "\nEjemplo: \"1 2 3\" o \"restaurantes compras comercios\""
         
         set_estado_bot(numero, ESTADOS_BOT["SELECCION_INTERESES"])
         usuario.estado_conversacion = ESTADOS_BOT["SELECCION_INTERESES"]
@@ -779,24 +777,6 @@ class Chat:
                     {"id": "ropa_no", "title": "No"}
                 ]
             },
-            "interes_tipo_recreacion": {
-                "body": "¿Qué tipo de recreación preferís?",
-                "options": [
-                    {"id": "recreacion_activa", "title": "Activa"},
-                    {"id": "recreacion_pasiva", "title": "Pasiva"},
-                    {"id": "recreacion_familiar", "title": "Familiar"},
-                    {"id": "recreacion_romantica", "title": "Romántica"}
-                ]
-            },
-            "interes_tipo_cultura": {
-                "body": "¿Qué tipo de cultura te interesa más?",
-                "options": [
-                    {"id": "cultura_museos", "title": "Museos"},
-                    {"id": "cultura_arquitectura", "title": "Arquitectura"},
-                    {"id": "cultura_arte", "title": "Arte"},
-                    {"id": "cultura_historia", "title": "Historia"}
-                ]
-            },
             "interes_tipo_comercios": {
                 "body": "¿Qué tipo de comercios te interesan?",
                 "options": [
@@ -884,9 +864,9 @@ class Chat:
         """
         Detecta intereses del texto del usuario.
         Soporta:
-        - Números: "1 2 3" → restaurantes, comercios, recreacion
-        - Letras: "A B C" → restaurantes, comercios, recreacion
-        - Nombres completos o parciales: "restaurantes compras recreacion"
+        - Números: "1 2 3" → restaurantes, comercios, compras
+        - Letras: "A B C" → restaurantes, comercios, compras
+        - Nombres completos o parciales: "restaurantes compras comercios"
         - "todo" → todos los intereses
         """
         if not texto or not texto.strip():
@@ -907,22 +887,8 @@ class Chat:
             "comercios": "comercios",
             "tienda": "comercios",
             "tiendas": "comercios",
-            "3": "recreacion",
-            "c": "recreacion",
-            "recreacion": "recreacion",
-            "recreación": "recreacion",
-            "recreativo": "recreacion",
-            "parque": "recreacion",
-            "parques": "recreacion",
-            "4": "cultura",
-            "d": "cultura",
-            "cultura": "cultura",
-            "museo": "cultura",
-            "museos": "cultura",
-            "paseo": "cultura",
-            "paseos": "cultura",
-            "5": "compras",
-            "e": "compras",
+            "3": "compras",
+            "c": "compras",
             "compra": "compras",
             "compras": "compras",
             "shopping": "compras",
@@ -930,7 +896,7 @@ class Chat:
             "regalos": "compras"
         }
         
-        intereses_validos = ["restaurantes", "comercios", "recreacion", "cultura", "compras"]
+        intereses_validos = ["restaurantes", "comercios", "compras"]
         intereses_detectados = []
         
         # Si dice "todo", seleccionar todos
@@ -976,8 +942,6 @@ class Chat:
         nombres = {
             "restaurantes": "Restaurantes",
             "comercios": "Comercios",
-            "recreacion": "Recreación",
-            "cultura": "Cultura",
             "compras": "Compras"
         }
         return nombres.get(interes, interes.capitalize())
@@ -1007,16 +971,6 @@ class Chat:
             # Interés ropa
             "ropa_si": ("interes_ropa", True),
             "ropa_no": ("interes_ropa", False),
-            # Tipo recreación
-            "recreacion_activa": ("interes_tipo_recreacion", "activa"),
-            "recreacion_pasiva": ("interes_tipo_recreacion", "pasiva"),
-            "recreacion_familiar": ("interes_tipo_recreacion", "familiar"),
-            "recreacion_romantica": ("interes_tipo_recreacion", "romantica"),
-            # Tipo cultura
-            "cultura_museos": ("interes_tipo_cultura", "museos"),
-            "cultura_arquitectura": ("interes_tipo_cultura", "arquitectura"),
-            "cultura_arte": ("interes_tipo_cultura", "arte"),
-            "cultura_historia": ("interes_tipo_cultura", "historia"),
             # Tipo comercios
             "comercios_artesanias": ("interes_tipo_comercios", "artesanias"),
             "comercios_souvenirs": ("interes_tipo_comercios", "souvenirs"),
@@ -1115,10 +1069,6 @@ class Chat:
                 campo_pregunta = "interes_regalos"
             elif "ropa" in siguiente_pregunta.lower():
                 campo_pregunta = "interes_ropa"
-            elif "recreación" in siguiente_pregunta.lower() or "recreacion" in siguiente_pregunta.lower():
-                campo_pregunta = "interes_tipo_recreacion"
-            elif "cultura" in siguiente_pregunta.lower():
-                campo_pregunta = "interes_tipo_cultura"
             elif "comercios" in siguiente_pregunta.lower() or "comercio" in siguiente_pregunta.lower():
                 campo_pregunta = "interes_tipo_comercios"
             elif "niños" in siguiente_pregunta.lower() or "ninos" in siguiente_pregunta.lower() or "chicos" in siguiente_pregunta.lower():

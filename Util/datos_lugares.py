@@ -73,50 +73,36 @@ DATOS_LUGARES = {
                 ubicacion="https://www.google.com/maps/search/Feria+Productores+Colonia",
                 tags=["feria", "artesanias", "dulces", "antiguedades", "decoracion", "tradicional"],
                 imagen_url=None
-            )
-        ],
-        "recreacion": [
-            Excursion(
-                id="rec_001",
-                ciudad="Colonia",
-                categoria="recreacion",
-                nombre="Rambla de las Américas",
-                descripcion="Es el paseo marítimo más extenso de la ciudad, con más de 7 kilómetros que bordean toda la bahía. Es el lugar preferido por turistas y locales para caminar, andar en bicicleta o simplemente sentarse a tomar mate mientras cae el sol. Al inicio del recorrido se encuentra el famoso cartel de letras de 'COLONIA', punto obligatorio para fotografías.\n\nHorario: Abierto las 24 hs.",
-                ubicacion="https://www.google.com/maps/search/Rambla+Colonia+Sacramento",
-                tags=["paseo", "maritimo", "naturaleza", "fotografia", "familiar", "gratis"],
-                imagen_url="https://tse2.mm.bing.net/th/id/OIP.gq7cBke5qj6EDObvwUxwbwHaFh?cb=ucfimg2&ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3"
             ),
             Excursion(
-                id="rec_002",
+                id="com_004",
                 ciudad="Colonia",
-                categoria="recreacion",
-                nombre="Playa Ferrando",
-                descripcion="Ubicada a pocos minutos del centro, es considerada la playa más linda y valorada de la ciudad. Se encuentra rodeada por un bosque de pinos y eucaliptos que proporcionan sombra natural, ideal para pasar el día en familia haciendo picnic. Sus arenas son finas y doradas, con aguas mansas que permiten un baño seguro en el río.\n\nHorario: Abierto las 24 hs.",
-                ubicacion="https://www.google.com/maps/search/Playa+Ferrando+Colonia",
-                tags=["playa", "naturaleza", "familiar", "picnic", "bosque", "gratis"],
-                imagen_url="https://th.bing.com/th/id/R.4796de3daafd59c21249428e9da345e3?rik=7ZwfeqS9p1i%2blA&pid=ImgRaw&r=0"
-            )
-        ],
-        "cultura": [
-            Excursion(
-                id="cul_001",
-                ciudad="Colonia",
-                categoria="cultura",
-                nombre="Plaza de Toros Real de San Carlos",
-                descripcion="Inaugurada en 1910 y recientemente restaurada, es hoy el mayor ícono cultural del departamento. Este imponente estadio de estilo neomudéjar ya no realiza corridas de toros, sino que funciona como un centro de espectáculos y museo taurino donde se puede recorrer su impactante arquitectura circular.\n\nCosto: Pago ($150 - $200 UYU).\nHorario: Lun-Dom 10:00-18:30 hs (Sábados hasta las 19:00).",
-                ubicacion="https://www.google.com/maps/search/Plaza+de+Toros+Colonia",
-                tags=["museo", "arquitectura", "historico", "espectaculos", "neomudejar"],
-                imagen_url="https://www.civitatis.com/f/uruguay/colonia-del-sacramento/galeria/fachada-plaza-toros-real-san-carlos.jpg"
+                categoria="comercios",
+                nombre="Lemon",
+                descripcion="Lemon es una de las marcas de indumentaria femenina más importantes de Uruguay, destacada por su estilo casual, contemporáneo y urbano. Su local en la avenida principal de Colonia ofrece una amplia variedad de prendas de temporada que combinan diseño moderno con comodidad, siendo una parada obligada para quienes buscan renovar su vestidor con calidad nacional.\n\nHorario: Lunes a Viernes de 10:00 a 19:00 hs, Sábados de 10:00 a 14:00 hs.",
+                ubicacion="https://www.google.com/maps/search/Lemon+Colonia+Gral+Flores+435",
+                tags=["ropa", "indumentaria", "mujer", "moda", "nacional", "premium"],
+                imagen_url="https://kronelectronics.uy/wp-content/uploads/2025/04/LEMON.jpeg"
             ),
             Excursion(
-                id="cul_002",
+                id="com_005",
                 ciudad="Colonia",
-                categoria="cultura",
-                nombre="Bastión del Carmen",
-                descripcion="Este complejo cultural funciona en un antiguo fuerte militar y posteriormente fue fábrica. Actualmente es el epicentro de la movida cultural de Colonia, albergando salas de teatro, exposiciones de arte y música en vivo. Su patio trasero cuenta con un jardín de esculturas frente al río que es uno de los rincones más tranquilos y bellos de la ciudad.\n\nCosto: Entrada libre para el predio y jardines.\nHorario: Todos los días de 10:00 a 18:00 hs (dependiendo de funciones).",
-                ubicacion="https://www.google.com/maps/search/Bastion+del+Carmen+Colonia",
-                tags=["teatro", "arte", "musica", "jardin", "esculturas", "gratis", "cultural"],
-                imagen_url="https://th.bing.com/th/id/R.ac549ad43f254f69a12695c3c7b387f7?rik=oXipcCMAOBqJlg&pid=ImgRaw&r=0"
+                categoria="comercios",
+                nombre="Cosas Bellas",
+                descripcion="Como su nombre lo indica, esta tienda es un refugio de objetos hermosos y curiosidades seleccionadas. Alejándose del souvenir masivo, ofrece artesanías de alta calidad, textiles, joyería de diseño, y productos gourmet locales. Es el sitio ideal para quienes desean llevarse un recuerdo auténtico de Colonia, en un local que en sí mismo es un paseo visual.\n\nHorario: Todos los días de 10:30 a 18:30 hs.",
+                ubicacion="https://www.google.com/maps/search/Cosas+Bellas+Colonia+Misiones+Tapes",
+                tags=["souvenirs", "artesanias", "joyeria", "textiles", "gourmet", "local", "premium"],
+                imagen_url="https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/2a/4b/3a/6.jpg?w=1200&h=1200&s=1"
+            ),
+            Excursion(
+                id="com_006",
+                ciudad="Colonia",
+                categoria="comercios",
+                nombre="Lombardía Arte & Joyas",
+                descripcion="Es un prestigioso taller de orfebrería dirigido por Gino Martinelli, con fuerte presencia en Nueva Helvecia (Colonia). Se especializan en la fabricación artesanal de joyas clásicas y contemporáneas, además de ser expertos en platería criolla, una técnica tradicional uruguaya. Sus piezas son únicas, elaboradas con metales nobles y diseños que combinan la tradición orfebre con la elegancia moderna.\n\nHorario: Lunes a Viernes de 09:00 a 12:00 hs y de 14:30 a 18:30 hs (Aprox).",
+                ubicacion="https://www.google.com/maps/search/Lombardia+Arte+y+Joyas+Nueva+Helvecia",
+                tags=["joyeria", "orfebreria", "plateria", "artesanal", "premium", "tradicional"],
+                imagen_url="https://lombardia.com.uy/wp-content/uploads/2023/11/333-1-300x300.jpg"
             )
         ],
         "compras": [

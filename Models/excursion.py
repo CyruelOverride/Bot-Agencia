@@ -6,7 +6,7 @@ class Excursion:
         self,
         id: str,
         ciudad: str,
-        categoria: str,  # "restaurantes", "comercios", "recreacion", "cultura", "compras"
+        categoria: str,  # "restaurantes", "comercios", "compras"
         nombre: str,
         descripcion: str,
         ubicacion: Optional[str] = None,

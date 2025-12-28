@@ -40,7 +40,6 @@ Perfil actual:
 - Preferencias comida: {perfil.preferencias_comida or 'No especificado'}
 - Interés regalos: {perfil.interes_regalos or 'No especificado'}
 - Interés ropa: {perfil.interes_ropa or 'No especificado'}
-- Tipo recreación: {perfil.interes_tipo_recreacion or 'No especificado'}
 - Viaja con niños: {perfil.viaja_con_ninos or 'No especificado'}
 """
         
@@ -72,7 +71,6 @@ Campos posibles:
 - preferencias_comida: "local", "internacional", "vegetariano", "vegano", "sin_restricciones"
 - interes_regalos: true/false
 - interes_ropa: true/false
-- interes_tipo_recreacion: "activa", "pasiva", "familiar", "romantica"
 - viaja_con_ninos: true/false (solo si acompanantes="familia")
 
 REGLA CRÍTICA: Si el mensaje menciona "familia" o "con mi familia", puede referirse a:
@@ -224,15 +222,13 @@ Responde SOLO con JSON:
             "preferencias_comida": "¿Qué tipo de comida preferís?",
             "interes_regalos": "¿Buscás algo para vos o para regalar?",
             "interes_ropa": "¿Te interesa comprar ropa?",
-            "interes_tipo_recreacion": "¿Qué tipo de recreación preferís?",
-            "interes_tipo_cultura": "¿Qué tipo de cultura te interesa más?",
             "interes_tipo_comercios": "¿Qué tipo de comercios te interesan?",
             "viaja_con_ninos": "¿Viajás con niños o familiares chicos?"
         }
         
         # Priorizar: primero campos obligatorios, luego condicionales
         campos_obligatorios = ["tipo_viaje", "duracion_estadia"]
-        campos_condicionales = ["preferencias_comida", "interes_regalos", "interes_ropa", "interes_tipo_recreacion", "interes_tipo_cultura", "interes_tipo_comercios"]
+        campos_condicionales = ["preferencias_comida", "interes_regalos", "interes_ropa", "interes_tipo_comercios"]
         
         # Solo agregar "viaja_con_ninos" si el tipo de viaje es "familia"
         if perfil.tipo_viaje == "familia":
@@ -279,9 +275,6 @@ Perfil:
             if "compras" in usuario.intereses:
                 perfil_texto += f"\n- Interés regalos: {perfil.interes_regalos or 'No especificado'}"
                 perfil_texto += f"\n- Interés ropa: {perfil.interes_ropa or 'No especificado'}"
-            
-            if "recreacion" in usuario.intereses:
-                perfil_texto += f"\n- Tipo recreación: {perfil.interes_tipo_recreacion or 'No especificado'}"
             
             if perfil.viaja_con_ninos is not None:
                 perfil_texto += f"\n- Viaja con niños: {perfil.viaja_con_ninos}"
