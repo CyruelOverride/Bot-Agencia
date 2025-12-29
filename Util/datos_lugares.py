@@ -102,7 +102,7 @@ DATOS_LUGARES = {
                 descripcion="Es un prestigioso taller de orfebrería dirigido por Gino Martinelli, con fuerte presencia en Nueva Helvecia (Colonia). Se especializan en la fabricación artesanal de joyas clásicas y contemporáneas, además de ser expertos en platería criolla, una técnica tradicional uruguaya. Sus piezas son únicas, elaboradas con metales nobles y diseños que combinan la tradición orfebre con la elegancia moderna.\n\nHorario: Lunes a Viernes de 09:00 a 12:00 hs y de 14:30 a 18:30 hs (Aprox).",
                 ubicacion="https://www.google.com/maps/search/Lombardia+Arte+y+Joyas+Nueva+Helvecia",
                 tags=["joyeria", "orfebreria", "plateria", "artesanal", "premium", "tradicional"],
-                imagen_url="https://lombardia.com.uy/wp-content/uploads/2023/11/333-1-300x300.jpg"
+                imagen_url="https://lombardia.com.uy/wp-content/uploads/2023/11/22-3.jpg"
             )
         ],
         "compras": [
