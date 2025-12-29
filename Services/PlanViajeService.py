@@ -336,6 +336,9 @@ class PlanViajeService:
                         caption = f"*{excursion.nombre}*\n\n{descripcion}"
                         if ubicacion:
                             caption += f"\n\n📍 {ubicacion}"
+                        # Aclarar que abajo se enviará un QR con descuento (educando al cliente)
+                        if ruta_qr:
+                            caption += f"\n\n A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento."
                         # NO incluir mensaje del QR en el caption de la imagen para evitar duplicación
                         
                         # Limitar caption a 1024 caracteres (límite de WhatsApp)
@@ -353,8 +356,8 @@ class PlanViajeService:
                                     try:
                                         # Pausa para asegurar que la imagen se procesó completamente
                                         time.sleep(2)
-                                        # Caption del QR simple, sin duplicar información
-                                        caption_qr = f"📱 *Código QR - {excursion.nombre}*\n\nEscanea este código para obtener un descuento del 5%"
+                                        # Caption del QR con instrucciones de uso
+                                        caption_qr = f"📱 *Código QR - {excursion.nombre}*\n\nMuestra este QR a la hora de pagar para poder acceder al descuento."
                                         print(f"     📱 Enviando QR en mensaje separado: {ruta_qr}")
                                         print(f"     📱 Verificando que el archivo existe: {os.path.exists(ruta_qr)}")
                                         print(f"     📱 Caption del QR: {caption_qr}")
@@ -386,6 +389,9 @@ class PlanViajeService:
                                 mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
                                 if ubicacion:
                                     mensaje += f"\n\n📍 {ubicacion}"
+                                # Aclarar que abajo se enviará un QR con descuento (educando al cliente)
+                                if ruta_qr:
+                                    mensaje += f"\n\n A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento."
                                 # NO incluir mensaje del QR en el texto principal, se enviará después
                                 
                                 print(f"     📝 Intentando enviar mensaje de texto como fallback...")
@@ -402,8 +408,8 @@ class PlanViajeService:
                                         try:
                                             # Pausa adicional para asegurar que el texto se procesó completamente
                                             time.sleep(2)
-                                            # Caption del QR con información del restaurante
-                                            caption_qr = f"📱 *Código QR - {excursion.nombre}*\n\nEscanea este código para obtener un descuento del 5%"
+                                            # Caption del QR con instrucciones de uso
+                                            caption_qr = f"📱 *Código QR - {excursion.nombre}*\n\nMuestra este QR a la hora de pagar para poder acceder al descuento."
                                             print(f"     📱 Enviando QR después del texto (fallback): {ruta_qr}")
                                             print(f"     📱 Caption del QR: {caption_qr}")
                                             resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr, caption_qr)
@@ -437,6 +443,9 @@ class PlanViajeService:
                             mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
                             if ubicacion:
                                 mensaje += f"\n\n📍 {ubicacion}"
+                            # Aclarar que abajo se enviará un QR con descuento (educando al cliente)
+                            if ruta_qr:
+                                mensaje += f"\n\n A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento."
                             # NO incluir mensaje del QR en el texto principal, se enviará después
                             
                             print(f"     📝 Intentando enviar mensaje de texto como fallback (excepción)...")
@@ -484,6 +493,9 @@ class PlanViajeService:
                         mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
                         if ubicacion:
                             mensaje += f"\n\n📍 {ubicacion}"
+                        # Aclarar que abajo se enviará un QR con descuento (educando al cliente)
+                        if ruta_qr:
+                            mensaje += f"\n\n A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento."
                         # NO incluir mensaje del QR en el texto principal, se enviará después
                         
                         resultado_texto = enviar_mensaje_whatsapp(numero, mensaje)
@@ -508,8 +520,8 @@ class PlanViajeService:
                             try:
                                 # Pausa más larga para asegurar que el texto se procesó completamente
                                 time.sleep(3)
-                                # Caption del QR con información del restaurante
-                                caption_qr = f"📱 *Código QR - {excursion.nombre}*\n\nEscanea este código para obtener un descuento del 5%"
+                                # Caption del QR con instrucciones de uso
+                                caption_qr = f"📱 *Código QR - {excursion.nombre}*\n\nMuestra este QR a la hora de pagar para poder acceder al descuento."
                                 print(f"     📱 Enviando QR después del texto: {ruta_qr}")
                                 print(f"     📱 Verificando que el archivo existe: {os.path.exists(ruta_qr)}")
                                 print(f"     📱 Caption del QR: {caption_qr}")

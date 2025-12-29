@@ -262,7 +262,7 @@ class Chat:
                     if ubicacion:
                         caption += f"\n\n📍 {ubicacion}"
                     if ruta_qr:
-                        caption += f"\n\n📱 Escanea el código QR para obtener un descuento del 5%"
+                        caption += f"\n\n A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento."
                     
                     # Limitar caption a 1024 caracteres
                     if len(caption) > 1024:
@@ -279,8 +279,8 @@ class Chat:
                             print(f"🧪 [TEST] 📱 Enviando QR en mensaje separado: {ruta_qr}")
                             print(f"🧪 [TEST] 📱 Archivo existe: {os.path.exists(ruta_qr)}")
                             
-                            # Enviar QR con caption simple
-                            caption_qr = f"📱 Código QR - {restaurante.nombre}\n\nEscanea este código para obtener un descuento del 5%"
+                            # Enviar QR con instrucciones de uso
+                            caption_qr = f"📱 Código QR - {restaurante.nombre}\n\nMuestra este QR a la hora de pagar para poder acceder al descuento."
                             print(f"🧪 [TEST] 📱 Enviando QR con caption...")
                             resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr, caption_qr)
                             print(f"🧪 [TEST] 📱 Resultado del envío QR: {resultado_qr}")
@@ -308,12 +308,12 @@ class Chat:
                         if ubicacion:
                             mensaje += f"\n\n📍 {ubicacion}"
                         if ruta_qr:
-                            mensaje += f"\n\n📱 Escanea el código QR para obtener un descuento del 5%"
+                            mensaje += f"\n\n💡 Abajo te enviaremos un código QR con descuento exclusivo para ti."
                         enviar_mensaje_whatsapp(numero, mensaje)
                         
                         if ruta_qr and os.path.exists(ruta_qr):
                             time.sleep(2)
-                            caption_qr = f"Código QR - {restaurante.nombre}\n\nEscanea este código para obtener un descuento del 5%"
+                            caption_qr = f"Código QR - {restaurante.nombre}\n\nMuestra este QR a la hora de pagar para poder acceder a un 5% de descuento."
                             print(f"🧪 [TEST] 📱 Enviando QR después del texto: {ruta_qr}")
                             print(f"🧪 [TEST] 📱 Caption del QR: {caption_qr}")
                             resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr, caption_qr)
@@ -328,12 +328,12 @@ class Chat:
                     if ubicacion:
                         mensaje += f"\n\n📍 {ubicacion}"
                     if ruta_qr:
-                        mensaje += f"\n\n📱 Escanea el código QR para obtener un descuento del 5%"
+                        mensaje += f"\n\n💡 Abajo te enviaremos un código QR con descuento exclusivo para ti."
                     enviar_mensaje_whatsapp(numero, mensaje)
                     
                     if ruta_qr and os.path.exists(ruta_qr):
                         time.sleep(2)
-                        caption_qr = f"Código QR - Descuento 5% en {restaurante.nombre}"
+                        caption_qr = f"📱 Código QR - {restaurante.nombre}\n\nMuestra este QR a la hora de pagar para poder acceder a un 5% de descuento."
                         print(f"🧪 [TEST] 📱 Enviando QR (sin imagen restaurante): {ruta_qr}")
                         resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr, caption_qr)
                         if resultado_qr.get("success"):
@@ -444,9 +444,9 @@ class Chat:
         mensaje = (
             f"¡Hola! 👋\n\n"
             f"Soy tu asistente virtual de viaje y estoy acá para ayudarte a aprovechar al máximo tu estadía en {usuario.ciudad}.\n\n"
-            f"A continuación te voy a hacer unas breves preguntas para conocerte mejor y poder recomendarte "
-            f"lugares, actividades y opciones que se adapten a tus gustos.\n\n"
-            f"La idea es sacarte de un apuro y ahorrarte horas buscando en Google \n\n"
+            f"A continuación te voy a hacer unas breves preguntas para conocerte mejor y poder recomendarte lugares, actividades y opciones que se adapten mejor a tus gustos.\n\n"
+            f"Además, muchas de las sugerencias incluyen beneficios y descuentos especiales pensados para nuestros pasajeros, para que disfrutes más gastando menos.\n\n"
+            f"La idea es simple: ahorrarte tiempo, evitar búsquedas interminables y llevarte directo a lo mejor de la ciudad.\n\n"
             f"¿Quieres que te proporcione este servicio sin costo adicional?"
         )
         
