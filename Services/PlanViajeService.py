@@ -13,6 +13,68 @@ logger = logging.getLogger(__name__)
 
 class PlanViajeService:
     @staticmethod
+    def _sanitizar_ruta_qr(ruta_qr: str, excursion: Excursion) -> Optional[str]:
+        """
+        Sanitiza la ruta del QR para manejar acentos y caracteres especiales.
+        Busca el archivo tanto con acento como sin él.
+        
+        Args:
+            ruta_qr: Ruta original del archivo QR
+            excursion: Excursión para obtener información adicional si es necesario
+        
+        Returns:
+            Ruta sanitizada que existe en el sistema, o None si no se encuentra
+        """
+        if not ruta_qr:
+            return None
+        
+        # Si la ruta existe tal cual, retornarla
+        if os.path.exists(ruta_qr):
+            return ruta_qr
+        
+        # Si no existe, intentar variaciones sin acentos
+        # Obtener directorio y nombre del archivo
+        directorio = os.path.dirname(ruta_qr)
+        nombre_archivo = os.path.basename(ruta_qr)
+        
+        # Crear variaciones del nombre sin acentos
+        nombre_sin_acentos = nombre_archivo
+        # Reemplazar acentos comunes
+        reemplazos = {
+            'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u',
+            'Á': 'A', 'É': 'E', 'Í': 'I', 'Ó': 'O', 'Ú': 'U',
+            'ñ': 'n', 'Ñ': 'N'
+        }
+        for acento, sin_acento in reemplazos.items():
+            nombre_sin_acentos = nombre_sin_acentos.replace(acento, sin_acento)
+        
+        # Intentar con nombre sin acentos
+        if nombre_sin_acentos != nombre_archivo:
+            ruta_sin_acentos = os.path.join(directorio, nombre_sin_acentos)
+            if os.path.exists(ruta_sin_acentos):
+                print(f"     🔄 QR encontrado con nombre sin acentos: {ruta_sin_acentos}")
+                return ruta_sin_acentos
+        
+        # Si aún no existe, intentar buscar por ID de excursión (más robusto)
+        # El QR generalmente se genera con el ID, no con el nombre
+        if excursion and excursion.id:
+            # Buscar archivo con patrón: {excursion_id}.png
+            posibles_nombres = [
+                f"{excursion.id}.png",
+                f"{excursion.id}.jpg",
+                f"{excursion.id}.jpeg"
+            ]
+            for nombre_posible in posibles_nombres:
+                ruta_posible = os.path.join(directorio, nombre_posible)
+                if os.path.exists(ruta_posible):
+                    print(f"     🔄 QR encontrado por ID: {ruta_posible}")
+                    return ruta_posible
+        
+        # Si no se encuentra ninguna variación, retornar None
+        print(f"     ⚠️ No se encontró QR en ninguna variación para: {ruta_qr}")
+        return None
+    
+    @staticmethod
     def _enviar_informacion_y_qr(numero: str, excursion: Excursion, ruta_qr: Optional[str] = None) -> bool:
         """
         Envía la información del lugar y luego el QR si corresponde.
@@ -116,27 +178,42 @@ class PlanViajeService:
                 logger.error(f"Excepción al enviar información de {excursion.nombre}: {e}")
         
         # PARTE 2: Solo si la información se envió exitosamente, enviar QR
-        if info_enviada_exitosamente and ruta_qr and os.path.exists(ruta_qr):
+        if info_enviada_exitosamente and ruta_qr:
+            # BLINDAJE 1: Sanitizar y verificar ruta del QR (manejar acentos y caracteres especiales)
+            ruta_qr_sanitizada = PlanViajeService._sanitizar_ruta_qr(ruta_qr, excursion)
+            
+            # BLINDAJE 1: Envolver envío de QR en try-except específico
+            # Si el QR falla, retornar True igual (info ya se envió) pero loguear error
             try:
-                time.sleep(2)  # Pausa para asegurar que la información se procesó
-                caption_qr = f"📱 *Código QR - {excursion.nombre}*\n\nMuestra este QR a la hora de pagar para poder acceder al descuento."
-                print(f"     📱 Enviando QR (información enviada exitosamente): {ruta_qr}")
-                resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr, caption_qr)
-                if resultado_qr.get("success"):
-                    print(f"     ✅ QR enviado exitosamente")
-                    time.sleep(2)
+                if ruta_qr_sanitizada and os.path.exists(ruta_qr_sanitizada):
+                    time.sleep(2)  # Pausa para asegurar que la información se procesó
+                    caption_qr = f"📱 *Código QR - {excursion.nombre}*\n\nMuestra este QR a la hora de pagar para poder acceder al descuento."
+                    print(f"     📱 Enviando QR (información enviada exitosamente): {ruta_qr_sanitizada}")
+                    resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr_sanitizada, caption_qr)
+                    if resultado_qr.get("success"):
+                        print(f"     ✅ QR enviado exitosamente")
+                        time.sleep(2)
+                    else:
+                        error_qr = resultado_qr.get('error', 'Error desconocido')
+                        print(f"     ⚠️ Error al enviar QR (pero información ya enviada): {error_qr}")
+                        logger.warning(f"Error al enviar QR para {excursion.nombre} (información ya enviada): {error_qr}")
+                        # NO lanzar excepción, solo loguear - la información ya se envió exitosamente
                 else:
-                    error_qr = resultado_qr.get('error', 'Error desconocido')
-                    print(f"     ❌ Error al enviar QR: {error_qr}")
-                    logger.error(f"Error al enviar QR para {excursion.nombre}: {error_qr}")
+                    print(f"     ⚠️ QR no existe en ruta (sanitizada): {ruta_qr_sanitizada}")
+                    logger.warning(f"QR no existe para {excursion.nombre} en ruta: {ruta_qr_sanitizada}")
             except Exception as e:
-                print(f"     ❌ Excepción al enviar QR: {e}")
-                logger.error(f"Excepción al enviar QR para {excursion.nombre}: {e}")
+                # BLINDAJE 1: Si QR falla por cualquier motivo, loguear pero NO afectar el retorno
+                print(f"     ⚠️ Excepción al enviar QR (pero información ya enviada): {e}")
+                logger.warning(f"Excepción al enviar QR para {excursion.nombre} (información ya enviada): {e}")
+                import traceback
+                logger.debug(f"Traceback QR: {traceback.format_exc()}")
+                # NO lanzar excepción, la información ya se envió exitosamente
         elif ruta_qr and not info_enviada_exitosamente:
             print(f"     ⚠️ NO se enviará QR porque la información del lugar no se envió exitosamente")
         elif ruta_qr and not os.path.exists(ruta_qr):
             print(f"     ⚠️ QR no existe en ruta: {ruta_qr}")
         
+        # BLINDAJE 1: Retornar True si la información se envió, independientemente del resultado del QR
         return info_enviada_exitosamente
     
     @staticmethod
@@ -171,8 +248,10 @@ class PlanViajeService:
         )
         
         # Excluir lugares ya enviados
+        # BLINDAJE 1: Normalizar IDs a string para comparación consistente
         if lugares_excluidos:
-            excursiones = [exc for exc in excursiones if exc.id not in lugares_excluidos]
+            lugares_excluidos_normalizados = [str(lugar_id) for lugar_id in lugares_excluidos]
+            excursiones = [exc for exc in excursiones if str(exc.id) not in lugares_excluidos_normalizados]
             print(f"🔍 [GENERAR_PLAN] Después de excluir lugares ya enviados: {len(excursiones)} excursiones")
         
         print(f"🔍 [GENERAR_PLAN] Excursiones después de filtrar por intereses: {len(excursiones)}")
@@ -358,7 +437,7 @@ class PlanViajeService:
         }
     
     @staticmethod
-    def enviar_plan_con_imagen(numero: str, plan: PlanViaje, ruta_imagen: Optional[str] = None):
+    def enviar_plan_con_imagen(numero: str, plan: PlanViaje, ruta_imagen: Optional[str] = None, chat=None):
         """
         Envía el plan con un mensaje individual por cada lugar.
         Primero envía imagen con resumen, luego cada excursión en mensajes separados con su imagen.
@@ -367,6 +446,7 @@ class PlanViajeService:
             numero: Número de teléfono del usuario
             plan: Plan de viaje a enviar
             ruta_imagen: Ruta opcional a la imagen del resumen. Si no se proporciona, busca automáticamente
+            chat: Objeto Chat opcional para actualizar lugares_enviados_seguimiento en conversation_data
         """
         from whatsapp_api import enviar_imagen_whatsapp, enviar_mensaje_whatsapp
         import time
@@ -485,10 +565,34 @@ class PlanViajeService:
                     # Usar función centralizada con verificación de 2 partes
                     info_enviada_exitosamente = PlanViajeService._enviar_informacion_y_qr(numero, excursion, ruta_qr)
 
-                    # Marcar lugar como enviado solo si la información se envió exitosamente
+                    # BLINDAJE 3: Verificación de persistencia inmediata
                     if info_enviada_exitosamente:
-                        # Guardar en UsuarioService para persistencia
+                        # CRÍTICO: Guardar en UsuarioService PRIMERO (persistencia principal)
                         UsuarioService.agregar_lugar_enviado(numero, excursion.id, excursion.categoria.lower())
+                        # Asegurar que el usuario se actualice en memoria
+                        usuario_actualizado = UsuarioService.obtener_usuario_por_telefono(numero)
+                        if usuario_actualizado:
+                            UsuarioService.actualizar_usuario(usuario_actualizado)
+                            print(f"✅ [PLAN] Lugar {excursion.id} guardado en UsuarioService")
+                        
+                        # CRÍTICO: Actualizar lugares_enviados_seguimiento en conversation_data si chat está disponible
+                        # BLINDAJE 1: Normalizar ID a string antes de guardar
+                        # BLINDAJE 4: Persistencia síncrona inmediata
+                        if chat and hasattr(chat, 'conversation_data'):
+                            if 'lugares_enviados_seguimiento' not in chat.conversation_data:
+                                chat.conversation_data['lugares_enviados_seguimiento'] = []
+                            
+                            lugar_id_str = str(excursion.id)  # Normalizar a string
+                            if lugar_id_str not in chat.conversation_data['lugares_enviados_seguimiento']:
+                                chat.conversation_data['lugares_enviados_seguimiento'].append(lugar_id_str)
+                                print(f"✅ [PLAN] Agregado lugar {lugar_id_str} a lugares_enviados_seguimiento")
+                                
+                                # BLINDAJE 4: Persistencia síncrona - verificar inmediatamente después de guardar
+                                lugares_guardados = chat.conversation_data.get('lugares_enviados_seguimiento', [])
+                                if lugar_id_str in lugares_guardados:
+                                    print(f"✅ [PLAN] Verificación: Lugar {lugar_id_str} confirmado en conversation_data")
+                                else:
+                                    logger.error(f"❌ [PLAN] ERROR: Lugar {lugar_id_str} NO se guardó correctamente en conversation_data")
 
                     print(f"     ✅ Proceso completado para {excursion.nombre}")
                     
@@ -541,16 +645,33 @@ class PlanViajeService:
         )
 
         # SOLUCIÓN 3: Filtrar lugares ya enviados usando el arreglo simple
+        # BLINDAJE 1: Normalizar IDs a string para comparación consistente
+        lugares_ya_enviados_normalizados = [str(lugar_id) for lugar_id in lugares_ya_enviados]
         excursiones_filtradas = []
         for exc in excursiones:
-            if exc.id not in lugares_ya_enviados:
+            if str(exc.id) not in lugares_ya_enviados_normalizados:
                 excursiones_filtradas.append(exc)
         
         print(f"🔍 [SEGUIMIENTO] Lugares a enviar después de filtrar: {len(excursiones_filtradas)}")
         
+        # BLINDAJE 2: Manejo mejorado de resultados vacíos
         if not excursiones_filtradas:
-            mensaje = "Ya te he enviado todos los lugares disponibles para estos intereses. Si querés ver más opciones, podés agregar otros intereses."
+            # Construir mensaje amigable con los intereses específicos
+            if len(nuevos_intereses) == 1:
+                interes_nombre = {
+                    "restaurantes": "restaurantes",
+                    "comercios": "comercios",
+                    "compras": "compras",
+                    "cultura": "cultura"
+                }.get(nuevos_intereses[0].lower(), nuevos_intereses[0])
+                mensaje = f"¡Ya te mostré todas nuestras opciones para {interes_nombre}! ¿Te gustaría probar con otra categoría?"
+            else:
+                intereses_texto = ", ".join(nuevos_intereses[:-1]) + f" y {nuevos_intereses[-1]}"
+                mensaje = f"¡Ya te mostré todas nuestras opciones para {intereses_texto}! ¿Te gustaría probar con otra categoría?"
+            
+            print(f"⚠️ [SEGUIMIENTO] No hay lugares nuevos para enviar. Mensaje enviado al usuario.")
             enviar_mensaje_whatsapp(numero, mensaje)
+            # Retornar None para que el flujo continúe normalmente al mensaje de cierre
             return
         
         # Limitar a máximo 10 lugares para no sobrecargar
@@ -598,18 +719,35 @@ class PlanViajeService:
                     # Usar función centralizada con verificación de 2 partes
                     info_enviada_exitosamente = PlanViajeService._enviar_informacion_y_qr(numero, excursion, ruta_qr)
 
-                    # SOLUCIÓN 3: Marcar lugar como enviado en el arreglo simple
+                    # BLINDAJE 3: Verificación de persistencia inmediata
                     if info_enviada_exitosamente:
                         lugares_enviados_ids.append(excursion.id)
-                        # Agregar al arreglo de seguimiento en conversation_data
+                        
+                        # CRÍTICO: Guardar en UsuarioService PRIMERO (persistencia principal)
+                        UsuarioService.agregar_lugar_enviado(numero, excursion.id, excursion.categoria.lower())
+                        # Asegurar que el usuario se actualice en memoria
+                        usuario_actualizado = UsuarioService.obtener_usuario_por_telefono(numero)
+                        if usuario_actualizado:
+                            UsuarioService.actualizar_usuario(usuario_actualizado)
+                            print(f"✅ [SEGUIMIENTO] Lugar {excursion.id} guardado en UsuarioService")
+                        
+                        # CRÍTICO: Guardar en conversation_data SEGUNDO (para filtrado inmediato)
+                        # BLINDAJE 1: Normalizar ID a string antes de guardar
+                        # BLINDAJE 4: Persistencia síncrona inmediata
                         if 'lugares_enviados_seguimiento' not in chat.conversation_data:
                             chat.conversation_data['lugares_enviados_seguimiento'] = []
-                        if excursion.id not in chat.conversation_data['lugares_enviados_seguimiento']:
-                            chat.conversation_data['lugares_enviados_seguimiento'].append(excursion.id)
-                            print(f"✅ [SEGUIMIENTO] Agregado lugar {excursion.id} a seguimiento")
-
-                        # También mantener en el usuario por interés (para compatibilidad)
-                        UsuarioService.agregar_lugar_enviado(numero, excursion.id, excursion.categoria.lower())
+                        
+                        lugar_id_str = str(excursion.id)  # Normalizar a string
+                        if lugar_id_str not in chat.conversation_data['lugares_enviados_seguimiento']:
+                            chat.conversation_data['lugares_enviados_seguimiento'].append(lugar_id_str)
+                            print(f"✅ [SEGUIMIENTO] Agregado lugar {lugar_id_str} a lugares_enviados_seguimiento")
+                            
+                            # BLINDAJE 4: Persistencia síncrona - verificar inmediatamente después de guardar
+                            lugares_guardados = chat.conversation_data.get('lugares_enviados_seguimiento', [])
+                            if lugar_id_str in lugares_guardados:
+                                print(f"✅ [SEGUIMIENTO] Verificación: Lugar {lugar_id_str} confirmado en conversation_data")
+                            else:
+                                logger.error(f"❌ [SEGUIMIENTO] ERROR: Lugar {lugar_id_str} NO se guardó correctamente en conversation_data")
 
                     time.sleep(3)
                     

@@ -70,11 +70,25 @@ class Chat:
         return self.conversation_data.get(key, default)
     
     def clear_conversation_data(self):
+        """Limpia conversation_data pero PROTEGE lugares_enviados_seguimiento"""
+        # BLINDAJE 4: Proteger lugares_enviados_seguimiento de limpieza accidental
+        lugares_enviados_protegidos = self.conversation_data.get('lugares_enviados_seguimiento', [])
         self.conversation_data = {}
+        # Restaurar lugares_enviados_seguimiento si existía
+        if lugares_enviados_protegidos:
+            self.conversation_data['lugares_enviados_seguimiento'] = lugares_enviados_protegidos
+            print(f"🛡️ [PROTECCIÓN] Lugares enviados protegidos: {len(lugares_enviados_protegidos)} lugares")
     
     def reset_conversation(self, numero):
+        """Resetea la conversación pero PROTEGE lugares_enviados_seguimiento"""
         clear_waiting_for(numero)
+        # BLINDAJE 4: Proteger lugares_enviados_seguimiento de limpieza accidental
+        lugares_enviados_protegidos = self.conversation_data.get('lugares_enviados_seguimiento', [])
         self.conversation_data = {}
+        # Restaurar lugares_enviados_seguimiento si existía
+        if lugares_enviados_protegidos:
+            self.conversation_data['lugares_enviados_seguimiento'] = lugares_enviados_protegidos
+            print(f"🛡️ [PROTECCIÓN] Lugares enviados protegidos durante reset: {len(lugares_enviados_protegidos)} lugares")
         print("Conversación reseteada.")
     
     def is_waiting_response(self, numero) -> bool:
@@ -599,11 +613,14 @@ class Chat:
 
                 # Identificar nuevos intereses: los que están en usuario.intereses pero no estaban antes
                 intereses_anteriores = self.conversation_data.get('intereses_anteriores', [])
+                # BLINDAJE 3: Usar deepcopy para evitar efectos secundarios por referencia
+                import copy
+                intereses_anteriores_copia = copy.deepcopy(intereses_anteriores) if intereses_anteriores else []
                 # Normalizar para comparación
-                intereses_anteriores_normalizados = [i.lower() for i in intereses_anteriores]
+                intereses_anteriores_normalizados = [str(i).lower() for i in intereses_anteriores_copia]
                 intereses_actuales = usuario.intereses or []
 
-                nuevos_intereses = [interes for interes in intereses_actuales if interes.lower() not in intereses_anteriores_normalizados]
+                nuevos_intereses = [interes for interes in intereses_actuales if str(interes).lower() not in intereses_anteriores_normalizados]
 
                 print(f"🔍 [SEGUIMIENTO] Intereses anteriores: {intereses_anteriores}")
                 print(f"🔍 [SEGUIMIENTO] Intereses actuales: {intereses_actuales}")
@@ -668,12 +685,14 @@ class Chat:
                 intereses_nuevos = []
                 # Obtener usuario actualizado antes de agregar
                 usuario = UsuarioService.obtener_usuario_por_telefono(numero)
-                intereses_anteriores = usuario.intereses.copy() if usuario.intereses else []
+                # BLINDAJE 3: Usar deepcopy para evitar efectos secundarios por referencia
+                import copy
+                intereses_anteriores = copy.deepcopy(usuario.intereses) if usuario.intereses else []
 
                 for interes in intereses_detectados:
                     # Normalizar para comparación
-                    interes_normalizado = interes.lower()
-                    intereses_anteriores_normalizados = [i.lower() for i in intereses_anteriores]
+                    interes_normalizado = str(interes).lower()
+                    intereses_anteriores_normalizados = [str(i).lower() for i in intereses_anteriores]
 
                     if interes_normalizado not in intereses_anteriores_normalizados:
                         usuario.agregar_interes(interes)
@@ -688,7 +707,9 @@ class Chat:
                 usuario = UsuarioService.obtener_usuario_por_telefono(numero)
 
                 # Actualizar estado local
-                intereses_actuales = usuario.intereses.copy() if usuario.intereses else []
+                # BLINDAJE 3: Usar deepcopy para evitar efectos secundarios por referencia
+                import copy
+                intereses_actuales = copy.deepcopy(usuario.intereses) if usuario.intereses else []
                 set_intereses_seleccionados(numero, intereses_actuales)
 
                 # SI viene desde seguimiento, guardar inmediatamente los nuevos intereses
@@ -1121,20 +1142,23 @@ class Chat:
         palabras = texto_limpio.split()
         
         for palabra in palabras:
-            palabra_limpia = palabra.strip()
+            palabra_limpia = palabra.strip().lower()
             # Verificar coincidencia exacta primero (más rápido y preciso)
             if palabra_limpia in intereses_map:
                 interes = intereses_map[palabra_limpia]
                 if interes not in intereses_detectados:
                     intereses_detectados.append(interes)
+                    print(f"🔍 [DETECTAR] Interés detectado por coincidencia exacta: '{palabra_limpia}' -> '{interes}'")
             else:
                 # Buscar coincidencias parciales solo si la palabra tiene más de 2 caracteres
                 # (evita falsos positivos con números de un solo dígito)
                 if len(palabra_limpia) > 2:
                     for key, interes in intereses_map.items():
-                        if key in palabra_limpia or palabra_limpia in key:
+                        # Verificar si la palabra contiene la clave o viceversa (case insensitive)
+                        if key.lower() in palabra_limpia or palabra_limpia in key.lower():
                             if interes not in intereses_detectados:
                                 intereses_detectados.append(interes)
+                                print(f"🔍 [DETECTAR] Interés detectado por coincidencia parcial: '{palabra_limpia}' contiene '{key}' -> '{interes}'")
                             break
         
         return intereses_detectados
@@ -1395,26 +1419,36 @@ class Chat:
         if not plan:
             return self.flujo_generando_plan(numero, texto)
         
-        # Guardar IDs de lugares enviados para evitar duplicados en futuras recomendaciones
-        lugares_enviados = [exc.id for exc in plan.excursiones]
+        # CRÍTICO: NO guardar lugares ANTES de enviarlos, se guardarán DESPUÉS de enviarlos exitosamente
+        # BLINDAJE 4: Proteger lugares_enviados_seguimiento - inicializar solo si no existe
         if 'lugares_enviados_seguimiento' not in self.conversation_data:
             self.conversation_data['lugares_enviados_seguimiento'] = []
-        self.conversation_data['lugares_enviados_seguimiento'].extend(lugares_enviados)
-        print(f"✅ [PLAN_PRESENTADO] Agregados {len(lugares_enviados)} lugares a seguimiento: {lugares_enviados}")
+        else:
+            # Verificar que no se haya limpiado accidentalmente
+            if not isinstance(self.conversation_data['lugares_enviados_seguimiento'], list):
+                print(f"⚠️ [PROTECCIÓN] lugares_enviados_seguimiento no es una lista, reinicializando...")
+                self.conversation_data['lugares_enviados_seguimiento'] = []
         
         # Enviar plan con imagen (si está disponible) y texto detallado
         # El método maneja errores silenciosamente si no hay imagen
-        PlanViajeService.enviar_plan_con_imagen(numero, plan)
+        # CRÍTICO: Pasar self (chat) para que pueda actualizar lugares_enviados_seguimiento
+        PlanViajeService.enviar_plan_con_imagen(numero, plan, chat=self)
         
         # Obtener usuario para actualizar lugares enviados
         usuario = UsuarioService.obtener_usuario_por_telefono(numero)
         
-        # Actualizar lugares_enviados del usuario con todos los lugares enviados en el plan
-        # Agrupar por categoría (interés) para guardar correctamente
+        # CRÍTICO: Los lugares ya se guardaron en conversation_data cuando se enviaron exitosamente
+        # Solo actualizar en UsuarioService los que realmente se enviaron (ya están en conversation_data)
+        # BLINDAJE 1: Normalizar IDs a string para consistencia
+        lugares_enviados_raw = self.conversation_data.get('lugares_enviados_seguimiento', [])
+        lugares_enviados = [str(lugar_id) for lugar_id in lugares_enviados_raw]  # Normalizar a string
         if usuario:
-            for exc in plan.excursiones:
-                interes = exc.categoria.lower()
-                UsuarioService.agregar_lugar_enviado(numero, exc.id, interes)
+            for exc_id in lugares_enviados:
+                # Buscar la excursión en el plan para obtener su categoría
+                exc = next((e for e in plan.excursiones if e.id == exc_id), None)
+                if exc:
+                    interes = exc.categoria.lower()
+                    UsuarioService.agregar_lugar_enviado(numero, exc.id, interes)
             print(f"✅ [PLAN_PRESENTADO] Actualizados lugares enviados del usuario. Total: {len(lugares_enviados)} lugares")
         
         # Obtener usuario actualizado después de actualizar lugares
@@ -1463,7 +1497,9 @@ class Chat:
         if texto in ("agregar_mas_intereses_si", "agregar_mas_intereses_no"):
             if texto == "agregar_mas_intereses_si":
                 # Guardar intereses actuales para identificar los nuevos después
-                self.conversation_data['intereses_anteriores'] = usuario.intereses.copy() if usuario.intereses else []
+                # BLINDAJE 3: Usar deepcopy para evitar efectos secundarios por referencia
+                import copy
+                self.conversation_data['intereses_anteriores'] = copy.deepcopy(usuario.intereses) if usuario.intereses else []
                 # Marcar que viene desde mensaje de cierre para excluir intereses ya seleccionados
                 self.conversation_data['agregando_mas_intereses'] = True
                 # Redirigir a selección de intereses (excluyendo los ya seleccionados)
