@@ -110,43 +110,124 @@ def enviar_imagen_whatsapp(numero, ruta_o_url_imagen, caption=""):
     es_url = ruta_o_url_imagen.startswith(('http://', 'https://'))
     
     if es_url:
-        # Usar URL directamente (más simple y eficiente)
-        data = {
-            "messaging_product": "whatsapp",
-            "to": numero,
-            "type": "image",
-            "image": {
-                "link": ruta_o_url_imagen
-            }
-        }
-        
-        if caption:
-            data["image"]["caption"] = caption
+        # NUEVA ESTRATEGIA: Descargar imagen y subirla a WhatsApp Media API
+        # Esto es más confiable que usar URLs externas directamente
+        import tempfile
+        import shutil
         
         try:
+            print(f"📥 Descargando imagen desde URL: {ruta_o_url_imagen[:80]}...")
+            response_download = requests.get(ruta_o_url_imagen, timeout=10, stream=True)
+            
+            if response_download.status_code != 200:
+                print(f"❌ Error descargando imagen: Status {response_download.status_code}")
+                return {"success": False, "error": f"No se pudo descargar la imagen: Status {response_download.status_code}"}
+            
+            # Detectar tipo de imagen desde headers o URL
+            content_type = response_download.headers.get('content-type', '')
+            if 'image' not in content_type:
+                # Intentar detectar desde extensión de URL
+                if ruta_o_url_imagen.lower().endswith(('.jpg', '.jpeg')):
+                    content_type = 'image/jpeg'
+                elif ruta_o_url_imagen.lower().endswith('.png'):
+                    content_type = 'image/png'
+                elif ruta_o_url_imagen.lower().endswith('.gif'):
+                    content_type = 'image/gif'
+                else:
+                    content_type = 'image/jpeg'  # Default
+            
+            # Crear archivo temporal
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
+                temp_path = temp_file.name
+                shutil.copyfileobj(response_download.raw, temp_file)
+            
+            print(f"✅ Imagen descargada temporalmente: {temp_path}")
+            
+            # Subir a WhatsApp Media API (usar el mismo código que para archivos locales)
+            _imagen = f"{WHATSAPP_API_URL}/{WHATSAPP_PHONE_NUMBER_ID}/media"
+            upload_headers = {
+                "Authorization": f"Bearer {WHATSAPP_ACCESS_TOKEN}",
+            }
+            
+            with open(temp_path, 'rb') as img_file:
+                files = {
+                    'file': (os.path.basename(temp_path), img_file, content_type),
+                    'messaging_product': (None, 'whatsapp'),
+                }
+                
+                print(f"📤 Subiendo imagen a WhatsApp Media API...")
+                respuesta = requests.post(_imagen, headers=upload_headers, files=files)
+                
+                print(f"📨 Respuesta de subida: Status {respuesta.status_code}")
+                if respuesta.status_code != 200:
+                    print(f"❌ Error subiendo imagen: {respuesta.status_code}")
+                    print(f"   Respuesta: {respuesta.text}")
+                    # Limpiar archivo temporal
+                    try:
+                        os.unlink(temp_path)
+                    except:
+                        pass
+                    return {"success": False, "error": f"Error al subir imagen: {respuesta.text}"}
+                
+                respuesta_json = respuesta.json()
+                print(f"📨 Respuesta JSON de subida: {respuesta_json}")
+                media_id = respuesta_json.get("id")
+                print(f"✅ Imagen subida. Media ID: {media_id}")
+            
+            # Limpiar archivo temporal
+            try:
+                os.unlink(temp_path)
+            except:
+                pass
+            
+            # Enviar mensaje usando media_id
+            data = {
+                "messaging_product": "whatsapp",
+                "to": numero,
+                "type": "image",
+                "image": {
+                    "id": media_id
+                }
+            }
+            
+            if caption:
+                caption_limpio = caption[:1024] if len(caption) <= 1024 else caption[:1021] + "..."
+                data["image"]["caption"] = caption_limpio
+                print(f"📝 Caption a enviar ({len(caption_limpio)} chars): {caption_limpio[:100]}...")
+            
+            print(f"📤 Payload completo: {data}")
             response = requests.post(url, headers=headers, json=data)
-            print(f"➡️ Enviando imagen desde URL a {numero}")
+            print(f"➡️ Enviando imagen a {numero} usando Media ID")
             print("📨 Estado:", response.status_code)
             
             try:
                 res_json = response.json()
+                print(f"📨 Respuesta completa de WhatsApp: {res_json}")
                 if response.status_code == 200:
                     print("✅ Imagen enviada exitosamente")
+                    message_id = res_json.get("messages", [{}])[0].get("id")
+                    print(f"📨 Message ID recibido: {message_id}")
                     return {
                         "success": True,
-                        "message_id": res_json.get("messages", [{}])[0].get("id")
+                        "message_id": message_id
                     }
                 else:
-                    print(f"❌ Error enviando imagen: {res_json.get('error', 'Error desconocido')}")
+                    error_info = res_json.get("error", "Error desconocido")
+                    print(f"❌ Error en respuesta: {error_info}")
                     return {
                         "success": False,
-                        "error": res_json.get("error", "Error desconocido")
+                        "error": error_info
                     }
             except Exception as e:
                 print("⚠️ Error al interpretar la respuesta:", e)
+                print(f"⚠️ Respuesta raw: {response.text}")
                 return {"success": False, "error": str(e)}
+                
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Error descargando imagen desde URL: {e}")
+            return {"success": False, "error": f"Error al descargar imagen: {str(e)}"}
         except Exception as e:
-            print(f"❌ Error enviando imagen desde URL: {e}")
+            print(f"❌ Error procesando imagen desde URL: {e}")
             return {"success": False, "error": str(e)}
     else:
         # Código original para archivos locales (subir a media de WhatsApp)

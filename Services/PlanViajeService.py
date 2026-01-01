@@ -170,49 +170,73 @@ class PlanViajeService:
         print(f"📤 [LOG ENVÍO] Tiene QR: {ruta_qr is not None}")
         print(f"{'='*80}\n")
         
-        # 1. ESTRATEGIA CAMBIADA: Enviar SIEMPRE texto primero (más confiable)
-        # Luego, si hay imagen y el texto fue exitoso, enviar imagen como complemento
+        # 1. Intentar enviar la información (Imagen con caption o Texto)
+        # NUEVA ESTRATEGIA: Las imágenes ahora se descargan y suben a WhatsApp Media API
+        # Esto las hace más confiables que usar URLs externas directamente
         descripcion = excursion.descripcion if excursion.descripcion else "Sin descripción disponible"
         ubicacion = excursion.ubicacion if excursion.ubicacion else None
         
-        # Construir mensaje de texto (siempre se envía primero)
-        mensaje_texto = f"*{excursion.nombre}*\n\n{descripcion}"
-        if ubicacion:
-            mensaje_texto += f"\n\n📍 {ubicacion}"
-        
-        print(f"🚀 [PASO 1A] Enviando Info de {excursion.nombre} (TEXTO PRIMERO - más confiable)...")
-        print(f"📝 [PASO 1A] CONTENIDO A ENVIAR:")
-        print(f"   Nombre: {excursion.nombre}")
-        print(f"   Descripción: {descripcion[:100]}..." if len(descripcion) > 100 else f"   Descripción: {descripcion}")
-        print(f"   Ubicación: {ubicacion}" if ubicacion else "   Ubicación: No disponible")
-        print(f"   Mensaje completo ({len(mensaje_texto)} chars): {mensaje_texto[:200]}..." if len(mensaje_texto) > 200 else f"   Mensaje completo: {mensaje_texto}")
-        
-        resultado_texto = enviar_mensaje_whatsapp(numero, mensaje_texto)
-        print(f"📊 [PASO 1A] RESULTADO TEXTO: success={resultado_texto.get('success', False)}, error={resultado_texto.get('error', 'N/A')}")
-        
-        # Validar que el texto se envió exitosamente
-        info_enviada_exitosamente = resultado_texto.get("success", False)
-        
-        # 2. Si el texto fue exitoso Y hay imagen, enviar imagen como complemento (opcional)
-        if info_enviada_exitosamente and excursion.imagen_url:
-            caption_imagen = f"*{excursion.nombre}*\n\n{descripcion}"
+        # Construir caption/mensaje
+        if excursion.imagen_url:
+            caption = f"*{excursion.nombre}*\n\n{descripcion}"
             if ubicacion:
-                caption_imagen += f"\n\n📍 {ubicacion}"
+                caption += f"\n\n📍 {ubicacion}"
             
-            if len(caption_imagen) > 1024:
-                caption_imagen = caption_imagen[:1021] + "..."
+            if len(caption) > 1024:
+                caption = caption[:1021] + "..."
             
-            print(f"🚀 [PASO 1B] Enviando imagen como complemento para {excursion.nombre}...")
+            print(f"🚀 [PASO 1] Enviando Info de {excursion.nombre} (imagen - descargada y subida a WhatsApp)...")
+            print(f"📝 [PASO 1] CONTENIDO A ENVIAR:")
+            print(f"   Nombre: {excursion.nombre}")
+            print(f"   Descripción: {descripcion[:100]}..." if len(descripcion) > 100 else f"   Descripción: {descripcion}")
+            print(f"   Ubicación: {ubicacion}" if ubicacion else "   Ubicación: No disponible")
             print(f"   URL Imagen: {excursion.imagen_url[:80]}..." if len(excursion.imagen_url) > 80 else f"   URL Imagen: {excursion.imagen_url}")
+            print(f"   Caption completo ({len(caption)} chars): {caption[:200]}..." if len(caption) > 200 else f"   Caption completo: {caption}")
+            resultado_info = enviar_imagen_whatsapp(numero, excursion.imagen_url, caption)
+            print(f"📊 [PASO 1] RESULTADO: success={resultado_info.get('success', False)}, message_id={resultado_info.get('message_id', 'N/A')}, error={resultado_info.get('error', 'N/A')}")
+        else:
+            # Sin imagen, enviar texto directamente
+            mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
+            if ubicacion:
+                mensaje += f"\n\n📍 {ubicacion}"
             
-            resultado_imagen = enviar_imagen_whatsapp(numero, excursion.imagen_url, caption_imagen)
-            print(f"📊 [PASO 1B] RESULTADO IMAGEN: success={resultado_imagen.get('success', False)}, message_id={resultado_imagen.get('message_id', 'N/A')}, error={resultado_imagen.get('error', 'N/A')}")
-            
-            # La imagen es opcional: si falla, no afecta el éxito (ya enviamos el texto)
-            if not resultado_imagen.get("success", False):
-                print(f"⚠️ [AVISO] La imagen no se pudo enviar, pero el texto ya fue enviado exitosamente.")
+            print(f"🚀 [PASO 1] Enviando Info de {excursion.nombre} (texto)...")
+            print(f"📝 [PASO 1] CONTENIDO A ENVIAR:")
+            print(f"   Nombre: {excursion.nombre}")
+            print(f"   Descripción: {descripcion[:100]}..." if len(descripcion) > 100 else f"   Descripción: {descripcion}")
+            print(f"   Ubicación: {ubicacion}" if ubicacion else "   Ubicación: No disponible")
+            print(f"   Mensaje completo ({len(mensaje)} chars): {mensaje[:200]}..." if len(mensaje) > 200 else f"   Mensaje completo: {mensaje}")
+            resultado_info = enviar_mensaje_whatsapp(numero, mensaje)
+            print(f"📊 [PASO 1] RESULTADO: success={resultado_info.get('success', False)}, error={resultado_info.get('error', 'N/A')}")
         
-        print(f"✅ [PASO 1] VALIDACIÓN FINAL: info_enviada_exitosamente = {info_enviada_exitosamente}")
+        # 2. VALIDACIÓN CRÍTICA: ¿WhatsApp nos dio un OK (Status 200)?
+        info_enviada_exitosamente = resultado_info.get("success", False)
+        message_id_valido = resultado_info.get("message_id") is not None and resultado_info.get("message_id") != "N/A"
+        
+        # Para imágenes, requerimos message_id válido (ahora más confiable porque se suben a WhatsApp)
+        if excursion.imagen_url:
+            if not info_enviada_exitosamente or not message_id_valido:
+                print(f"⚠️ [ADVERTENCIA] Imagen falló o sin message_id válido para {excursion.nombre}.")
+                print(f"⚠️ [ADVERTENCIA] success={info_enviada_exitosamente}, message_id={resultado_info.get('message_id', 'N/A')}")
+                print(f"⚠️ [ADVERTENCIA] Intentando fallback de texto...")
+                info_enviada_exitosamente = False  # Forzar fallback
+        
+        print(f"✅ [PASO 1] VALIDACIÓN: info_enviada_exitosamente = {info_enviada_exitosamente}, message_id_válido = {message_id_valido}")
+        
+        # 3. SALVAVIDAS: Si la imagen falló, intentamos TEXTO SOLO
+        if not info_enviada_exitosamente:
+            print(f"⚠️ [SALVAVIDAS] Imagen falló para {excursion.nombre}. Intentando enviar solo TEXTO como respaldo...")
+            mensaje_fallback = f"*{excursion.nombre}*\n\n{descripcion}"
+            if ubicacion:
+                mensaje_fallback += f"\n\n📍 {ubicacion}"
+            
+            print(f"📝 [SALVAVIDAS] CONTENIDO FALLBACK A ENVIAR:")
+            print(f"   Mensaje fallback completo ({len(mensaje_fallback)} chars): {mensaje_fallback[:200]}..." if len(mensaje_fallback) > 200 else f"   Mensaje fallback completo: {mensaje_fallback}")
+            resultado_fallback = enviar_mensaje_whatsapp(numero, mensaje_fallback)
+            print(f"📊 [SALVAVIDAS] RESULTADO: success={resultado_fallback.get('success', False)}, error={resultado_fallback.get('error', 'N/A')}")
+            # Para texto, verificamos success (puede que no haya message_id en la respuesta de texto)
+            info_enviada_exitosamente = resultado_fallback.get("success", False)
+            print(f"✅ [SALVAVIDAS] VALIDACIÓN: info_enviada_exitosamente = {info_enviada_exitosamente}")
         
         # 4. EL CANDADO: Si después de intentar Imagen y luego Texto NADA salió...
         if not info_enviada_exitosamente:
@@ -756,6 +780,9 @@ class PlanViajeService:
             return
         
         print(f"📋 [SEGUIMIENTO] Enviando lugares para nuevos intereses: {nuevos_intereses}")
+        print(f"🔍 [SEGUIMIENTO] IMPORTANTE: Solo se enviarán lugares de estos nuevos intereses, NO de todos los intereses del usuario")
+        print(f"🔍 [SEGUIMIENTO] Intereses totales del usuario: {usuario.intereses if usuario else 'N/A'}")
+        print(f"🔍 [SEGUIMIENTO] Nuevos intereses (solo estos se usarán): {nuevos_intereses}")
         
         # SOLUCIÓN 3: Usar arreglo simple de lugares enviados en conversation_data
         lugares_ya_enviados_raw = chat.conversation_data.get('lugares_enviados_seguimiento', [])
@@ -772,12 +799,17 @@ class PlanViajeService:
         print(f"🔍 [SEGUIMIENTO] BLINDAJE IDs - Tipos normalizados: {[type(lugar_id).__name__ for lugar_id in lugares_ya_enviados[:5]]}")
         print(f"🔍 [SEGUIMIENTO] BLINDAJE IDs - Valores normalizados (primeros 5): {lugares_ya_enviados[:5]}")
 
-        # Obtener excursiones para los nuevos intereses
+        # CRÍTICO: Obtener excursiones SOLO para los nuevos intereses (NO todos los intereses del usuario)
+        print(f"🔍 [SEGUIMIENTO] Llamando a obtener_excursiones_por_intereses con SOLO nuevos intereses: {nuevos_intereses}")
         excursiones = ExcursionService.obtener_excursiones_por_intereses(
             ciudad=usuario.ciudad,
-            intereses=nuevos_intereses,
+            intereses=nuevos_intereses,  # CRÍTICO: Solo nuevos intereses, NO usuario.intereses
             perfil=usuario.perfil
         )
+        print(f"🔍 [SEGUIMIENTO] Excursiones obtenidas (antes de filtrar): {len(excursiones)} lugares")
+        print(f"🔍 [SEGUIMIENTO] Verificando categorías de excursiones obtenidas:")
+        for exc in excursiones[:5]:  # Mostrar primeros 5
+            print(f"   - {exc.nombre} (Categoría: {exc.categoria})")
 
         # SOLUCIÓN 3: Filtrar lugares ya enviados usando el arreglo simple
         # CORRECCIÓN BUG IDs MIXTOS: lugares_ya_enviados ya está normalizado arriba
