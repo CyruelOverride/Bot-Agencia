@@ -593,38 +593,46 @@ class Chat:
             if self.conversation_data.get('agregando_mas_intereses', False):
                 # Limpiar el flag
                 self.conversation_data['agregando_mas_intereses'] = False
-                
+
                 # Obtener usuario actualizado para asegurar que tiene los intereses más recientes
                 usuario = UsuarioService.obtener_usuario_por_telefono(numero)
-                
+
                 # Identificar nuevos intereses: los que están en usuario.intereses pero no estaban antes
                 intereses_anteriores = self.conversation_data.get('intereses_anteriores', [])
                 # Normalizar para comparación
                 intereses_anteriores_normalizados = [i.lower() for i in intereses_anteriores]
-                intereses_actuales_normalizados = [i.lower() for i in (usuario.intereses or [])]
-                
-                nuevos_intereses = [interes for interes in usuario.intereses if interes.lower() not in intereses_anteriores_normalizados]
-                
+                intereses_actuales = usuario.intereses or []
+
+                nuevos_intereses = [interes for interes in intereses_actuales if interes.lower() not in intereses_anteriores_normalizados]
+
                 print(f"🔍 [SEGUIMIENTO] Intereses anteriores: {intereses_anteriores}")
-                print(f"🔍 [SEGUIMIENTO] Intereses actuales: {usuario.intereses}")
+                print(f"🔍 [SEGUIMIENTO] Intereses actuales: {intereses_actuales}")
                 print(f"🔍 [SEGUIMIENTO] Nuevos intereses identificados: {nuevos_intereses}")
-                
+
                 if not nuevos_intereses:
                     # No hay nuevos intereses, informar al usuario
                     mensaje = "No se detectaron nuevos intereses. Por favor, seleccioná los intereses que querés agregar."
                     enviar_mensaje_whatsapp(numero, mensaje)
                     # Volver a mostrar opciones de intereses
                     return self._mostrar_mensaje_intereses(numero, usuario, True)
-                
-                # Guardar nuevos intereses en conversation_data para usar en flujo_generando_plan
-                self.conversation_data['nuevos_intereses_seguimiento'] = nuevos_intereses
-                
-                # Generar recomendaciones solo de los nuevos intereses, excluyendo lugares ya enviados
-                set_estado_bot(numero, ESTADOS_BOT["GENERANDO_PLAN"])
-                usuario.estado_conversacion = ESTADOS_BOT["GENERANDO_PLAN"]
-                UsuarioService.actualizar_usuario(usuario)
-                clear_waiting_for(numero)
-                return self.flujo_generando_plan(numero, texto)
+
+                # CRÍTICO: Enviar lugares SOLO de los nuevos intereses, NO generar un nuevo plan completo
+                print(f"🔍 [SEGUIMIENTO] ENVIANDO SOLO LUGARES DE NUEVOS INTERESES: {nuevos_intereses}")
+                PlanViajeService.enviar_lugares_seguimiento(numero, usuario, nuevos_intereses)
+
+                # Obtener usuario actualizado después de enviar lugares
+                usuario = UsuarioService.obtener_usuario_por_telefono(numero)
+
+                # Enviar mensaje de cierre
+                self._enviar_mensaje_cierre_recomendaciones(numero, usuario, None)
+
+                # Pasar a seguimiento
+                set_estado_bot(numero, ESTADOS_BOT["SEGUIMIENTO"])
+                if usuario:
+                    usuario.estado_conversacion = ESTADOS_BOT["SEGUIMIENTO"]
+                    UsuarioService.actualizar_usuario(usuario)
+
+                return None
             
             # Flujo normal: continuar al siguiente flujo
             set_estado_bot(numero, ESTADOS_BOT["ARMANDO_PERFIL"])
@@ -654,29 +662,50 @@ class Chat:
                 # Obtener usuario actualizado antes de agregar
                 usuario = UsuarioService.obtener_usuario_por_telefono(numero)
                 intereses_anteriores = usuario.intereses.copy() if usuario.intereses else []
-                
+
                 for interes in intereses_detectados:
                     # Normalizar para comparación
                     interes_normalizado = interes.lower()
                     intereses_anteriores_normalizados = [i.lower() for i in intereses_anteriores]
-                    
+
                     if interes_normalizado not in intereses_anteriores_normalizados:
                         usuario.agregar_interes(interes)
                         intereses_nuevos.append(interes)
                         print(f"✅ Interés agregado: {interes}")
                     else:
                         print(f"⚠️ Interés ya existe: {interes}")
-                
+
                 UsuarioService.actualizar_usuario(usuario)
-                
+
                 # Obtener usuario actualizado después de agregar intereses
                 usuario = UsuarioService.obtener_usuario_por_telefono(numero)
-                
+
                 # Actualizar estado local
                 intereses_actuales = usuario.intereses.copy() if usuario.intereses else []
                 set_intereses_seleccionados(numero, intereses_actuales)
-                
-                # Mostrar confirmación con botones
+
+                # SI viene desde seguimiento, guardar inmediatamente los nuevos intereses
+                # para que se usen en flujo_generando_plan
+                if self.conversation_data.get('agregando_mas_intereses', False):
+                    if intereses_nuevos:
+                        # Guardar nuevos intereses para el flujo de generación
+                        self.conversation_data['nuevos_intereses_seguimiento'] = intereses_nuevos
+                        print(f"🔍 [SEGUIMIENTO] Nuevos intereses detectados desde texto: {intereses_nuevos}")
+
+                        # Ir directamente a generar plan con estos nuevos intereses
+                        set_estado_bot(numero, ESTADOS_BOT["GENERANDO_PLAN"])
+                        usuario.estado_conversacion = ESTADOS_BOT["GENERANDO_PLAN"]
+                        UsuarioService.actualizar_usuario(usuario)
+                        clear_waiting_for(numero)
+                        return self.flujo_generando_plan(numero, texto)
+                    else:
+                        # No hay nuevos intereses
+                        mensaje = "No se detectaron nuevos intereses. Ya tenés todos estos intereses seleccionados."
+                        enviar_mensaje_whatsapp(numero, mensaje)
+                        # Volver a mostrar opciones
+                        return self._mostrar_mensaje_intereses(numero, usuario, True)
+
+                # Mostrar confirmación con botones (flujo normal)
                 print(f"✅ Intereses totales después de agregar: {intereses_actuales}")
                 print(f"✅ Nuevos intereses agregados: {intereses_nuevos}")
                 return self._mostrar_confirmacion_intereses(numero, usuario)
@@ -1278,7 +1307,7 @@ class Chat:
             if nuevos_intereses:
                 # Viene desde seguimiento: usar método directo sin Gemini
                 print(f"🔍 [GENERAR_PLAN] Modo seguimiento: enviando lugares SOLO para nuevos intereses {nuevos_intereses}")
-                
+
                 # Verificar que nuevos_intereses no esté vacío
                 if not nuevos_intereses:
                     print(f"⚠️ [GENERAR_PLAN] No hay nuevos intereses, volviendo a seguimiento")
@@ -1286,28 +1315,27 @@ class Chat:
                     usuario.estado_conversacion = ESTADOS_BOT["SEGUIMIENTO"]
                     UsuarioService.actualizar_usuario(usuario)
                     return None
-                
+
                 # Limpiar el flag de nuevos intereses
                 if 'nuevos_intereses_seguimiento' in self.conversation_data:
                     del self.conversation_data['nuevos_intereses_seguimiento']
-                
-                # CRÍTICO: Enviar lugares SOLO de los nuevos intereses, NO todo el plan
-                # Obtener usuario actualizado para asegurar que tiene los intereses correctos
-                usuario = UsuarioService.obtener_usuario_por_telefono(numero)
+
+                # CRÍTICO: Enviar lugares SOLO de los nuevos intereses, NO generar un nuevo plan completo
+                print(f"🔍 [GENERAR_PLAN] ENVIANDO SOLO LUGARES DE NUEVOS INTERESES: {nuevos_intereses}")
                 PlanViajeService.enviar_lugares_seguimiento(numero, usuario, nuevos_intereses)
-                
+
                 # Obtener usuario actualizado después de enviar lugares
                 usuario = UsuarioService.obtener_usuario_por_telefono(numero)
-                
+
                 # Enviar mensaje de cierre
                 self._enviar_mensaje_cierre_recomendaciones(numero, usuario, None)
-                
+
                 # Pasar a seguimiento
                 set_estado_bot(numero, ESTADOS_BOT["SEGUIMIENTO"])
                 if usuario:
                     usuario.estado_conversacion = ESTADOS_BOT["SEGUIMIENTO"]
                     UsuarioService.actualizar_usuario(usuario)
-                
+
                 return None
             else:
                 # Flujo normal: generar plan completo con Gemini
@@ -1409,6 +1437,8 @@ class Chat:
         # Procesar botones de agregar más intereses
         if texto in ("agregar_mas_intereses_si", "agregar_mas_intereses_no"):
             if texto == "agregar_mas_intereses_si":
+                # Guardar intereses actuales para identificar los nuevos después
+                self.conversation_data['intereses_anteriores'] = usuario.intereses.copy() if usuario.intereses else []
                 # Marcar que viene desde mensaje de cierre para excluir intereses ya seleccionados
                 self.conversation_data['agregando_mas_intereses'] = True
                 # Redirigir a selección de intereses (excluyendo los ya seleccionados)
