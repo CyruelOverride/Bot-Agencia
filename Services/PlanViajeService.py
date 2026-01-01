@@ -208,11 +208,19 @@ class PlanViajeService:
             resultado_info = enviar_mensaje_whatsapp(numero, mensaje)
             print(f"📊 [PASO 1] RESULTADO: success={resultado_info.get('success', False)}, error={resultado_info.get('error', 'N/A')}")
         
-        # 2. VALIDACIÓN CRÍTICA: ¿WhatsApp nos dio un OK (Status 200)?
+        # 2. VALIDACIÓN CRÍTICA: ¿WhatsApp nos dio un OK (Status 200) Y un message_id válido?
         info_enviada_exitosamente = resultado_info.get("success", False)
-        print(f"✅ [PASO 1] VALIDACIÓN: info_enviada_exitosamente = {info_enviada_exitosamente}")
+        message_id_valido = resultado_info.get("message_id") is not None and resultado_info.get("message_id") != "N/A"
         
-        # 3. SALVAVIDAS: Si la imagen falló (link roto), intentamos TEXTO SOLO
+        # VERIFICACIÓN ADICIONAL: Si success=True pero no hay message_id, puede ser un falso positivo
+        if info_enviada_exitosamente and not message_id_valido and excursion.imagen_url:
+            print(f"⚠️ [ADVERTENCIA] WhatsApp devolvió success=True pero sin message_id válido para {excursion.nombre}.")
+            print(f"⚠️ [ADVERTENCIA] Esto puede indicar que la imagen no se procesó correctamente. Intentando fallback de texto...")
+            info_enviada_exitosamente = False  # Forzar fallback
+        
+        print(f"✅ [PASO 1] VALIDACIÓN: info_enviada_exitosamente = {info_enviada_exitosamente}, message_id_válido = {message_id_valido}")
+        
+        # 3. SALVAVIDAS: Si la imagen falló (link roto o sin message_id), intentamos TEXTO SOLO
         if not info_enviada_exitosamente:
             print(f"⚠️ [SALVAVIDAS] Imagen/Texto falló para {excursion.nombre}. Intentando enviar solo TEXTO como respaldo...")
             mensaje_fallback = f"*{excursion.nombre}*\n\n{descripcion}"
@@ -236,8 +244,10 @@ class PlanViajeService:
         
         # 5. SOLO SI LLEGAMOS AQUÍ, procedemos con el QR
         if ruta_qr and os.path.exists(ruta_qr):
-            print(f"✅ [CONFIRMACIÓN] Info confirmada. Esperando 6s para mandar QR de {excursion.nombre}...")
-            time.sleep(6)
+            # AUMENTAR DELAY: 10 segundos para dar tiempo a que WhatsApp procese y entregue el mensaje anterior
+            print(f"✅ [CONFIRMACIÓN] Info confirmada. Esperando 10s para asegurar que el mensaje anterior llegue antes del QR de {excursion.nombre}...")
+            print(f"⏳ [ESPERA] Esto previene que el QR llegue antes que la información del lugar.")
+            time.sleep(10)
             
             # Sanitizar ruta del QR
             ruta_qr_sanitizada = PlanViajeService._sanitizar_ruta_qr(ruta_qr, excursion)

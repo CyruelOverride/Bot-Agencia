@@ -752,24 +752,34 @@ class Chat:
         """Muestra el mensaje de selección de intereses con opciones numeradas"""
         intereses_actuales = usuario.intereses if usuario.intereses else []
         
-        # Lista de todos los intereses disponibles
+        # Lista de todos los intereses disponibles CON NÚMEROS ESTÁTICOS
+        # IMPORTANTE: Los números NUNCA cambian (1=restaurantes, 2=comercios, 3=compras, 4=cultura)
         intereses_opciones = [
-            {"id": "restaurantes", "nombre": "Restaurantes", "emoji": "🍽️"},
-            {"id": "comercios", "nombre": "Comercios", "emoji": "🛍️"},
-            {"id": "compras", "nombre": "Compras", "emoji": "🛒"},
-            {"id": "cultura", "nombre": "Cultura", "emoji": "🎭"}
+            {"id": "restaurantes", "nombre": "Restaurantes", "emoji": "🍽️", "numero": 1},
+            {"id": "comercios", "nombre": "Comercios", "emoji": "🛍️", "numero": 2},
+            {"id": "compras", "nombre": "Compras", "emoji": "🛒", "numero": 3},
+            {"id": "cultura", "nombre": "Cultura", "emoji": "🎭", "numero": 4}
         ]
         
-        # Si excluir_seleccionados es True, filtrar los ya seleccionados
-        if excluir_seleccionados:
-            intereses_disponibles = [op for op in intereses_opciones if op["id"] not in intereses_actuales]
-        else:
-            intereses_disponibles = intereses_opciones
+        # Normalizar intereses actuales para comparación
+        intereses_actuales_normalizados = [str(i).lower() for i in intereses_actuales]
         
-        # Construir mensaje con opciones numeradas
+        # Construir mensaje con opciones numeradas ESTÁTICAS
         mensaje = "¿Qué te interesa? (Por favor elegí separando por , o espacios)\n\n"
-        for idx, opcion in enumerate(intereses_disponibles, 1):
-            mensaje += f"{idx}. {opcion['emoji']} {opcion['nombre']}\n"
+        
+        for opcion in intereses_opciones:
+            # Verificar si ya está seleccionado
+            ya_seleccionado = opcion["id"].lower() in intereses_actuales_normalizados
+            
+            if excluir_seleccionados and ya_seleccionado:
+                # Si estamos excluyendo seleccionados, no mostrar este
+                continue
+            
+            # Mostrar con número estático (nunca cambia)
+            if ya_seleccionado:
+                mensaje += f"{opcion['numero']}. {opcion['emoji']} {opcion['nombre']} ✅ (ya seleccionado)\n"
+            else:
+                mensaje += f"{opcion['numero']}. {opcion['emoji']} {opcion['nombre']}\n"
         
         mensaje += "\nEjemplo: \"1 2 3\" o \"restaurantes compras comercios\""
         
