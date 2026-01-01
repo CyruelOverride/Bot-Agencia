@@ -513,8 +513,11 @@ class PlanViajeService:
                         # NO incluir mensaje del QR en el texto principal, se enviará después
                         
                         resultado_texto = enviar_mensaje_whatsapp(numero, mensaje)
+                        texto_enviado_exitosamente = False
+                        
                         if resultado_texto.get("success"):
                             print(f"     ✅ Mensaje de texto enviado exitosamente")
+                            texto_enviado_exitosamente = True
                         else:
                             error_texto = resultado_texto.get('error', 'Error desconocido')
                             print(f"     ⚠️ Error al enviar mensaje de texto: {error_texto}")
@@ -526,11 +529,14 @@ class PlanViajeService:
                             resultado_texto_retry = enviar_mensaje_whatsapp(numero, mensaje)
                             if resultado_texto_retry.get("success"):
                                 print(f"     ✅ Mensaje de texto enviado exitosamente en reintento")
+                                texto_enviado_exitosamente = True
                             else:
                                 print(f"     ❌ Error persistente al enviar mensaje de texto")
+                                print(f"     ⚠️ NO se enviará QR porque el mensaje de información falló")
                         
-                        # Enviar QR después del texto en mensaje separado
-                        if ruta_qr and os.path.exists(ruta_qr):
+                        # CRÍTICO: Solo enviar QR si el mensaje de información se envió exitosamente
+                        # NUNCA enviar QR sin información del lugar
+                        if texto_enviado_exitosamente and ruta_qr and os.path.exists(ruta_qr):
                             try:
                                 # Pausa más larga para asegurar que el texto se procesó completamente
                                 time.sleep(3)
@@ -576,4 +582,155 @@ class PlanViajeService:
                     continue
         
         print(f"✅ Finalizado envío de mensajes individuales")
+    
+    @staticmethod
+    def enviar_lugares_seguimiento(numero: str, usuario: Usuario, nuevos_intereses: List[str]):
+        """
+        Envía lugares directamente sin usar Gemini para el resumen.
+        Solo envía lugares de los nuevos intereses que no se hayan enviado antes.
+        
+        Args:
+            numero: Número de teléfono del usuario
+            usuario: Usuario para el cual enviar los lugares
+            nuevos_intereses: Lista de nuevos intereses agregados en seguimiento
+        """
+        from whatsapp_api import enviar_imagen_whatsapp, enviar_mensaje_whatsapp
+        from Services.UsuarioService import UsuarioService
+        import time
+        
+        if not nuevos_intereses:
+            print(f"⚠️ [SEGUIMIENTO] No hay nuevos intereses para enviar")
+            return
+        
+        print(f"📋 [SEGUIMIENTO] Enviando lugares para nuevos intereses: {nuevos_intereses}")
+        
+        # Obtener lugares ya enviados por interés
+        lugares_enviados_por_interes = {}
+        for interes in nuevos_intereses:
+            lugares_enviados_por_interes[interes] = usuario.obtener_lugares_enviados_por_interes(interes)
+            print(f"🔍 [SEGUIMIENTO] Interés '{interes}': {len(lugares_enviados_por_interes[interes])} lugares ya enviados")
+        
+        # Obtener excursiones para los nuevos intereses
+        excursiones = ExcursionService.obtener_excursiones_por_intereses(
+            ciudad=usuario.ciudad,
+            intereses=nuevos_intereses,
+            perfil=usuario.perfil
+        )
+        
+        # Filtrar lugares ya enviados por interés
+        excursiones_filtradas = []
+        for exc in excursiones:
+            interes_exc = exc.categoria.lower()
+            lugares_enviados = lugares_enviados_por_interes.get(interes_exc, [])
+            if exc.id not in lugares_enviados:
+                excursiones_filtradas.append(exc)
+        
+        print(f"🔍 [SEGUIMIENTO] Lugares a enviar después de filtrar: {len(excursiones_filtradas)}")
+        
+        if not excursiones_filtradas:
+            mensaje = "Ya te he enviado todos los lugares disponibles para estos intereses. Si querés ver más opciones, podés agregar otros intereses."
+            enviar_mensaje_whatsapp(numero, mensaje)
+            return
+        
+        # Limitar a máximo 10 lugares para no sobrecargar
+        excursiones_filtradas = excursiones_filtradas[:10]
+        
+        # Agrupar por categoría (interés)
+        excursiones_por_categoria = {}
+        for exc in excursiones_filtradas:
+            categoria = exc.categoria.lower()
+            if categoria not in excursiones_por_categoria:
+                excursiones_por_categoria[categoria] = []
+            excursiones_por_categoria[categoria].append(exc)
+        
+        # Emojis por categoría
+        emojis_categoria = {
+            "restaurantes": "🍽️",
+            "comercios": "🛍️",
+            "compras": "🛒",
+            "cultura": "🎭"
+        }
+        
+        # Enviar lugares directamente sin resumen inicial
+        lugares_enviados_ids = []
+        for categoria, excursiones_cat in excursiones_por_categoria.items():
+            emoji = emojis_categoria.get(categoria, "📍")
+            print(f"📤 [SEGUIMIENTO] Procesando categoría: {categoria} ({emoji}) - {len(excursiones_cat)} lugares")
+            
+            for excursion in excursiones_cat:
+                print(f"  → Enviando lugar: {excursion.nombre}")
+                try:
+                    descripcion = excursion.descripcion if excursion.descripcion else "Sin descripción disponible"
+                    ubicacion = excursion.ubicacion if excursion.ubicacion else None
+                    
+                    # Verificar si es restaurante/comercio y obtener QR
+                    ruta_qr = None
+                    if debe_enviar_qr(excursion.categoria):
+                        try:
+                            ruta_qr = obtener_ruta_qr(excursion.id)
+                            if ruta_qr and os.path.exists(ruta_qr):
+                                print(f"     ✅ QR disponible para {excursion.nombre}")
+                        except Exception as e:
+                            print(f"     ⚠️ Error al generar QR: {e}")
+                            logger.warning(f"No se pudo generar QR para {excursion.nombre}: {e}")
+                    
+                    # Enviar información del lugar primero
+                    if excursion.imagen_url:
+                        caption = f"*{excursion.nombre}*\n\n{descripcion}"
+                        if ubicacion:
+                            caption += f"\n\n📍 {ubicacion}"
+                        if ruta_qr:
+                            caption += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
+                        
+                        if len(caption) > 1024:
+                            caption = caption[:1021] + "..."
+                        
+                        resultado = enviar_imagen_whatsapp(numero, excursion.imagen_url, caption)
+                        info_enviada = resultado.get("success", False)
+                        
+                        if not info_enviada:
+                            # Fallback a texto
+                            mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
+                            if ubicacion:
+                                mensaje += f"\n\n📍 {ubicacion}"
+                            if ruta_qr:
+                                mensaje += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
+                            resultado_texto = enviar_mensaje_whatsapp(numero, mensaje)
+                            info_enviada = resultado_texto.get("success", False)
+                    else:
+                        # Solo texto
+                        mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
+                        if ubicacion:
+                            mensaje += f"\n\n📍 {ubicacion}"
+                        if ruta_qr:
+                            mensaje += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
+                        resultado_texto = enviar_mensaje_whatsapp(numero, mensaje)
+                        info_enviada = resultado_texto.get("success", False)
+                    
+                    # CRÍTICO: Solo enviar QR si la información se envió exitosamente
+                    if info_enviada and ruta_qr and os.path.exists(ruta_qr):
+                        try:
+                            time.sleep(2)
+                            caption_qr = f"📱 *Código QR - {excursion.nombre}*\n\nMuestra este QR a la hora de pagar para poder acceder al descuento."
+                            resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr, caption_qr)
+                            if resultado_qr.get("success"):
+                                print(f"     ✅ QR enviado exitosamente")
+                                time.sleep(2)
+                        except Exception as e:
+                            print(f"     ❌ Error al enviar QR: {e}")
+                            logger.error(f"Error al enviar QR para {excursion.nombre}: {e}")
+                    
+                    # Marcar lugar como enviado
+                    if info_enviada:
+                        lugares_enviados_ids.append(excursion.id)
+                        UsuarioService.agregar_lugar_enviado(numero, excursion.id, excursion.categoria.lower())
+                    
+                    time.sleep(3)
+                    
+                except Exception as e:
+                    print(f"     ❌ Error al procesar {excursion.nombre}: {e}")
+                    logger.error(f"Error al enviar lugar {excursion.nombre}: {e}")
+                    continue
+        
+        print(f"✅ [SEGUIMIENTO] Finalizado envío de lugares. Total enviados: {len(lugares_enviados_ids)}")
 

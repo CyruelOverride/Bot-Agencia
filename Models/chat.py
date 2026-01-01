@@ -593,6 +593,18 @@ class Chat:
             if self.conversation_data.get('agregando_mas_intereses', False):
                 # Limpiar el flag
                 self.conversation_data['agregando_mas_intereses'] = False
+                
+                # Identificar nuevos intereses: los que están en usuario.intereses pero no estaban antes
+                intereses_anteriores = self.conversation_data.get('intereses_anteriores', [])
+                nuevos_intereses = [interes for interes in usuario.intereses if interes not in intereses_anteriores]
+                
+                print(f"🔍 [SEGUIMIENTO] Intereses anteriores: {intereses_anteriores}")
+                print(f"🔍 [SEGUIMIENTO] Intereses actuales: {usuario.intereses}")
+                print(f"🔍 [SEGUIMIENTO] Nuevos intereses identificados: {nuevos_intereses}")
+                
+                # Guardar nuevos intereses en conversation_data para usar en flujo_generando_plan
+                self.conversation_data['nuevos_intereses_seguimiento'] = nuevos_intereses
+                
                 # Generar recomendaciones solo de los nuevos intereses, excluyendo lugares ya enviados
                 set_estado_bot(numero, ESTADOS_BOT["GENERANDO_PLAN"])
                 usuario.estado_conversacion = ESTADOS_BOT["GENERANDO_PLAN"]
@@ -761,10 +773,19 @@ class Chat:
         
         # Intereses disponibles en el sistema
         intereses_disponibles = ["restaurantes", "comercios", "compras", "cultura"]
+        # Obtener intereses actualizados del usuario (asegurar que estén actualizados)
         intereses_usuario = usuario.intereses if usuario.intereses else []
         
-        # Verificar si tiene todos los intereses
-        tiene_todos_los_intereses = all(interes in intereses_usuario for interes in intereses_disponibles)
+        # Normalizar intereses para comparación (lowercase)
+        intereses_usuario_normalizados = [interes.lower() for interes in intereses_usuario]
+        intereses_disponibles_normalizados = [interes.lower() for interes in intereses_disponibles]
+        
+        # Verificar si tiene todos los intereses (comparación case-insensitive)
+        tiene_todos_los_intereses = all(interes in intereses_usuario_normalizados for interes in intereses_disponibles_normalizados)
+        
+        print(f"🔍 [CIERRE] Intereses del usuario: {intereses_usuario}")
+        print(f"🔍 [CIERRE] Intereses disponibles: {intereses_disponibles}")
+        print(f"🔍 [CIERRE] Tiene todos los intereses: {tiene_todos_los_intereses}")
         
         mensaje_base = "Espero que estas recomendaciones hayan sido de tu agrado"
         
@@ -1221,24 +1242,54 @@ class Chat:
             return self.flujo_inicio(numero, texto)
         
         try:
-            # Obtener lugares ya enviados para excluirlos de nuevas recomendaciones
-            lugares_excluidos = self.conversation_data.get('lugares_enviados', [])
+            # Verificar si viene desde seguimiento (agregando más intereses)
+            nuevos_intereses = self.conversation_data.get('nuevos_intereses_seguimiento', None)
             
-            # Generar plan (excluyendo lugares ya enviados si hay)
-            plan = PlanViajeService.generar_plan_personalizado(usuario, lugares_excluidos=lugares_excluidos)
-            
-            # Guardar plan en conversation_data
-            self.conversation_data['plan_viaje'] = plan
-            
-            # Pasar a presentación del plan
-            set_estado_bot(numero, ESTADOS_BOT["PLAN_PRESENTADO"])
-            usuario.estado_conversacion = ESTADOS_BOT["PLAN_PRESENTADO"]
-            UsuarioService.actualizar_usuario(usuario)
-            
-            return self.flujo_plan_presentado(numero, texto)
+            if nuevos_intereses:
+                # Viene desde seguimiento: usar método directo sin Gemini
+                print(f"🔍 [GENERAR_PLAN] Modo seguimiento: enviando lugares para nuevos intereses {nuevos_intereses}")
+                
+                # Limpiar el flag de nuevos intereses
+                del self.conversation_data['nuevos_intereses_seguimiento']
+                
+                # Enviar lugares directamente sin resumen
+                PlanViajeService.enviar_lugares_seguimiento(numero, usuario, nuevos_intereses)
+                
+                # Obtener usuario actualizado después de enviar lugares
+                usuario = UsuarioService.obtener_usuario_por_telefono(numero)
+                
+                # Enviar mensaje de cierre
+                self._enviar_mensaje_cierre_recomendaciones(numero, usuario, None)
+                
+                # Pasar a seguimiento
+                set_estado_bot(numero, ESTADOS_BOT["SEGUIMIENTO"])
+                if usuario:
+                    usuario.estado_conversacion = ESTADOS_BOT["SEGUIMIENTO"]
+                    UsuarioService.actualizar_usuario(usuario)
+                
+                return None
+            else:
+                # Flujo normal: generar plan completo con Gemini
+                # Obtener lugares ya enviados para excluirlos de nuevas recomendaciones
+                lugares_excluidos = self.conversation_data.get('lugares_enviados', [])
+                
+                # Generar plan (excluyendo lugares ya enviados si hay)
+                plan = PlanViajeService.generar_plan_personalizado(usuario, lugares_excluidos=lugares_excluidos)
+                
+                # Guardar plan en conversation_data
+                self.conversation_data['plan_viaje'] = plan
+                
+                # Pasar a presentación del plan
+                set_estado_bot(numero, ESTADOS_BOT["PLAN_PRESENTADO"])
+                usuario.estado_conversacion = ESTADOS_BOT["PLAN_PRESENTADO"]
+                UsuarioService.actualizar_usuario(usuario)
+                
+                return self.flujo_plan_presentado(numero, texto)
             
         except Exception as e:
             print(f"Error al generar plan: {e}")
+            import traceback
+            traceback.print_exc()
             return enviar_mensaje_whatsapp(
                 numero,
                 "⚠️ Hubo un error al generar tu plan. Por favor, intentá de nuevo o escribí /reiniciar para comenzar de nuevo."
@@ -1261,7 +1312,18 @@ class Chat:
         # El método maneja errores silenciosamente si no hay imagen
         PlanViajeService.enviar_plan_con_imagen(numero, plan)
         
-        # Obtener usuario para el mensaje de cierre
+        # Obtener usuario para actualizar lugares enviados
+        usuario = UsuarioService.obtener_usuario_por_telefono(numero)
+        
+        # Actualizar lugares_enviados del usuario con todos los lugares enviados en el plan
+        # Agrupar por categoría (interés) para guardar correctamente
+        if usuario:
+            for exc in plan.excursiones:
+                interes = exc.categoria.lower()
+                UsuarioService.agregar_lugar_enviado(numero, exc.id, interes)
+            print(f"✅ [PLAN_PRESENTADO] Actualizados lugares enviados del usuario. Total: {len(lugares_enviados)} lugares")
+        
+        # Obtener usuario actualizado después de actualizar lugares
         usuario = UsuarioService.obtener_usuario_por_telefono(numero)
         
         # Enviar mensaje de cierre después de todas las recomendaciones

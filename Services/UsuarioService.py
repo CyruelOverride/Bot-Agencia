@@ -96,6 +96,37 @@ class UsuarioService:
             UsuarioService.actualizar_usuario(usuario)
     
     @staticmethod
+    def agregar_lugar_enviado(telefono: str, lugar_id: str, interes: str):
+        """
+        Agrega un lugar enviado al usuario.
+        
+        Args:
+            telefono: Teléfono del usuario
+            lugar_id: ID del lugar enviado
+            interes: Interés al que pertenece el lugar (restaurantes, comercios, compras, cultura)
+        """
+        usuario = UsuarioService.obtener_usuario_por_telefono(telefono)
+        if usuario:
+            usuario.agregar_lugar_enviado(lugar_id, interes)
+            UsuarioService.actualizar_usuario(usuario)
+    
+    @staticmethod
+    def agregar_lugares_enviados(telefono: str, lugares: list, interes: str):
+        """
+        Agrega múltiples lugares enviados al usuario.
+        
+        Args:
+            telefono: Teléfono del usuario
+            lugares: Lista de IDs de lugares enviados
+            interes: Interés al que pertenecen los lugares
+        """
+        usuario = UsuarioService.obtener_usuario_por_telefono(telefono)
+        if usuario:
+            for lugar_id in lugares:
+                usuario.agregar_lugar_enviado(lugar_id, interes)
+            UsuarioService.actualizar_usuario(usuario)
+    
+    @staticmethod
     def obtener_todos_los_usuarios() -> list:
         """Obtiene todos los usuarios (útil para debugging)"""
         return list(USUARIOS.values())

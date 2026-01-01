@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Dict
 from datetime import datetime
 from Models.perfil_usuario import PerfilUsuario
 
@@ -12,7 +12,8 @@ class Usuario:
         intereses: Optional[List[str]] = None,
         perfil: Optional[PerfilUsuario] = None,
         estado_conversacion: str = "INICIO",
-        fecha_ultima_interaccion: Optional[datetime] = None
+        fecha_ultima_interaccion: Optional[datetime] = None,
+        lugares_enviados: Optional[Dict[str, List[str]]] = None
     ):
         self.telefono = telefono
         self.nombre = nombre
@@ -21,6 +22,8 @@ class Usuario:
         self.perfil = perfil
         self.estado_conversacion = estado_conversacion
         self.fecha_ultima_interaccion = fecha_ultima_interaccion or datetime.now()
+        # Diccionario donde la clave es el interés y el valor es una lista de IDs de lugares enviados
+        self.lugares_enviados = lugares_enviados or {}
     
     def actualizar_ultima_interaccion(self):
         self.fecha_ultima_interaccion = datetime.now()
@@ -28,6 +31,43 @@ class Usuario:
     def agregar_interes(self, interes: str):
         if interes not in self.intereses:
             self.intereses.append(interes)
+    
+    def agregar_lugar_enviado(self, lugar_id: str, interes: str):
+        """
+        Agrega un lugar enviado al diccionario de lugares enviados.
+        
+        Args:
+            lugar_id: ID del lugar enviado
+            interes: Interés al que pertenece el lugar (restaurantes, comercios, compras, cultura)
+        """
+        if interes not in self.lugares_enviados:
+            self.lugares_enviados[interes] = []
+        if lugar_id not in self.lugares_enviados[interes]:
+            self.lugares_enviados[interes].append(lugar_id)
+    
+    def obtener_lugares_enviados_por_interes(self, interes: str) -> List[str]:
+        """
+        Obtiene la lista de IDs de lugares enviados para un interés específico.
+        
+        Args:
+            interes: Interés del cual obtener los lugares enviados
+            
+        Returns:
+            Lista de IDs de lugares enviados para ese interés
+        """
+        return self.lugares_enviados.get(interes, [])
+    
+    def obtener_todos_lugares_enviados(self) -> List[str]:
+        """
+        Obtiene todos los IDs de lugares enviados sin importar el interés.
+        
+        Returns:
+            Lista de todos los IDs de lugares enviados
+        """
+        todos_lugares = []
+        for lugares in self.lugares_enviados.values():
+            todos_lugares.extend(lugares)
+        return todos_lugares
     
     def tiene_perfil_completo(self) -> bool:
         """
@@ -95,6 +135,7 @@ class Usuario:
             "intereses": self.intereses,
             "perfil": self.perfil.to_dict() if self.perfil else None,
             "estado_conversacion": self.estado_conversacion,
-            "fecha_ultima_interaccion": self.fecha_ultima_interaccion.isoformat() if self.fecha_ultima_interaccion else None
+            "fecha_ultima_interaccion": self.fecha_ultima_interaccion.isoformat() if self.fecha_ultima_interaccion else None,
+            "lugares_enviados": self.lugares_enviados
         }
 
