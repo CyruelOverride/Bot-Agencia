@@ -185,7 +185,14 @@ class PlanViajeService:
                 caption = caption[:1021] + "..."
             
             print(f"🚀 [PASO 1] Enviando Info de {excursion.nombre} (imagen)...")
+            print(f"📝 [PASO 1] CONTENIDO A ENVIAR:")
+            print(f"   Nombre: {excursion.nombre}")
+            print(f"   Descripción: {descripcion[:100]}..." if len(descripcion) > 100 else f"   Descripción: {descripcion}")
+            print(f"   Ubicación: {ubicacion}" if ubicacion else "   Ubicación: No disponible")
+            print(f"   URL Imagen: {excursion.imagen_url[:80]}..." if len(excursion.imagen_url) > 80 else f"   URL Imagen: {excursion.imagen_url}")
+            print(f"   Caption completo ({len(caption)} chars): {caption[:200]}..." if len(caption) > 200 else f"   Caption completo: {caption}")
             resultado_info = enviar_imagen_whatsapp(numero, excursion.imagen_url, caption)
+            print(f"📊 [PASO 1] RESULTADO: success={resultado_info.get('success', False)}, message_id={resultado_info.get('message_id', 'N/A')}, error={resultado_info.get('error', 'N/A')}")
         else:
             # Sin imagen, enviar texto directamente
             mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
@@ -193,10 +200,17 @@ class PlanViajeService:
                 mensaje += f"\n\n📍 {ubicacion}"
             
             print(f"🚀 [PASO 1] Enviando Info de {excursion.nombre} (texto)...")
+            print(f"📝 [PASO 1] CONTENIDO A ENVIAR:")
+            print(f"   Nombre: {excursion.nombre}")
+            print(f"   Descripción: {descripcion[:100]}..." if len(descripcion) > 100 else f"   Descripción: {descripcion}")
+            print(f"   Ubicación: {ubicacion}" if ubicacion else "   Ubicación: No disponible")
+            print(f"   Mensaje completo ({len(mensaje)} chars): {mensaje[:200]}..." if len(mensaje) > 200 else f"   Mensaje completo: {mensaje}")
             resultado_info = enviar_mensaje_whatsapp(numero, mensaje)
+            print(f"📊 [PASO 1] RESULTADO: success={resultado_info.get('success', False)}, error={resultado_info.get('error', 'N/A')}")
         
         # 2. VALIDACIÓN CRÍTICA: ¿WhatsApp nos dio un OK (Status 200)?
         info_enviada_exitosamente = resultado_info.get("success", False)
+        print(f"✅ [PASO 1] VALIDACIÓN: info_enviada_exitosamente = {info_enviada_exitosamente}")
         
         # 3. SALVAVIDAS: Si la imagen falló (link roto), intentamos TEXTO SOLO
         if not info_enviada_exitosamente:
@@ -205,8 +219,12 @@ class PlanViajeService:
             if ubicacion:
                 mensaje_fallback += f"\n\n📍 {ubicacion}"
             
+            print(f"📝 [SALVAVIDAS] CONTENIDO FALLBACK A ENVIAR:")
+            print(f"   Mensaje fallback completo ({len(mensaje_fallback)} chars): {mensaje_fallback[:200]}..." if len(mensaje_fallback) > 200 else f"   Mensaje fallback completo: {mensaje_fallback}")
             resultado_fallback = enviar_mensaje_whatsapp(numero, mensaje_fallback)
+            print(f"📊 [SALVAVIDAS] RESULTADO: success={resultado_fallback.get('success', False)}, error={resultado_fallback.get('error', 'N/A')}")
             info_enviada_exitosamente = resultado_fallback.get("success", False)
+            print(f"✅ [SALVAVIDAS] VALIDACIÓN: info_enviada_exitosamente = {info_enviada_exitosamente}")
         
         # 4. EL CANDADO: Si después de intentar Imagen y luego Texto NADA salió...
         if not info_enviada_exitosamente:
