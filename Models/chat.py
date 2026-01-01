@@ -697,7 +697,10 @@ class Chat:
                     if intereses_nuevos:
                         # Guardar nuevos intereses para el flujo de generación
                         self.conversation_data['nuevos_intereses_seguimiento'] = intereses_nuevos
+                        # CRÍTICO: Activar bandera para evitar Gemini
+                        self.conversation_data['modo_seguimiento'] = True
                         print(f"🔍 [SEGUIMIENTO] Nuevos intereses detectados desde texto: {intereses_nuevos}")
+                        print(f"🔍 [SEGUIMIENTO] Bandera modo_seguimiento activada para evitar Gemini")
 
                         # Ir directamente a generar plan con estos nuevos intereses
                         set_estado_bot(numero, ESTADOS_BOT["GENERANDO_PLAN"])
@@ -1357,7 +1360,11 @@ class Chat:
                 print(f"🔍 [GENERAR_PLAN] MODO NORMAL - Usando Gemini para generar plan completo")
 
                 # Obtener lugares ya enviados para excluirlos de nuevas recomendaciones
+                # CRÍTICO: Asegurar que siempre se use la lista completa de lugares enviados
                 lugares_excluidos = self.conversation_data.get('lugares_enviados_seguimiento', [])
+                print(f"🔍 [GENERAR_PLAN] Lugares excluidos del plan: {len(lugares_excluidos)} lugares")
+                if lugares_excluidos:
+                    print(f"🔍 [GENERAR_PLAN] IDs excluidos: {lugares_excluidos[:10]}...")  # Mostrar primeros 10
 
                 # Generar plan (excluyendo lugares ya enviados si hay)
                 plan = PlanViajeService.generar_plan_personalizado(usuario, lugares_excluidos=lugares_excluidos)

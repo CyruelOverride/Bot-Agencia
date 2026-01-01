@@ -13,6 +13,133 @@ logger = logging.getLogger(__name__)
 
 class PlanViajeService:
     @staticmethod
+    def _enviar_informacion_y_qr(numero: str, excursion: Excursion, ruta_qr: Optional[str] = None) -> bool:
+        """
+        Envía la información del lugar y luego el QR si corresponde.
+        Verificación de 2 partes:
+        1. Primero envía la información del lugar
+        2. Solo si la información se envió exitosamente, envía el QR
+        
+        Args:
+            numero: Número de teléfono del usuario
+            excursion: Excursión a enviar
+            ruta_qr: Ruta opcional al archivo QR (si no se proporciona, se intenta generar)
+        
+        Returns:
+            bool: True si la información se envió exitosamente, False en caso contrario
+        """
+        from whatsapp_api import enviar_imagen_whatsapp, enviar_mensaje_whatsapp
+        import time
+        
+        descripcion = excursion.descripcion if excursion.descripcion else "Sin descripción disponible"
+        ubicacion = excursion.ubicacion if excursion.ubicacion else None
+        info_enviada_exitosamente = False
+        
+        # PARTE 1: Enviar información del lugar
+        if excursion.imagen_url:
+            # Intentar enviar imagen primero
+            caption = f"*{excursion.nombre}*\n\n{descripcion}"
+            if ubicacion:
+                caption += f"\n\n📍 {ubicacion}"
+            if ruta_qr:
+                caption += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
+            
+            if len(caption) > 1024:
+                caption = caption[:1021] + "..."
+            
+            try:
+                resultado = enviar_imagen_whatsapp(numero, excursion.imagen_url, caption)
+                if resultado.get("success"):
+                    print(f"     ✅ Información del lugar enviada exitosamente (imagen)")
+                    info_enviada_exitosamente = True
+                else:
+                    # Fallback a texto si falla la imagen
+                    print(f"     ⚠️ Error al enviar imagen, intentando con texto...")
+                    mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
+                    if ubicacion:
+                        mensaje += f"\n\n📍 {ubicacion}"
+                    if ruta_qr:
+                        mensaje += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
+                    
+                    resultado_texto = enviar_mensaje_whatsapp(numero, mensaje)
+                    if resultado_texto.get("success"):
+                        print(f"     ✅ Información del lugar enviada exitosamente (texto fallback)")
+                        info_enviada_exitosamente = True
+                    else:
+                        print(f"     ❌ Error al enviar información del lugar (imagen y texto fallaron)")
+                        logger.error(f"No se pudo enviar información de {excursion.nombre}")
+            except Exception as e:
+                # Excepción al enviar imagen, intentar texto
+                print(f"     ⚠️ Excepción al enviar imagen: {e}, intentando con texto...")
+                mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
+                if ubicacion:
+                    mensaje += f"\n\n📍 {ubicacion}"
+                if ruta_qr:
+                    mensaje += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
+                
+                try:
+                    resultado_texto = enviar_mensaje_whatsapp(numero, mensaje)
+                    if resultado_texto.get("success"):
+                        print(f"     ✅ Información del lugar enviada exitosamente (texto fallback excepción)")
+                        info_enviada_exitosamente = True
+                    else:
+                        print(f"     ❌ Error al enviar información del lugar (texto fallback falló)")
+                        logger.error(f"No se pudo enviar información de {excursion.nombre}: {e}")
+                except Exception as e2:
+                    print(f"     ❌ Error crítico al enviar información del lugar: {e2}")
+                    logger.error(f"Error crítico al enviar información de {excursion.nombre}: {e2}")
+        else:
+            # Solo texto (sin imagen)
+            mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
+            if ubicacion:
+                mensaje += f"\n\n📍 {ubicacion}"
+            if ruta_qr:
+                mensaje += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
+            
+            try:
+                resultado_texto = enviar_mensaje_whatsapp(numero, mensaje)
+                if resultado_texto.get("success"):
+                    print(f"     ✅ Información del lugar enviada exitosamente (texto)")
+                    info_enviada_exitosamente = True
+                else:
+                    # Reintentar una vez
+                    time.sleep(1)
+                    resultado_texto_retry = enviar_mensaje_whatsapp(numero, mensaje)
+                    if resultado_texto_retry.get("success"):
+                        print(f"     ✅ Información del lugar enviada exitosamente (texto reintento)")
+                        info_enviada_exitosamente = True
+                    else:
+                        print(f"     ❌ Error al enviar información del lugar (texto falló)")
+                        logger.error(f"No se pudo enviar información de {excursion.nombre}")
+            except Exception as e:
+                print(f"     ❌ Excepción al enviar información del lugar: {e}")
+                logger.error(f"Excepción al enviar información de {excursion.nombre}: {e}")
+        
+        # PARTE 2: Solo si la información se envió exitosamente, enviar QR
+        if info_enviada_exitosamente and ruta_qr and os.path.exists(ruta_qr):
+            try:
+                time.sleep(2)  # Pausa para asegurar que la información se procesó
+                caption_qr = f"📱 *Código QR - {excursion.nombre}*\n\nMuestra este QR a la hora de pagar para poder acceder al descuento."
+                print(f"     📱 Enviando QR (información enviada exitosamente): {ruta_qr}")
+                resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr, caption_qr)
+                if resultado_qr.get("success"):
+                    print(f"     ✅ QR enviado exitosamente")
+                    time.sleep(2)
+                else:
+                    error_qr = resultado_qr.get('error', 'Error desconocido')
+                    print(f"     ❌ Error al enviar QR: {error_qr}")
+                    logger.error(f"Error al enviar QR para {excursion.nombre}: {error_qr}")
+            except Exception as e:
+                print(f"     ❌ Excepción al enviar QR: {e}")
+                logger.error(f"Excepción al enviar QR para {excursion.nombre}: {e}")
+        elif ruta_qr and not info_enviada_exitosamente:
+            print(f"     ⚠️ NO se enviará QR porque la información del lugar no se envió exitosamente")
+        elif ruta_qr and not os.path.exists(ruta_qr):
+            print(f"     ⚠️ QR no existe en ruta: {ruta_qr}")
+        
+        return info_enviada_exitosamente
+    
+    @staticmethod
     def generar_plan_personalizado(usuario: Usuario, lugares_excluidos: Optional[List[str]] = None) -> PlanViaje:
         """
         Genera un plan de viaje personalizado para un usuario basado en su perfil e intereses.
@@ -355,112 +482,13 @@ class PlanViajeService:
                                 except Exception as e2:
                                     print(f"     ❌ Error persistente con caracteres especiales: {e2}")
                     
-                    # VERIFICACIÓN DE 2 PARTES: Primero enviar información, solo entonces QR
-                    descripcion = excursion.descripcion if excursion.descripcion else "Sin descripción disponible"
-                    ubicacion = excursion.ubicacion if excursion.ubicacion else None
-                    info_enviada_exitosamente = False
+                    # Usar función centralizada con verificación de 2 partes
+                    info_enviada_exitosamente = PlanViajeService._enviar_informacion_y_qr(numero, excursion, ruta_qr)
 
-                    # PARTE 1: Enviar información del lugar
-                    if excursion.imagen_url:
-                        # Intentar enviar imagen primero
-                        caption = f"*{excursion.nombre}*\n\n{descripcion}"
-                        if ubicacion:
-                            caption += f"\n\n📍 {ubicacion}"
-                        if ruta_qr:
-                            caption += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
-
-                        if len(caption) > 1024:
-                            caption = caption[:1021] + "..."
-
-                        try:
-                            resultado = enviar_imagen_whatsapp(numero, excursion.imagen_url, caption)
-                            if resultado.get("success"):
-                                print(f"     ✅ Información del lugar enviada exitosamente (imagen)")
-                                info_enviada_exitosamente = True
-                            else:
-                                # Fallback a texto si falla la imagen
-                                print(f"     ⚠️ Error al enviar imagen, intentando con texto...")
-                                mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
-                                if ubicacion:
-                                    mensaje += f"\n\n📍 {ubicacion}"
-                                if ruta_qr:
-                                    mensaje += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
-
-                                resultado_texto = enviar_mensaje_whatsapp(numero, mensaje)
-                                if resultado_texto.get("success"):
-                                    print(f"     ✅ Información del lugar enviada exitosamente (texto fallback)")
-                                    info_enviada_exitosamente = True
-                                else:
-                                    print(f"     ❌ Error al enviar información del lugar (imagen y texto fallaron)")
-                                    logger.error(f"No se pudo enviar información de {excursion.nombre}")
-                        except Exception as e:
-                            # Excepción al enviar imagen, intentar texto
-                            print(f"     ⚠️ Excepción al enviar imagen: {e}, intentando con texto...")
-                            mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
-                            if ubicacion:
-                                mensaje += f"\n\n📍 {ubicacion}"
-                            if ruta_qr:
-                                mensaje += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
-
-                            try:
-                                resultado_texto = enviar_mensaje_whatsapp(numero, mensaje)
-                                if resultado_texto.get("success"):
-                                    print(f"     ✅ Información del lugar enviada exitosamente (texto fallback excepción)")
-                                    info_enviada_exitosamente = True
-                                else:
-                                    print(f"     ❌ Error al enviar información del lugar (texto fallback falló)")
-                                    logger.error(f"No se pudo enviar información de {excursion.nombre}: {e}")
-                            except Exception as e2:
-                                print(f"     ❌ Error crítico al enviar información del lugar: {e2}")
-                                logger.error(f"Error crítico al enviar información de {excursion.nombre}: {e2}")
-                    else:
-                        # Solo texto (sin imagen)
-                        mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
-                        if ubicacion:
-                            mensaje += f"\n\n📍 {ubicacion}"
-                        if ruta_qr:
-                            mensaje += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
-
-                        try:
-                            resultado_texto = enviar_mensaje_whatsapp(numero, mensaje)
-                            if resultado_texto.get("success"):
-                                print(f"     ✅ Información del lugar enviada exitosamente (texto)")
-                                info_enviada_exitosamente = True
-                            else:
-                                # Reintentar una vez
-                                time.sleep(1)
-                                resultado_texto_retry = enviar_mensaje_whatsapp(numero, mensaje)
-                                if resultado_texto_retry.get("success"):
-                                    print(f"     ✅ Información del lugar enviada exitosamente (texto reintento)")
-                                    info_enviada_exitosamente = True
-                                else:
-                                    print(f"     ❌ Error al enviar información del lugar (texto falló)")
-                                    logger.error(f"No se pudo enviar información de {excursion.nombre}")
-                        except Exception as e:
-                            print(f"     ❌ Excepción al enviar información del lugar: {e}")
-                            logger.error(f"Excepción al enviar información de {excursion.nombre}: {e}")
-
-                    # PARTE 2: Solo si la información se envió exitosamente, enviar QR
-                    if info_enviada_exitosamente and ruta_qr and os.path.exists(ruta_qr):
-                        try:
-                            time.sleep(2)  # Pausa para asegurar que la información se procesó
-                            caption_qr = f"📱 *Código QR - {excursion.nombre}*\n\nMuestra este QR a la hora de pagar para poder acceder al descuento."
-                            print(f"     📱 Enviando QR (información enviada exitosamente): {ruta_qr}")
-                            resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr, caption_qr)
-                            if resultado_qr.get("success"):
-                                print(f"     ✅ QR enviado exitosamente")
-                                time.sleep(2)
-                            else:
-                                error_qr = resultado_qr.get('error', 'Error desconocido')
-                                print(f"     ❌ Error al enviar QR: {error_qr}")
-                                logger.error(f"Error al enviar QR para {excursion.nombre}: {error_qr}")
-                        except Exception as e:
-                            print(f"     ❌ Excepción al enviar QR: {e}")
-                            logger.error(f"Excepción al enviar QR para {excursion.nombre}: {e}")
-                    elif ruta_qr and not info_enviada_exitosamente:
-                        print(f"     ⚠️ NO se enviará QR porque la información del lugar no se envió exitosamente")
-                    elif ruta_qr and not os.path.exists(ruta_qr):
-                        print(f"     ⚠️ QR no existe en ruta: {ruta_qr}")
+                    # Marcar lugar como enviado solo si la información se envió exitosamente
+                    if info_enviada_exitosamente:
+                        # Guardar en UsuarioService para persistencia
+                        UsuarioService.agregar_lugar_enviado(numero, excursion.id, excursion.categoria.lower())
 
                     print(f"     ✅ Proceso completado para {excursion.nombre}")
                     
@@ -567,112 +595,8 @@ class PlanViajeService:
                             print(f"     ⚠️ Error al generar QR: {e}")
                             logger.warning(f"No se pudo generar QR para {excursion.nombre}: {e}")
                     
-                    # VERIFICACIÓN DE 2 PARTES: Primero enviar información, solo entonces QR
-                    descripcion = excursion.descripcion if excursion.descripcion else "Sin descripción disponible"
-                    ubicacion = excursion.ubicacion if excursion.ubicacion else None
-                    info_enviada_exitosamente = False
-
-                    # PARTE 1: Enviar información del lugar
-                    if excursion.imagen_url:
-                        # Intentar enviar imagen primero
-                        caption = f"*{excursion.nombre}*\n\n{descripcion}"
-                        if ubicacion:
-                            caption += f"\n\n📍 {ubicacion}"
-                        if ruta_qr:
-                            caption += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
-
-                        if len(caption) > 1024:
-                            caption = caption[:1021] + "..."
-
-                        try:
-                            resultado = enviar_imagen_whatsapp(numero, excursion.imagen_url, caption)
-                            if resultado.get("success"):
-                                print(f"     ✅ Información del lugar enviada exitosamente (imagen)")
-                                info_enviada_exitosamente = True
-                            else:
-                                # Fallback a texto si falla la imagen
-                                print(f"     ⚠️ Error al enviar imagen, intentando con texto...")
-                                mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
-                                if ubicacion:
-                                    mensaje += f"\n\n📍 {ubicacion}"
-                                if ruta_qr:
-                                    mensaje += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
-
-                                resultado_texto = enviar_mensaje_whatsapp(numero, mensaje)
-                                if resultado_texto.get("success"):
-                                    print(f"     ✅ Información del lugar enviada exitosamente (texto fallback)")
-                                    info_enviada_exitosamente = True
-                                else:
-                                    print(f"     ❌ Error al enviar información del lugar (imagen y texto fallaron)")
-                                    logger.error(f"No se pudo enviar información de {excursion.nombre}")
-                        except Exception as e:
-                            # Excepción al enviar imagen, intentar texto
-                            print(f"     ⚠️ Excepción al enviar imagen: {e}, intentando con texto...")
-                            mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
-                            if ubicacion:
-                                mensaje += f"\n\n📍 {ubicacion}"
-                            if ruta_qr:
-                                mensaje += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
-
-                            try:
-                                resultado_texto = enviar_mensaje_whatsapp(numero, mensaje)
-                                if resultado_texto.get("success"):
-                                    print(f"     ✅ Información del lugar enviada exitosamente (texto fallback excepción)")
-                                    info_enviada_exitosamente = True
-                                else:
-                                    print(f"     ❌ Error al enviar información del lugar (texto fallback falló)")
-                                    logger.error(f"No se pudo enviar información de {excursion.nombre}: {e}")
-                            except Exception as e2:
-                                print(f"     ❌ Error crítico al enviar información del lugar: {e2}")
-                                logger.error(f"Error crítico al enviar información de {excursion.nombre}: {e2}")
-                    else:
-                        # Solo texto (sin imagen)
-                        mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
-                        if ubicacion:
-                            mensaje += f"\n\n📍 {ubicacion}"
-                        if ruta_qr:
-                            mensaje += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
-
-                        try:
-                            resultado_texto = enviar_mensaje_whatsapp(numero, mensaje)
-                            if resultado_texto.get("success"):
-                                print(f"     ✅ Información del lugar enviada exitosamente (texto)")
-                                info_enviada_exitosamente = True
-                            else:
-                                # Reintentar una vez
-                                time.sleep(1)
-                                resultado_texto_retry = enviar_mensaje_whatsapp(numero, mensaje)
-                                if resultado_texto_retry.get("success"):
-                                    print(f"     ✅ Información del lugar enviada exitosamente (texto reintento)")
-                                    info_enviada_exitosamente = True
-                                else:
-                                    print(f"     ❌ Error al enviar información del lugar (texto falló)")
-                                    logger.error(f"No se pudo enviar información de {excursion.nombre}")
-                        except Exception as e:
-                            print(f"     ❌ Excepción al enviar información del lugar: {e}")
-                            logger.error(f"Excepción al enviar información de {excursion.nombre}: {e}")
-
-                    # PARTE 2: Solo si la información se envió exitosamente, enviar QR
-                    if info_enviada_exitosamente and ruta_qr and os.path.exists(ruta_qr):
-                        try:
-                            time.sleep(2)  # Pausa para asegurar que la información se procesó
-                            caption_qr = f"📱 *Código QR - {excursion.nombre}*\n\nMuestra este QR a la hora de pagar para poder acceder al descuento."
-                            print(f"     📱 Enviando QR (información enviada exitosamente): {ruta_qr}")
-                            resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr, caption_qr)
-                            if resultado_qr.get("success"):
-                                print(f"     ✅ QR enviado exitosamente")
-                                time.sleep(2)
-                            else:
-                                error_qr = resultado_qr.get('error', 'Error desconocido')
-                                print(f"     ❌ Error al enviar QR: {error_qr}")
-                                logger.error(f"Error al enviar QR para {excursion.nombre}: {error_qr}")
-                        except Exception as e:
-                            print(f"     ❌ Excepción al enviar QR: {e}")
-                            logger.error(f"Excepción al enviar QR para {excursion.nombre}: {e}")
-                    elif ruta_qr and not info_enviada_exitosamente:
-                        print(f"     ⚠️ NO se enviará QR porque la información del lugar no se envió exitosamente")
-                    elif ruta_qr and not os.path.exists(ruta_qr):
-                        print(f"     ⚠️ QR no existe en ruta: {ruta_qr}")
+                    # Usar función centralizada con verificación de 2 partes
+                    info_enviada_exitosamente = PlanViajeService._enviar_informacion_y_qr(numero, excursion, ruta_qr)
 
                     # SOLUCIÓN 3: Marcar lugar como enviado en el arreglo simple
                     if info_enviada_exitosamente:
