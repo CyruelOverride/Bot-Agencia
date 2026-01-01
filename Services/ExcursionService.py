@@ -33,9 +33,19 @@ class ExcursionService:
         if not excursiones:
             return []
         
+        # Mapeo de intereses a categorías
+        mapeo_interes_categoria = {
+            "cultura": "cultural"
+        }
+        
+        # Convertir intereses a categorías
+        categorias_interes = []
+        for interes in intereses:
+            categoria = mapeo_interes_categoria.get(interes.lower(), interes.lower())
+            categorias_interes.append(categoria)
+        
         # Primero filtrar por intereses (categorías)
         excursiones_filtradas = []
-        categorias_interes = [interes.lower() for interes in intereses]
         ids_agregados = set()
         
         for exc in excursiones:
@@ -84,9 +94,19 @@ class ExcursionService:
         """Obtiene excursiones filtradas por intereses y perfil"""
         todas_las_excursiones = ExcursionService.obtener_excursiones_por_ciudad(ciudad)
         
+        # Mapeo de intereses a categorías (algunos intereses tienen nombres diferentes a las categorías)
+        mapeo_interes_categoria = {
+            "cultura": "cultural"  # El interés "cultura" se mapea a la categoría "cultural"
+        }
+        
+        # Convertir intereses a categorías usando el mapeo
+        categorias_interes = []
+        for interes in intereses:
+            categoria = mapeo_interes_categoria.get(interes.lower(), interes.lower())
+            categorias_interes.append(categoria)
+        
         if not perfil:
             # Si no hay perfil, solo filtrar por intereses
-            categorias_interes = [interes.lower() for interes in intereses]
             return [
                 exc for exc in todas_las_excursiones
                 if exc.categoria.lower() in categorias_interes or any(
@@ -94,7 +114,10 @@ class ExcursionService:
                 )
             ]
         
-        return ExcursionService.filtrar_por_perfil(todas_las_excursiones, perfil, intereses)
+        # Para filtrar por perfil, necesitamos usar las categorías mapeadas
+        # Crear una lista temporal de intereses con las categorías mapeadas
+        intereses_mapeados = [mapeo_interes_categoria.get(i.lower(), i.lower()) for i in intereses]
+        return ExcursionService.filtrar_por_perfil(todas_las_excursiones, perfil, intereses_mapeados)
     
     @staticmethod
     def obtener_excursion_por_id(ciudad: str, id_excursion: str) -> Optional[Excursion]:

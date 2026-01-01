@@ -40,6 +40,7 @@ class Usuario:
           * interes_regalos (solo si "compras" en intereses)
           * interes_ropa (solo si "compras" en intereses)
           * interes_tipo_comercios (solo si "comercios" en intereses)
+          * interes_tipo_cultura (solo si "cultura" en intereses)
         """
         if not self.perfil:
             return False
@@ -72,6 +73,10 @@ class Usuario:
         
         if "comercios" in self.intereses:
             if perfil.interes_tipo_comercios is None:
+                return False
+        
+        if "cultura" in self.intereses:
+            if perfil.interes_tipo_cultura is None:
                 return False
         
         # Si viaja con familia, debe tener respuesta sobre niños

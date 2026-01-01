@@ -13,9 +13,13 @@ logger = logging.getLogger(__name__)
 
 class PlanViajeService:
     @staticmethod
-    def generar_plan_personalizado(usuario: Usuario) -> PlanViaje:
+    def generar_plan_personalizado(usuario: Usuario, lugares_excluidos: Optional[List[str]] = None) -> PlanViaje:
         """
         Genera un plan de viaje personalizado para un usuario basado en su perfil e intereses.
+        
+        Args:
+            usuario: Usuario para el cual generar el plan
+            lugares_excluidos: Lista opcional de IDs de lugares a excluir (para evitar duplicados)
         """
         if not usuario.ciudad:
             raise ValueError("El usuario debe tener una ciudad asignada")
@@ -23,9 +27,14 @@ class PlanViajeService:
         if not usuario.intereses:
             raise ValueError("El usuario debe tener al menos un interés seleccionado")
         
+        # Inicializar lista de lugares excluidos si no se proporciona
+        if lugares_excluidos is None:
+            lugares_excluidos = []
+        
         # LOGGING: Intereses del usuario antes de generar plan
         print(f"🔍 [GENERAR_PLAN] Intereses del usuario: {usuario.intereses}")
         print(f"🔍 [GENERAR_PLAN] Ciudad: {usuario.ciudad}")
+        print(f"🔍 [GENERAR_PLAN] Lugares excluidos: {len(lugares_excluidos)} lugares")
         
         # Obtener excursiones filtradas por intereses y perfil
         excursiones = ExcursionService.obtener_excursiones_por_intereses(
@@ -33,6 +42,11 @@ class PlanViajeService:
             intereses=usuario.intereses,
             perfil=usuario.perfil
         )
+        
+        # Excluir lugares ya enviados
+        if lugares_excluidos:
+            excursiones = [exc for exc in excursiones if exc.id not in lugares_excluidos]
+            print(f"🔍 [GENERAR_PLAN] Después de excluir lugares ya enviados: {len(excursiones)} excursiones")
         
         print(f"🔍 [GENERAR_PLAN] Excursiones después de filtrar por intereses: {len(excursiones)}")
         for exc in excursiones:
@@ -52,9 +66,9 @@ class PlanViajeService:
                 # Buscar al menos una excursión de este interés
                 excursiones_interes = ExcursionService.obtener_excursiones_por_categoria(usuario.ciudad, interes)
                 if excursiones_interes:
-                    # Agregar la primera que no esté ya en la lista
+                    # Agregar la primera que no esté ya en la lista y no esté excluida
                     for exc in excursiones_interes:
-                        if exc.id not in ids_existentes:
+                        if exc.id not in ids_existentes and exc.id not in lugares_excluidos:
                             excursiones.append(exc)
                             ids_existentes.add(exc.id)
                             print(f"🔍 [GENERAR_PLAN] Agregada excursión para completar interés '{interes}': {exc.nombre} (ID: {exc.id})")
@@ -78,9 +92,9 @@ class PlanViajeService:
             ]
             print(f"🔍 [GENERAR_PLAN] Excursiones adicionales encontradas: {len(excursiones_adicionales)}")
             
-            # Agregar sin duplicar SOLO de los intereses del usuario
+            # Agregar sin duplicar SOLO de los intereses del usuario y excluyendo lugares ya enviados
             for exc in excursiones_adicionales:
-                if exc.id not in ids_existentes and len(excursiones) < 15:
+                if exc.id not in ids_existentes and exc.id not in lugares_excluidos and len(excursiones) < 15:
                     # VERIFICAR que la categoría coincida con algún interés del usuario
                     if exc.categoria.lower() in categorias_interes:
                         excursiones.append(exc)
@@ -338,7 +352,7 @@ class PlanViajeService:
                             caption += f"\n\n📍 {ubicacion}"
                         # Aclarar que abajo se enviará un QR con descuento (educando al cliente)
                         if ruta_qr:
-                            caption += f"\n\n A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento."
+                            caption += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
                         # NO incluir mensaje del QR en el caption de la imagen para evitar duplicación
                         
                         # Limitar caption a 1024 caracteres (límite de WhatsApp)
@@ -391,7 +405,7 @@ class PlanViajeService:
                                     mensaje += f"\n\n📍 {ubicacion}"
                                 # Aclarar que abajo se enviará un QR con descuento (educando al cliente)
                                 if ruta_qr:
-                                    mensaje += f"\n\n A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento."
+                                    mensaje += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
                                 # NO incluir mensaje del QR en el texto principal, se enviará después
                                 
                                 print(f"     📝 Intentando enviar mensaje de texto como fallback...")
@@ -445,7 +459,7 @@ class PlanViajeService:
                                 mensaje += f"\n\n📍 {ubicacion}"
                             # Aclarar que abajo se enviará un QR con descuento (educando al cliente)
                             if ruta_qr:
-                                mensaje += f"\n\n A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento."
+                                mensaje += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
                             # NO incluir mensaje del QR en el texto principal, se enviará después
                             
                             print(f"     📝 Intentando enviar mensaje de texto como fallback (excepción)...")
@@ -495,7 +509,7 @@ class PlanViajeService:
                             mensaje += f"\n\n📍 {ubicacion}"
                         # Aclarar que abajo se enviará un QR con descuento (educando al cliente)
                         if ruta_qr:
-                            mensaje += f"\n\n A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento."
+                            mensaje += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
                         # NO incluir mensaje del QR en el texto principal, se enviará después
                         
                         resultado_texto = enviar_mensaje_whatsapp(numero, mensaje)

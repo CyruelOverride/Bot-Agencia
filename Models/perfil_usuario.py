@@ -10,6 +10,7 @@ class PerfilUsuario:
         interes_regalos: Optional[bool] = None,
         interes_ropa: Optional[bool] = None,  # True si le interesa comprar ropa
         interes_tipo_comercios: Optional[str] = None,  # "artesanias", "souvenirs", "productos_locales", "joyeria"
+        interes_tipo_cultura: Optional[str] = None,  # "teatro", "museos", "espectaculos", "arte", "patrimonio"
         viaja_con_ninos: Optional[bool] = None,  # True si viaja con niños/familiares chicos
         duracion_estadia: Optional[int] = None  # días
     ):
@@ -19,6 +20,7 @@ class PerfilUsuario:
         self.interes_regalos = interes_regalos
         self.interes_ropa = interes_ropa
         self.interes_tipo_comercios = interes_tipo_comercios
+        self.interes_tipo_cultura = interes_tipo_cultura
         self.viaja_con_ninos = viaja_con_ninos
         self.duracion_estadia = duracion_estadia
     
@@ -41,6 +43,7 @@ class PerfilUsuario:
         - interes_regalos (solo si "compras" en intereses)
         - interes_ropa (solo si "compras" en intereses)
         - interes_tipo_comercios (solo si "comercios" en intereses)
+        - interes_tipo_cultura (solo si "cultura" en intereses)
         """
         if intereses is None:
             intereses = []
@@ -64,6 +67,9 @@ class PerfilUsuario:
         if "comercios" in intereses:
             campos_condicionales.append("interes_tipo_comercios")
         
+        if "cultura" in intereses:
+            campos_condicionales.append("interes_tipo_cultura")
+        
         # Si viaja con familia, preguntar si hay niños
         if self.tipo_viaje == "familia" and self.viaja_con_ninos is None:
             campos_condicionales.append("viaja_con_ninos")
@@ -82,6 +88,7 @@ class PerfilUsuario:
             "interes_regalos": self.interes_regalos,
             "interes_ropa": self.interes_ropa,
             "interes_tipo_comercios": self.interes_tipo_comercios,
+            "interes_tipo_cultura": self.interes_tipo_cultura,
             "viaja_con_ninos": self.viaja_con_ninos,
             "duracion_estadia": self.duracion_estadia
         }

@@ -126,6 +126,28 @@ DATOS_LUGARES = {
                 tags=["avenida", "tiendas", "ropa", "zapatos", "bancos", "social"],
                 imagen_url=None
             )
+        ],
+        "cultural": [
+            Excursion(
+                id="cult_001",
+                ciudad="Colonia",
+                categoria="cultural",
+                nombre="Teatro Bastión del Carmen",
+                descripcion="Un centro cultural vibrante construido sobre los restos de una antigua fortificación española y una posterior fábrica de jabón. Este espacio combina muros de piedra originales con una arquitectura moderna, ofreciendo una sala de teatro, galerías de arte y un hermoso jardín que bordea la muralla con vista al río. Es el epicentro de la actividad artística local, albergando obras de teatro, conciertos y exposiciones de artes visuales durante todo el año.\n\nHorario: Depende de la programación; galería abierta de 12:00 a 20:00 hs.",
+                ubicacion="https://goo.gl/maps/8V9R2Y7L1M4",
+                tags=["teatro", "arte", "musica", "vistas", "arquitectura"],
+                imagen_url="https://salimos.uy/wp-content/uploads/2021/01/bastion-del-carmen-en-colonia-del-sacramento.jpg"
+            ),
+            Excursion(
+                id="cult_002",
+                ciudad="Colonia",
+                categoria="cultural",
+                nombre="Plaza de Toros Real de San Carlos",
+                descripcion="Inaugurada originalmente en 1910, es la única plaza de toros de estilo neomudéjar que queda en pie en el Río de la Plata. Tras un siglo de abandono debido a la prohibición de las corridas en Uruguay (1912), fue majestuosamente rehabilitada en 2021. Hoy funciona como un moderno centro de espectáculos y convenciones con capacidad para miles de personas. El complejo incluye un museo taurino que exhibe trajes de toreros y afiches de época, una vinoteca y un restaurante. Su acústica circular es tan perfecta que artistas como Jorge Drexler han elogiado el sonido del lugar.\n\nHorario: Lunes, jueves, viernes, sábados y domingos de 10:00 a 18:30 hs. (Sábados hasta las 19:00 hs).",
+                ubicacion="https://maps.app.goo.gl/3P3Z5G9J6XN2",
+                tags=["historia", "arquitectura", "espectaculos", "museo", "patrimonio"],
+                imagen_url="https://images.adsttc.com/media/images/61f0/4592/3e4b/313f/8900/001e/newsletter/DJI_0992.jpg?1643136376"
+            )
         ]
     }
 }

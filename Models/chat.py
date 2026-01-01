@@ -262,7 +262,7 @@ class Chat:
                     if ubicacion:
                         caption += f"\n\n📍 {ubicacion}"
                     if ruta_qr:
-                        caption += f"\n\n A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento."
+                        caption += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
                     
                     # Limitar caption a 1024 caracteres
                     if len(caption) > 1024:
@@ -585,9 +585,22 @@ class Chat:
             # Verificar que tenga intereses
             if not usuario.intereses or len(usuario.intereses) == 0:
                 # No tiene intereses, mostrar mensaje de intereses de nuevo
-                return self._mostrar_mensaje_intereses(numero, usuario, False)
+                # Si viene desde mensaje de cierre, excluir ya seleccionados
+                excluir = self.conversation_data.get('agregando_mas_intereses', False)
+                return self._mostrar_mensaje_intereses(numero, usuario, excluir)
             
-            # Tiene intereses, continuar al siguiente flujo
+            # Verificar si viene desde mensaje de cierre (agregando más intereses)
+            if self.conversation_data.get('agregando_mas_intereses', False):
+                # Limpiar el flag
+                self.conversation_data['agregando_mas_intereses'] = False
+                # Generar recomendaciones solo de los nuevos intereses, excluyendo lugares ya enviados
+                set_estado_bot(numero, ESTADOS_BOT["GENERANDO_PLAN"])
+                usuario.estado_conversacion = ESTADOS_BOT["GENERANDO_PLAN"]
+                UsuarioService.actualizar_usuario(usuario)
+                clear_waiting_for(numero)
+                return self.flujo_generando_plan(numero, texto)
+            
+            # Flujo normal: continuar al siguiente flujo
             set_estado_bot(numero, ESTADOS_BOT["ARMANDO_PERFIL"])
             usuario.estado_conversacion = ESTADOS_BOT["ARMANDO_PERFIL"]
             UsuarioService.actualizar_usuario(usuario)
@@ -629,7 +642,9 @@ class Chat:
                 print(f"⚠️ No se detectaron intereses en el texto: '{texto}'")
         
         # Si no se detectaron intereses o el texto está vacío, mostrar mensaje inicial
-        return self._mostrar_mensaje_intereses(numero, usuario, False)
+        # Si viene desde mensaje de cierre, excluir ya seleccionados
+        excluir = self.conversation_data.get('agregando_mas_intereses', False)
+        return self._mostrar_mensaje_intereses(numero, usuario, excluir)
     
     def _mostrar_mensaje_intereses(self, numero, usuario, excluir_seleccionados=False):
         """Muestra el mensaje de selección de intereses con opciones numeradas"""
@@ -639,7 +654,8 @@ class Chat:
         intereses_opciones = [
             {"id": "restaurantes", "nombre": "Restaurantes", "emoji": "🍽️"},
             {"id": "comercios", "nombre": "Comercios", "emoji": "🛍️"},
-            {"id": "compras", "nombre": "Compras", "emoji": "🛒"}
+            {"id": "compras", "nombre": "Compras", "emoji": "🛒"},
+            {"id": "cultura", "nombre": "Cultura", "emoji": "🎭"}
         ]
         
         # Si excluir_seleccionados es True, filtrar los ya seleccionados
@@ -731,6 +747,77 @@ class Chat:
             # Fallback: enviar solo texto
             return enviar_mensaje_whatsapp(numero, mensaje)
     
+    def _enviar_mensaje_cierre_recomendaciones(self, numero: str, usuario, plan):
+        """
+        Envía mensaje de cierre después de todas las recomendaciones.
+        Si el usuario no tiene todos los intereses, ofrece agregar más.
+        Si tiene todos, muestra mensaje de cierre simple.
+        """
+        if not usuario:
+            usuario = UsuarioService.obtener_usuario_por_telefono(numero)
+        
+        if not usuario:
+            return
+        
+        # Intereses disponibles en el sistema
+        intereses_disponibles = ["restaurantes", "comercios", "compras", "cultura"]
+        intereses_usuario = usuario.intereses if usuario.intereses else []
+        
+        # Verificar si tiene todos los intereses
+        tiene_todos_los_intereses = all(interes in intereses_usuario for interes in intereses_disponibles)
+        
+        mensaje_base = "Espero que estas recomendaciones hayan sido de tu agrado"
+        
+        if tiene_todos_los_intereses:
+            # Tiene todos los intereses, solo mensaje de cierre
+            mensaje = f"{mensaje_base}. Por cualquier consulta puedes escribirme sin problema"
+            return enviar_mensaje_whatsapp(numero, mensaje)
+        else:
+            # No tiene todos los intereses, ofrecer agregar más
+            mensaje = f"{mensaje_base}. Si quieres agregar más intereses presiona este botón"
+            
+            # Crear payload con botones interactivos
+            payload = {
+                "messaging_product": "whatsapp",
+                "to": numero,
+                "type": "interactive",
+                "interactive": {
+                    "type": "button",
+                    "body": {
+                        "text": mensaje
+                    },
+                    "action": {
+                        "buttons": [
+                            {
+                                "type": "reply",
+                                "reply": {
+                                    "id": "agregar_mas_intereses_si",
+                                    "title": "✅ Sí, agregar más"
+                                }
+                            },
+                            {
+                                "type": "reply",
+                                "reply": {
+                                    "id": "agregar_mas_intereses_no",
+                                    "title": "❌ No quiero"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+            
+            try:
+                resultado = enviar_mensaje_whatsapp(numero, payload)
+                if resultado and not resultado.get("success", True):
+                    print(f"⚠️ Error enviando botones interactivos, enviando solo texto")
+                    return enviar_mensaje_whatsapp(numero, mensaje)
+                return resultado
+            except Exception as e:
+                print(f"⚠️ Error en _enviar_mensaje_cierre_recomendaciones: {e}")
+                # Fallback: enviar solo texto
+                return enviar_mensaje_whatsapp(numero, mensaje)
+    
     def _crear_pregunta_interactiva(self, numero: str, campo: str) -> dict:
         """Crea un mensaje interactivo según el campo del perfil.
         Usa botones si hay 3 o menos opciones, lista interactiva si hay más de 3."""
@@ -792,6 +879,16 @@ class Chat:
                 "options": [
                     {"id": "ninos_si", "title": "Sí"},
                     {"id": "ninos_no", "title": "No"}
+                ]
+            },
+            "interes_tipo_cultura": {
+                "body": "¿Qué tipo de actividades culturales te interesan?",
+                "options": [
+                    {"id": "cultura_teatro", "title": "Teatro"},
+                    {"id": "cultura_museos", "title": "Museos"},
+                    {"id": "cultura_espectaculos", "title": "Espectáculos"},
+                    {"id": "cultura_arte", "title": "Arte"},
+                    {"id": "cultura_patrimonio", "title": "Patrimonio"}
                 ]
             }
         }
@@ -864,9 +961,9 @@ class Chat:
         """
         Detecta intereses del texto del usuario.
         Soporta:
-        - Números: "1 2 3" → restaurantes, comercios, compras
-        - Letras: "A B C" → restaurantes, comercios, compras
-        - Nombres completos o parciales: "restaurantes compras comercios"
+        - Números: "1 2 3 4" → restaurantes, comercios, compras, cultura
+        - Letras: "A B C D" → restaurantes, comercios, compras, cultura
+        - Nombres completos o parciales: "restaurantes compras comercios cultura"
         - "todo" → todos los intereses
         """
         if not texto or not texto.strip():
@@ -893,10 +990,20 @@ class Chat:
             "compras": "compras",
             "shopping": "compras",
             "regalo": "compras",
-            "regalos": "compras"
+            "regalos": "compras",
+            "4": "cultura",
+            "d": "cultura",
+            "cultura": "cultura",
+            "cultural": "cultura",
+            "arte": "cultura",
+            "teatro": "cultura",
+            "museo": "cultura",
+            "museos": "cultura",
+            "espectaculos": "cultura",
+            "espectáculos": "cultura"
         }
         
-        intereses_validos = ["restaurantes", "comercios", "compras"]
+        intereses_validos = ["restaurantes", "comercios", "compras", "cultura"]
         intereses_detectados = []
         
         # Si dice "todo", seleccionar todos
@@ -942,7 +1049,8 @@ class Chat:
         nombres = {
             "restaurantes": "Restaurantes",
             "comercios": "Comercios",
-            "compras": "Compras"
+            "compras": "Compras",
+            "cultura": "Cultura"
         }
         return nombres.get(interes, interes.capitalize())
     
@@ -977,6 +1085,12 @@ class Chat:
             "comercios_productos_locales": ("interes_tipo_comercios", "productos_locales"),
             "comercios_joyeria": ("interes_tipo_comercios", "joyeria"),
             "comercios_tienda_ropa": ("interes_tipo_comercios", "tienda_ropa"),
+            # Tipo cultura
+            "cultura_teatro": ("interes_tipo_cultura", "teatro"),
+            "cultura_museos": ("interes_tipo_cultura", "museos"),
+            "cultura_espectaculos": ("interes_tipo_cultura", "espectaculos"),
+            "cultura_arte": ("interes_tipo_cultura", "arte"),
+            "cultura_patrimonio": ("interes_tipo_cultura", "patrimonio"),
             # Viaja con niños
             "ninos_si": ("viaja_con_ninos", True),
             "ninos_no": ("viaja_con_ninos", False)
@@ -1071,6 +1185,8 @@ class Chat:
                 campo_pregunta = "interes_ropa"
             elif "comercios" in siguiente_pregunta.lower() or "comercio" in siguiente_pregunta.lower():
                 campo_pregunta = "interes_tipo_comercios"
+            elif "cultura" in siguiente_pregunta.lower() or "cultural" in siguiente_pregunta.lower() or "actividades culturales" in siguiente_pregunta.lower():
+                campo_pregunta = "interes_tipo_cultura"
             elif "niños" in siguiente_pregunta.lower() or "ninos" in siguiente_pregunta.lower() or "chicos" in siguiente_pregunta.lower():
                 campo_pregunta = "viaja_con_ninos"
             elif "días" in siguiente_pregunta.lower() or "dias" in siguiente_pregunta.lower():
@@ -1105,8 +1221,11 @@ class Chat:
             return self.flujo_inicio(numero, texto)
         
         try:
-            # Generar plan
-            plan = PlanViajeService.generar_plan_personalizado(usuario)
+            # Obtener lugares ya enviados para excluirlos de nuevas recomendaciones
+            lugares_excluidos = self.conversation_data.get('lugares_enviados', [])
+            
+            # Generar plan (excluyendo lugares ya enviados si hay)
+            plan = PlanViajeService.generar_plan_personalizado(usuario, lugares_excluidos=lugares_excluidos)
             
             # Guardar plan en conversation_data
             self.conversation_data['plan_viaje'] = plan
@@ -1132,19 +1251,28 @@ class Chat:
         if not plan:
             return self.flujo_generando_plan(numero, texto)
         
+        # Guardar IDs de lugares enviados para evitar duplicados en futuras recomendaciones
+        lugares_enviados = [exc.id for exc in plan.excursiones]
+        if 'lugares_enviados' not in self.conversation_data:
+            self.conversation_data['lugares_enviados'] = []
+        self.conversation_data['lugares_enviados'].extend(lugares_enviados)
+        
         # Enviar plan con imagen (si está disponible) y texto detallado
         # El método maneja errores silenciosamente si no hay imagen
         PlanViajeService.enviar_plan_con_imagen(numero, plan)
         
+        # Obtener usuario para el mensaje de cierre
+        usuario = UsuarioService.obtener_usuario_por_telefono(numero)
+        
+        # Enviar mensaje de cierre después de todas las recomendaciones
+        self._enviar_mensaje_cierre_recomendaciones(numero, usuario, plan)
+        
         # Pasar a seguimiento
         set_estado_bot(numero, ESTADOS_BOT["SEGUIMIENTO"])
-        usuario = UsuarioService.obtener_usuario_por_telefono(numero)
         if usuario:
             usuario.estado_conversacion = ESTADOS_BOT["SEGUIMIENTO"]
             UsuarioService.actualizar_usuario(usuario)
         
-        # NO enviar mensaje de seguimiento automáticamente
-        # Solo esperar a que el usuario escriba algo
         return None
     
     def flujo_seguimiento(self, numero, texto):
@@ -1170,6 +1298,26 @@ class Chat:
                     "Escribime tu consulta y te ayudo a resolverla. "
                     "Puedo ayudarte con información sobre lugares, restaurantes, actividades, etc."
                 )
+                set_estado_bot(numero, ESTADOS_BOT["SEGUIMIENTO"])
+                usuario.estado_conversacion = ESTADOS_BOT["SEGUIMIENTO"]
+                UsuarioService.actualizar_usuario(usuario)
+                return enviar_mensaje_whatsapp(numero, mensaje)
+        
+        # Procesar botones de agregar más intereses
+        if texto in ("agregar_mas_intereses_si", "agregar_mas_intereses_no"):
+            if texto == "agregar_mas_intereses_si":
+                # Marcar que viene desde mensaje de cierre para excluir intereses ya seleccionados
+                self.conversation_data['agregando_mas_intereses'] = True
+                # Redirigir a selección de intereses (excluyendo los ya seleccionados)
+                set_estado_bot(numero, ESTADOS_BOT["SELECCION_INTERESES"])
+                usuario.estado_conversacion = ESTADOS_BOT["SELECCION_INTERESES"]
+                UsuarioService.actualizar_usuario(usuario)
+                clear_waiting_for(numero)
+                # Llamar con texto vacío para mostrar opciones excluyendo ya seleccionados
+                return self.flujo_seleccion_intereses(numero, "")
+            elif texto == "agregar_mas_intereses_no":
+                # Enviar mensaje de cierre
+                mensaje = "Gracias espero que disfrutes tu estadía"
                 set_estado_bot(numero, ESTADOS_BOT["SEGUIMIENTO"])
                 usuario.estado_conversacion = ESTADOS_BOT["SEGUIMIENTO"]
                 UsuarioService.actualizar_usuario(usuario)
