@@ -75,11 +75,79 @@ class PlanViajeService:
         return None
     
     @staticmethod
+    def _enviar_con_reintento(numero: str, excursion: Excursion) -> dict:
+        """
+        Envía la información del lugar con reintentos.
+        Retorna un diccionario con 'success' y 'error' si aplica.
+        """
+        from whatsapp_api import enviar_imagen_whatsapp, enviar_mensaje_whatsapp
+        from datetime import datetime
+        import time
+        
+        descripcion = excursion.descripcion if excursion.descripcion else "Sin descripción disponible"
+        ubicacion = excursion.ubicacion if excursion.ubicacion else None
+        
+        # Intentar enviar imagen primero
+        if excursion.imagen_url:
+            caption = f"*{excursion.nombre}*\n\n{descripcion}"
+            if ubicacion:
+                caption += f"\n\n📍 {ubicacion}"
+            
+            if len(caption) > 1024:
+                caption = caption[:1021] + "..."
+            
+            try:
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                print(f"🚀 [PASO 1] Enviando INFO (imagen) para: {excursion.nombre} - {timestamp}")
+                resultado = enviar_imagen_whatsapp(numero, excursion.imagen_url, caption)
+                if resultado.get("success"):
+                    timestamp_result = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    print(f"✅ [PASO 1] ÉXITO - {timestamp_result} - Lugar: {excursion.nombre} (ID: {excursion.id})")
+                    return {"success": True}
+                else:
+                    # Fallback a texto
+                    print(f"⚠️ [PASO 1] Imagen falló, intentando texto...")
+            except Exception as e:
+                print(f"⚠️ [PASO 1] Excepción con imagen: {e}, intentando texto...")
+        
+        # Fallback a texto
+        mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
+        if ubicacion:
+            mensaje += f"\n\n📍 {ubicacion}"
+        
+        try:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            print(f"🚀 [PASO 1] Enviando INFO (texto) para: {excursion.nombre} - {timestamp}")
+            resultado_texto = enviar_mensaje_whatsapp(numero, mensaje)
+            if resultado_texto.get("success"):
+                timestamp_result = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                print(f"✅ [PASO 1] ÉXITO - {timestamp_result} - Lugar: {excursion.nombre} (ID: {excursion.id})")
+                return {"success": True}
+            else:
+                # Reintentar una vez
+                time.sleep(1)
+                print(f"🔄 [PASO 1] Reintentando envío de texto...")
+                resultado_retry = enviar_mensaje_whatsapp(numero, mensaje)
+                if resultado_retry.get("success"):
+                    timestamp_retry = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    print(f"✅ [PASO 1] ÉXITO REINTENTO - {timestamp_retry} - Lugar: {excursion.nombre} (ID: {excursion.id})")
+                    return {"success": True}
+                else:
+                    timestamp_retry = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    error_msg = resultado_retry.get('error', 'Error desconocido')
+                    print(f"❌ [PASO 1] FALLO REINTENTO - {timestamp_retry} - Lugar: {excursion.nombre} - Error: {error_msg}")
+                    return {"success": False, "error": error_msg}
+        except Exception as e:
+            timestamp_exception = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            print(f"❌ [PASO 1] EXCEPCIÓN - {timestamp_exception} - Lugar: {excursion.nombre} - Error: {e}")
+            return {"success": False, "error": str(e)}
+    
+    @staticmethod
     def _enviar_informacion_y_qr(numero: str, excursion: Excursion, ruta_qr: Optional[str] = None) -> bool:
         """
         Envía la información del lugar y luego el QR si corresponde.
-        Verificación de 2 partes:
-        1. Primero envía la información del lugar
+        Verificación de 2 partes ATÓMICA:
+        1. Primero envía la información del lugar (con reintentos)
         2. Solo si la información se envió exitosamente, envía el QR
         
         Args:
@@ -90,136 +158,82 @@ class PlanViajeService:
         Returns:
             bool: True si la información se envió exitosamente, False en caso contrario
         """
-        from whatsapp_api import enviar_imagen_whatsapp, enviar_mensaje_whatsapp
+        from whatsapp_api import enviar_imagen_whatsapp
         import time
+        from datetime import datetime
+        import os
         
-        descripcion = excursion.descripcion if excursion.descripcion else "Sin descripción disponible"
-        ubicacion = excursion.ubicacion if excursion.ubicacion else None
-        info_enviada_exitosamente = False
+        # LOG DETALLADO: Inicio de envío
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print(f"\n{'='*80}")
+        print(f"📤 [LOG ENVÍO] INICIO - {timestamp}")
+        print(f"📤 [LOG ENVÍO] Lugar ID: {excursion.id}")
+        print(f"📤 [LOG ENVÍO] Lugar Nombre: {excursion.nombre}")
+        print(f"📤 [LOG ENVÍO] Categoría: {excursion.categoria}")
+        print(f"📤 [LOG ENVÍO] Tiene QR: {ruta_qr is not None}")
+        print(f"{'='*80}\n")
         
-        # PARTE 1: Enviar información del lugar
-        if excursion.imagen_url:
-            # Intentar enviar imagen primero
-            caption = f"*{excursion.nombre}*\n\n{descripcion}"
-            if ubicacion:
-                caption += f"\n\n📍 {ubicacion}"
-            if ruta_qr:
-                caption += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
-            
-            if len(caption) > 1024:
-                caption = caption[:1021] + "..."
-            
-            try:
-                resultado = enviar_imagen_whatsapp(numero, excursion.imagen_url, caption)
-                if resultado.get("success"):
-                    print(f"     ✅ Información del lugar enviada exitosamente (imagen)")
-                    info_enviada_exitosamente = True
-                else:
-                    # Fallback a texto si falla la imagen
-                    print(f"     ⚠️ Error al enviar imagen, intentando con texto...")
-                    mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
-                    if ubicacion:
-                        mensaje += f"\n\n📍 {ubicacion}"
-                    if ruta_qr:
-                        mensaje += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
-                    
-                    resultado_texto = enviar_mensaje_whatsapp(numero, mensaje)
-                    if resultado_texto.get("success"):
-                        print(f"     ✅ Información del lugar enviada exitosamente (texto fallback)")
-                        info_enviada_exitosamente = True
-                    else:
-                        print(f"     ❌ Error al enviar información del lugar (imagen y texto fallaron)")
-                        logger.error(f"No se pudo enviar información de {excursion.nombre}")
-            except Exception as e:
-                # Excepción al enviar imagen, intentar texto
-                print(f"     ⚠️ Excepción al enviar imagen: {e}, intentando con texto...")
-                mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
-                if ubicacion:
-                    mensaje += f"\n\n📍 {ubicacion}"
-                if ruta_qr:
-                    mensaje += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
-                
-                try:
-                    resultado_texto = enviar_mensaje_whatsapp(numero, mensaje)
-                    if resultado_texto.get("success"):
-                        print(f"     ✅ Información del lugar enviada exitosamente (texto fallback excepción)")
-                        info_enviada_exitosamente = True
-                    else:
-                        print(f"     ❌ Error al enviar información del lugar (texto fallback falló)")
-                        logger.error(f"No se pudo enviar información de {excursion.nombre}: {e}")
-                except Exception as e2:
-                    print(f"     ❌ Error crítico al enviar información del lugar: {e2}")
-                    logger.error(f"Error crítico al enviar información de {excursion.nombre}: {e2}")
-        else:
-            # Solo texto (sin imagen)
-            mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
-            if ubicacion:
-                mensaje += f"\n\n📍 {ubicacion}"
-            if ruta_qr:
-                mensaje += f"\n\n*A continuación te enviaremos un código QR el cual puedes enseñar al momento de pagar para acceder a un descuento.*"
-            
-            try:
-                resultado_texto = enviar_mensaje_whatsapp(numero, mensaje)
-                if resultado_texto.get("success"):
-                    print(f"     ✅ Información del lugar enviada exitosamente (texto)")
-                    info_enviada_exitosamente = True
-                else:
-                    # Reintentar una vez
-                    time.sleep(1)
-                    resultado_texto_retry = enviar_mensaje_whatsapp(numero, mensaje)
-                    if resultado_texto_retry.get("success"):
-                        print(f"     ✅ Información del lugar enviada exitosamente (texto reintento)")
-                        info_enviada_exitosamente = True
-                    else:
-                        print(f"     ❌ Error al enviar información del lugar (texto falló)")
-                        logger.error(f"No se pudo enviar información de {excursion.nombre}")
-            except Exception as e:
-                print(f"     ❌ Excepción al enviar información del lugar: {e}")
-                logger.error(f"Excepción al enviar información de {excursion.nombre}: {e}")
+        # PARTE 1: Enviar información del lugar con reintentos
+        print(f"🚀 [PASO 1] Iniciando envío de INFO para: {excursion.nombre}")
+        resultado_info = PlanViajeService._enviar_con_reintento(numero, excursion)
         
-        # PARTE 2: Solo si la información se envió exitosamente, enviar QR
-        if info_enviada_exitosamente and ruta_qr:
-            # BLINDAJE 1: Sanitizar y verificar ruta del QR (manejar acentos y caracteres especiales)
+        # CRÍTICO: Si la info no se confirmó, abortamos el QR para evitar "QRs huérfanos"
+        if not resultado_info.get("success"):
+            print(f"❌ [FALLO] No se pudo enviar INFO de {excursion.nombre} (ID: {excursion.id}). Cancelando QR.")
+            timestamp_fin = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            print(f"📤 [LOG ENVÍO] FIN - {timestamp_fin} - Lugar ID: {excursion.id} - Información enviada: False")
+            print(f"{'='*80}\n")
+            return False
+        
+        # PARTE 2: El QR solo si hay ruta y la parte 1 fue confirmada
+        if ruta_qr and os.path.exists(ruta_qr):
+            # CORRECCIÓN RACE CONDITION: Aumentar delay con log de bloqueo
+            print(f"⏳ [PAUSA] Bloqueando 6s para asegurar que INFO llegue antes que QR...")
+            print(f"⏳ [PAUSA] Lugar: {excursion.nombre} (ID: {excursion.id})")
+            time.sleep(6)
+            
+            # Sanitizar ruta del QR
             ruta_qr_sanitizada = PlanViajeService._sanitizar_ruta_qr(ruta_qr, excursion)
             
-            # BLINDAJE 1: Envolver envío de QR en try-except específico
-            # Si el QR falla, retornar True igual (info ya se envió) pero loguear error
-            try:
-                if ruta_qr_sanitizada and os.path.exists(ruta_qr_sanitizada):
-                    # CORRECCIÓN JUMBLE WHATSAPP: Esperar confirmación real + delay aumentado
-                    # Aumentar delay a 5 segundos para evitar que WhatsApp mezcle mensajes
-                    time.sleep(5)  # Pausa aumentada para asegurar que WhatsApp procesó completamente la información
-                    caption_qr = f"📱 *Código QR - {excursion.nombre}*\n\nMuestra este QR a la hora de pagar para poder acceder al descuento."
-                    # CORRECCIÓN SINCRONIZACIÓN: Log de rastreo para verificar IDs
-                    print(f"     🔍 DEBUG: Enviando QR ID={excursion.id} para lugar {excursion.nombre}")
-                    print(f"     📱 Enviando QR (información enviada exitosamente): {ruta_qr_sanitizada}")
+            if ruta_qr_sanitizada and os.path.exists(ruta_qr_sanitizada):
+                caption_qr = f"📱 *Código QR - {excursion.nombre}*\n\nMuestra este QR a la hora de pagar para poder acceder al descuento."
+                
+                timestamp_qr = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                print(f"🎯 [PASO 2] Enviando QR para: {excursion.nombre} (ID: {excursion.id}) - {timestamp_qr}")
+                print(f"🎯 [PASO 2] Ruta QR: {ruta_qr_sanitizada}")
+                
+                try:
                     resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr_sanitizada, caption_qr)
                     if resultado_qr.get("success"):
-                        print(f"     ✅ QR enviado exitosamente")
-                        # CORRECCIÓN JUMBLE WHATSAPP: Esperar confirmación antes de continuar
-                        time.sleep(3)  # Pausa adicional después de confirmación para evitar jumble
+                        timestamp_qr_result = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        print(f"✅ [PASO 2] ÉXITO - {timestamp_qr_result} - QR enviado para: {excursion.nombre} (ID: {excursion.id})")
+                        # Pausa adicional después de confirmación
+                        time.sleep(3)
                     else:
+                        timestamp_qr_result = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         error_qr = resultado_qr.get('error', 'Error desconocido')
-                        print(f"     ⚠️ Error al enviar QR (pero información ya enviada): {error_qr}")
+                        print(f"⚠️ [AVISO] QR de {excursion.nombre} (ID: {excursion.id}) falló, pero la info ya se envió. Error: {error_qr}")
                         logger.warning(f"Error al enviar QR para {excursion.nombre} (información ya enviada): {error_qr}")
-                        # NO lanzar excepción, solo loguear - la información ya se envió exitosamente
-                else:
-                    print(f"     ⚠️ QR no existe en ruta (sanitizada): {ruta_qr_sanitizada}")
-                    logger.warning(f"QR no existe para {excursion.nombre} en ruta: {ruta_qr_sanitizada}")
-            except Exception as e:
-                # BLINDAJE 1: Si QR falla por cualquier motivo, loguear pero NO afectar el retorno
-                print(f"     ⚠️ Excepción al enviar QR (pero información ya enviada): {e}")
-                logger.warning(f"Excepción al enviar QR para {excursion.nombre} (información ya enviada): {e}")
-                import traceback
-                logger.debug(f"Traceback QR: {traceback.format_exc()}")
-                # NO lanzar excepción, la información ya se envió exitosamente
-        elif ruta_qr and not info_enviada_exitosamente:
-            print(f"     ⚠️ NO se enviará QR porque la información del lugar no se envió exitosamente")
+                except Exception as e:
+                    timestamp_qr_exception = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    print(f"⚠️ [AVISO] Excepción al enviar QR de {excursion.nombre} (ID: {excursion.id}), pero la info ya se envió. Error: {e}")
+                    logger.warning(f"Excepción al enviar QR para {excursion.nombre} (información ya enviada): {e}")
+            else:
+                print(f"⚠️ [AVISO] QR no existe en ruta sanitizada: {ruta_qr_sanitizada}")
+                logger.warning(f"QR no existe para {excursion.nombre} en ruta: {ruta_qr_sanitizada}")
         elif ruta_qr and not os.path.exists(ruta_qr):
-            print(f"     ⚠️ QR no existe en ruta: {ruta_qr}")
+            print(f"⚠️ [AVISO] QR no existe en ruta: {ruta_qr}")
         
-        # BLINDAJE 1: Retornar True si la información se envió, independientemente del resultado del QR
-        return info_enviada_exitosamente
+        # LOG DETALLADO: Fin de envío
+        timestamp_fin = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print(f"📤 [LOG ENVÍO] FIN - {timestamp_fin}")
+        print(f"📤 [LOG ENVÍO] Lugar ID: {excursion.id}")
+        print(f"📤 [LOG ENVÍO] Lugar Nombre: {excursion.nombre}")
+        print(f"📤 [LOG ENVÍO] Información enviada: True")
+        print(f"📤 [LOG ENVÍO] QR enviado: {ruta_qr is not None and os.path.exists(ruta_qr) if ruta_qr else False}")
+        print(f"{'='*80}\n")
+        
+        return True
     
     @staticmethod
     def generar_plan_personalizado(usuario: Usuario, lugares_excluidos: Optional[List[str]] = None) -> PlanViaje:
@@ -469,33 +483,107 @@ class PlanViajeService:
             imagen_a_enviar = ruta_imagen
         
         # Mensaje 1: Enviar imagen con resumen (si existe)
+        from datetime import datetime
+        
         if imagen_a_enviar:
             try:
                 # Caption con resumen corto (500-700 chars recomendado, usamos 700 como máximo seguro)
                 caption = f"🎯 Tu Plan Personalizado para {plan.ciudad}\n\n{plan.resumen_ia[:700]}"
                 
+                # LOG DETALLADO: Resumen del plan
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                print(f"\n{'='*80}")
+                print(f"📤 [LOG PLAN] ENVIANDO RESUMEN DEL PLAN (IMAGEN) - {timestamp}")
+                print(f"📤 [LOG PLAN] Ciudad: {plan.ciudad}")
+                print(f"📤 [LOG PLAN] Imagen URL: {imagen_a_enviar}")
+                print(f"📤 [LOG PLAN] Contenido del mensaje:")
+                print(f"{'─'*80}")
+                print(caption)
+                print(f"{'─'*80}")
+                print(f"{'='*80}\n")
+                
                 resultado = enviar_imagen_whatsapp(numero, imagen_a_enviar, caption)
                 
                 if resultado.get("success"):
+                    timestamp_result = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    print(f"✅ [LOG PLAN] ÉXITO - {timestamp_result} - Ciudad: {plan.ciudad}")
                     # Pausa para mejor UX
                     time.sleep(2)
                 else:
-                    logger.warning(f"No se pudo enviar imagen del plan: {resultado.get('error', 'Error desconocido')}")
+                    timestamp_result = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    error_msg = resultado.get('error', 'Error desconocido')
+                    print(f"❌ [LOG PLAN] FALLO - {timestamp_result} - Ciudad: {plan.ciudad} - Error: {error_msg}")
+                    logger.warning(f"No se pudo enviar imagen del plan: {error_msg}")
                     # Si falla la imagen, enviar resumen como texto
                     mensaje_resumen = f"🎯 *Tu Plan Personalizado para {plan.ciudad}*\n\n{plan.resumen_ia[:700]}"
-                    enviar_mensaje_whatsapp(numero, mensaje_resumen)
+                    
+                    # LOG DETALLADO: Resumen del plan (texto fallback)
+                    timestamp_fallback = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    print(f"\n{'='*80}")
+                    print(f"📤 [LOG PLAN] ENVIANDO RESUMEN DEL PLAN (TEXTO FALLBACK) - {timestamp_fallback}")
+                    print(f"📤 [LOG PLAN] Ciudad: {plan.ciudad}")
+                    print(f"📤 [LOG PLAN] Contenido del mensaje:")
+                    print(f"{'─'*80}")
+                    print(mensaje_resumen)
+                    print(f"{'─'*80}")
+                    print(f"{'='*80}\n")
+                    
+                    resultado_fallback = enviar_mensaje_whatsapp(numero, mensaje_resumen)
+                    if resultado_fallback.get("success"):
+                        timestamp_fallback_result = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        print(f"✅ [LOG PLAN] ÉXITO FALLBACK - {timestamp_fallback_result} - Ciudad: {plan.ciudad}")
+                    else:
+                        timestamp_fallback_result = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        print(f"❌ [LOG PLAN] FALLO FALLBACK - {timestamp_fallback_result} - Ciudad: {plan.ciudad} - Error: {resultado_fallback.get('error', 'Desconocido')}")
                     time.sleep(1)
                     
             except Exception as e:
                 # Error silencioso: enviar resumen como texto
+                timestamp_exception = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                print(f"❌ [LOG PLAN] EXCEPCIÓN - {timestamp_exception} - Ciudad: {plan.ciudad} - Error: {e}")
                 logger.warning(f"No se pudo enviar imagen del plan: {e}")
                 mensaje_resumen = f"🎯 *Tu Plan Personalizado para {plan.ciudad}*\n\n{plan.resumen_ia[:700]}"
-                enviar_mensaje_whatsapp(numero, mensaje_resumen)
+                
+                # LOG DETALLADO: Resumen del plan (texto excepción)
+                print(f"\n{'='*80}")
+                print(f"📤 [LOG PLAN] ENVIANDO RESUMEN DEL PLAN (TEXTO EXCEPCIÓN) - {timestamp_exception}")
+                print(f"📤 [LOG PLAN] Ciudad: {plan.ciudad}")
+                print(f"📤 [LOG PLAN] Contenido del mensaje:")
+                print(f"{'─'*80}")
+                print(mensaje_resumen)
+                print(f"{'─'*80}")
+                print(f"{'='*80}\n")
+                
+                resultado_exception = enviar_mensaje_whatsapp(numero, mensaje_resumen)
+                if resultado_exception.get("success"):
+                    timestamp_exception_result = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    print(f"✅ [LOG PLAN] ÉXITO EXCEPCIÓN - {timestamp_exception_result} - Ciudad: {plan.ciudad}")
+                else:
+                    timestamp_exception_result = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    print(f"❌ [LOG PLAN] FALLO EXCEPCIÓN - {timestamp_exception_result} - Ciudad: {plan.ciudad} - Error: {resultado_exception.get('error', 'Desconocido')}")
                 time.sleep(1)
         else:
             # Si no hay imagen, enviar resumen como texto
             mensaje_resumen = f"🎯 *Tu Plan Personalizado para {plan.ciudad}*\n\n{plan.resumen_ia[:700]}"
-            enviar_mensaje_whatsapp(numero, mensaje_resumen)
+            
+            # LOG DETALLADO: Resumen del plan (texto)
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            print(f"\n{'='*80}")
+            print(f"📤 [LOG PLAN] ENVIANDO RESUMEN DEL PLAN (TEXTO) - {timestamp}")
+            print(f"📤 [LOG PLAN] Ciudad: {plan.ciudad}")
+            print(f"📤 [LOG PLAN] Contenido del mensaje:")
+            print(f"{'─'*80}")
+            print(mensaje_resumen)
+            print(f"{'─'*80}")
+            print(f"{'='*80}\n")
+            
+            resultado_texto = enviar_mensaje_whatsapp(numero, mensaje_resumen)
+            if resultado_texto.get("success"):
+                timestamp_result = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                print(f"✅ [LOG PLAN] ÉXITO - {timestamp_result} - Ciudad: {plan.ciudad}")
+            else:
+                timestamp_result = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                print(f"❌ [LOG PLAN] FALLO - {timestamp_result} - Ciudad: {plan.ciudad} - Error: {resultado_texto.get('error', 'Desconocido')}")
             time.sleep(1)
         
         # Mensajes 2-N: Enviar un mensaje individual por cada lugar de cada interés
@@ -692,7 +780,26 @@ class PlanViajeService:
                 mensaje = f"¡Ya te mostré todas nuestras opciones para {intereses_texto}! ¿Te gustaría probar con otra categoría?"
             
             print(f"⚠️ [SEGUIMIENTO] No hay lugares nuevos para enviar. Mensaje enviado al usuario.")
-            enviar_mensaje_whatsapp(numero, mensaje)
+            
+            # LOG DETALLADO: Mensaje de no hay lugares
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            print(f"\n{'='*80}")
+            print(f"📤 [LOG MENSAJE] ENVIANDO MENSAJE (NO HAY LUGARES) - {timestamp}")
+            print(f"📤 [LOG MENSAJE] Contenido del mensaje:")
+            print(f"{'─'*80}")
+            print(mensaje)
+            print(f"{'─'*80}")
+            print(f"{'='*80}\n")
+            
+            resultado_no_lugares = enviar_mensaje_whatsapp(numero, mensaje)
+            if resultado_no_lugares.get("success"):
+                timestamp_result = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                print(f"✅ [LOG MENSAJE] ÉXITO - {timestamp_result}")
+            else:
+                timestamp_result = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                print(f"❌ [LOG MENSAJE] FALLO - {timestamp_result} - Error: {resultado_no_lugares.get('error', 'Desconocido')}")
+            
             # Retornar None para que el flujo continúe normalmente al mensaje de cierre
             return
         
