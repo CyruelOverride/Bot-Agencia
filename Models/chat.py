@@ -605,9 +605,8 @@ class Chat:
             
             # Verificar si viene desde mensaje de cierre (agregando más intereses)
             if self.conversation_data.get('agregando_mas_intereses', False):
-                # Limpiar el flag
-                self.conversation_data['agregando_mas_intereses'] = False
-
+                print(f"🔍 [SEGUIMIENTO] Detectado: Viene desde seguimiento (agregando más intereses)")
+                
                 # Obtener usuario actualizado para asegurar que tiene los intereses más recientes
                 usuario = UsuarioService.obtener_usuario_por_telefono(numero)
 
@@ -633,30 +632,24 @@ class Chat:
                     # Volver a mostrar opciones de intereses
                     return self._mostrar_mensaje_intereses(numero, usuario, True)
 
-                # BANDERA PARA EVITAR GEMINI: Usar modo seguimiento directo
+                # CRÍTICO: Guardar nuevos intereses y activar modo seguimiento ANTES de limpiar flag
+                self.conversation_data['nuevos_intereses_seguimiento'] = nuevos_intereses
                 self.conversation_data['modo_seguimiento'] = True
+                
+                # Limpiar el flag de agregando_mas_intereses
+                self.conversation_data['agregando_mas_intereses'] = False
 
-                # CRÍTICO: Enviar lugares SOLO de los nuevos intereses, NO generar un nuevo plan completo
+                # CRÍTICO: Ir directamente a GENERANDO_PLAN con modo seguimiento (NO a ARMANDO_PERFIL)
                 print(f"🔍 [SEGUIMIENTO] ENVIANDO SOLO LUGARES DE NUEVOS INTERESES: {nuevos_intereses}")
-                PlanViajeService.enviar_lugares_seguimiento(self, numero, usuario, nuevos_intereses)
-
-                # Obtener usuario actualizado después de enviar lugares
-                usuario = UsuarioService.obtener_usuario_por_telefono(numero)
-
-                # Enviar mensaje de cierre
-                self._enviar_mensaje_cierre_recomendaciones(numero, usuario, None)
-
-                # Pasar a seguimiento y limpiar banderas
-                set_estado_bot(numero, ESTADOS_BOT["SEGUIMIENTO"])
-                if usuario:
-                    usuario.estado_conversacion = ESTADOS_BOT["SEGUIMIENTO"]
-                    UsuarioService.actualizar_usuario(usuario)
-
-                # Limpiar banderas de seguimiento
-                if 'modo_seguimiento' in self.conversation_data:
-                    del self.conversation_data['modo_seguimiento']
-
-                return None
+                print(f"🔍 [SEGUIMIENTO] Redirigiendo a GENERANDO_PLAN con modo seguimiento (sin Gemini)")
+                
+                set_estado_bot(numero, ESTADOS_BOT["GENERANDO_PLAN"])
+                usuario.estado_conversacion = ESTADOS_BOT["GENERANDO_PLAN"]
+                UsuarioService.actualizar_usuario(usuario)
+                clear_waiting_for(numero)
+                
+                # Llamar directamente a flujo_generando_plan que detectará modo_seguimiento
+                return self.flujo_generando_plan(numero, texto)
             
             # Flujo normal: continuar al siguiente flujo
             set_estado_bot(numero, ESTADOS_BOT["ARMANDO_PERFIL"])
