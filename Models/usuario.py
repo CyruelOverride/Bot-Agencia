@@ -29,8 +29,19 @@ class Usuario:
         self.fecha_ultima_interaccion = datetime.now()
     
     def agregar_interes(self, interes: str):
-        if interes not in self.intereses:
-            self.intereses.append(interes)
+        """Agrega un interés si no existe (comparación case-insensitive)"""
+        if not interes:
+            return
+        # Normalizar a lowercase para comparación
+        interes_normalizado = str(interes).lower()
+        # Verificar si ya existe (comparación case-insensitive)
+        intereses_normalizados = [str(i).lower() for i in (self.intereses or [])]
+        if interes_normalizado not in intereses_normalizados:
+            # Agregar el interés en su forma normalizada (lowercase)
+            self.intereses.append(interes_normalizado)
+            print(f"✅ [USUARIO] Interés agregado: '{interes}' -> '{interes_normalizado}'")
+        else:
+            print(f"⚠️ [USUARIO] Interés ya existe: '{interes}' (normalizado: '{interes_normalizado}')")
     
     def agregar_lugar_enviado(self, lugar_id: str, interes: str):
         """

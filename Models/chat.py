@@ -1356,12 +1356,6 @@ class Chat:
                     UsuarioService.actualizar_usuario(usuario)
                     return None
 
-                # Limpiar flags de seguimiento
-                if 'nuevos_intereses_seguimiento' in self.conversation_data:
-                    del self.conversation_data['nuevos_intereses_seguimiento']
-                if 'modo_seguimiento' in self.conversation_data:
-                    del self.conversation_data['modo_seguimiento']
-
                 # CRÍTICO: Enviar lugares SOLO de los nuevos intereses, NO todo el plan
                 print(f"🔍 [GENERAR_PLAN] ENVIANDO SOLO LUGARES DE NUEVOS INTERESES: {nuevos_intereses}")
                 PlanViajeService.enviar_lugares_seguimiento(self, numero, usuario, nuevos_intereses)
@@ -1378,6 +1372,14 @@ class Chat:
                     usuario.estado_conversacion = ESTADOS_BOT["SEGUIMIENTO"]
                     UsuarioService.actualizar_usuario(usuario)
 
+                # CORRECCIÓN SINCRONIZACIÓN: Limpiar flags de seguimiento AL FINAL, después de que todo termine
+                if 'nuevos_intereses_seguimiento' in self.conversation_data:
+                    del self.conversation_data['nuevos_intereses_seguimiento']
+                    print(f"🔍 [GENERAR_PLAN] Flag 'nuevos_intereses_seguimiento' limpiado")
+                if 'modo_seguimiento' in self.conversation_data:
+                    del self.conversation_data['modo_seguimiento']
+                    print(f"🔍 [GENERAR_PLAN] Flag 'modo_seguimiento' limpiado")
+
                 return None
             else:
                 # Flujo normal: generar plan completo con Gemini
@@ -1385,7 +1387,9 @@ class Chat:
 
                 # Obtener lugares ya enviados para excluirlos de nuevas recomendaciones
                 # CRÍTICO: Asegurar que siempre se use la lista completa de lugares enviados
-                lugares_excluidos = self.conversation_data.get('lugares_enviados_seguimiento', [])
+                # CORRECCIÓN BUG IDs MIXTOS: Normalizar IDs al recuperarlos (no solo al guardarlos)
+                lugares_excluidos_raw = self.conversation_data.get('lugares_enviados_seguimiento', [])
+                lugares_excluidos = [str(lugar_id) for lugar_id in lugares_excluidos_raw]  # Normalizar a string
                 print(f"🔍 [GENERAR_PLAN] Lugares excluidos del plan: {len(lugares_excluidos)} lugares")
                 if lugares_excluidos:
                     print(f"🔍 [GENERAR_PLAN] IDs excluidos: {lugares_excluidos[:10]}...")  # Mostrar primeros 10

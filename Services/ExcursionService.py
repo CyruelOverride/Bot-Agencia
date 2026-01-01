@@ -99,20 +99,29 @@ class ExcursionService:
             "cultura": "cultural"  # El interés "cultura" se mapea a la categoría "cultural"
         }
         
-        # Convertir intereses a categorías usando el mapeo
+        # CORRECCIÓN CULTURA: Normalizar intereses a lowercase ANTES del mapeo
+        # Convertir intereses a categorías usando el mapeo (case-insensitive)
         categorias_interes = []
         for interes in intereses:
-            categoria = mapeo_interes_categoria.get(interes.lower(), interes.lower())
+            interes_normalizado = interes.lower().strip()  # Normalizar y limpiar
+            categoria = mapeo_interes_categoria.get(interes_normalizado, interes_normalizado)
             categorias_interes.append(categoria)
+        
+        # CORRECCIÓN CULTURA: Log para debugging
+        print(f"🔍 [EXCURSION_SERVICE] Intereses recibidos: {intereses}")
+        print(f"🔍 [EXCURSION_SERVICE] Categorías mapeadas: {categorias_interes}")
         
         if not perfil:
             # Si no hay perfil, solo filtrar por intereses
-            return [
+            # CORRECCIÓN CULTURA: Asegurar comparación case-insensitive en ambos lados
+            excursiones_filtradas = [
                 exc for exc in todas_las_excursiones
                 if exc.categoria.lower() in categorias_interes or any(
-                    cat in exc.categoria.lower() for cat in categorias_interes
+                    cat.lower() in exc.categoria.lower() for cat in categorias_interes
                 )
             ]
+            print(f"🔍 [EXCURSION_SERVICE] Excursiones encontradas (sin perfil): {len(excursiones_filtradas)}")
+            return excursiones_filtradas
         
         # Para filtrar por perfil, necesitamos usar las categorías mapeadas
         # Crear una lista temporal de intereses con las categorías mapeadas

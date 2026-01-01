@@ -186,13 +186,18 @@ class PlanViajeService:
             # Si el QR falla, retornar True igual (info ya se envió) pero loguear error
             try:
                 if ruta_qr_sanitizada and os.path.exists(ruta_qr_sanitizada):
-                    time.sleep(2)  # Pausa para asegurar que la información se procesó
+                    # CORRECCIÓN JUMBLE WHATSAPP: Esperar confirmación real + delay aumentado
+                    # Aumentar delay a 5 segundos para evitar que WhatsApp mezcle mensajes
+                    time.sleep(5)  # Pausa aumentada para asegurar que WhatsApp procesó completamente la información
                     caption_qr = f"📱 *Código QR - {excursion.nombre}*\n\nMuestra este QR a la hora de pagar para poder acceder al descuento."
+                    # CORRECCIÓN SINCRONIZACIÓN: Log de rastreo para verificar IDs
+                    print(f"     🔍 DEBUG: Enviando QR ID={excursion.id} para lugar {excursion.nombre}")
                     print(f"     📱 Enviando QR (información enviada exitosamente): {ruta_qr_sanitizada}")
                     resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr_sanitizada, caption_qr)
                     if resultado_qr.get("success"):
                         print(f"     ✅ QR enviado exitosamente")
-                        time.sleep(2)
+                        # CORRECCIÓN JUMBLE WHATSAPP: Esperar confirmación antes de continuar
+                        time.sleep(3)  # Pausa adicional después de confirmación para evitar jumble
                     else:
                         error_qr = resultado_qr.get('error', 'Error desconocido')
                         print(f"     ⚠️ Error al enviar QR (pero información ya enviada): {error_qr}")
@@ -273,8 +278,10 @@ class PlanViajeService:
                 excursiones_interes = ExcursionService.obtener_excursiones_por_categoria(usuario.ciudad, interes)
                 if excursiones_interes:
                     # Agregar la primera que no esté ya en la lista y no esté excluida
+                    # BLINDAJE 1: Normalizar IDs para comparación consistente
+                    lugares_excluidos_normalizados_aux = [str(lugar_id) for lugar_id in lugares_excluidos] if lugares_excluidos else []
                     for exc in excursiones_interes:
-                        if exc.id not in ids_existentes and exc.id not in lugares_excluidos:
+                        if exc.id not in ids_existentes and str(exc.id) not in lugares_excluidos_normalizados_aux:
                             excursiones.append(exc)
                             ids_existentes.add(exc.id)
                             print(f"🔍 [GENERAR_PLAN] Agregada excursión para completar interés '{interes}': {exc.nombre} (ID: {exc.id})")
@@ -299,8 +306,10 @@ class PlanViajeService:
             print(f"🔍 [GENERAR_PLAN] Excursiones adicionales encontradas: {len(excursiones_adicionales)}")
             
             # Agregar sin duplicar SOLO de los intereses del usuario y excluyendo lugares ya enviados
+            # BLINDAJE 1: Normalizar IDs para comparación consistente
+            lugares_excluidos_normalizados_aux2 = [str(lugar_id) for lugar_id in lugares_excluidos] if lugares_excluidos else []
             for exc in excursiones_adicionales:
-                if exc.id not in ids_existentes and exc.id not in lugares_excluidos and len(excursiones) < 15:
+                if exc.id not in ids_existentes and str(exc.id) not in lugares_excluidos_normalizados_aux2 and len(excursiones) < 15:
                     # VERIFICAR que la categoría coincida con algún interés del usuario
                     if exc.categoria.lower() in categorias_interes:
                         excursiones.append(exc)
@@ -634,8 +643,19 @@ class PlanViajeService:
         print(f"📋 [SEGUIMIENTO] Enviando lugares para nuevos intereses: {nuevos_intereses}")
         
         # SOLUCIÓN 3: Usar arreglo simple de lugares enviados en conversation_data
-        lugares_ya_enviados = chat.conversation_data.get('lugares_enviados_seguimiento', [])
+        lugares_ya_enviados_raw = chat.conversation_data.get('lugares_enviados_seguimiento', [])
+        
+        # CORRECCIÓN BUG IDs MIXTOS: Normalizar IDs al recuperarlos (no solo al guardarlos)
+        # Si conversation_data se guarda en JSON/DB, los números pueden convertirse a int automáticamente
+        lugares_ya_enviados = [str(lugar_id) for lugar_id in lugares_ya_enviados_raw]
+        
         print(f"🔍 [SEGUIMIENTO] Lugares ya enviados en seguimiento: {len(lugares_ya_enviados)} lugares")
+        
+        # BLINDAJE DE IDs: Verificar tipos antes y después de normalizar
+        print(f"🔍 [SEGUIMIENTO] BLINDAJE IDs - Tipos originales (raw): {[type(lugar_id).__name__ for lugar_id in lugares_ya_enviados_raw[:5]]}")  # Mostrar primeros 5 tipos
+        print(f"🔍 [SEGUIMIENTO] BLINDAJE IDs - Valores originales (raw, primeros 5): {lugares_ya_enviados_raw[:5]}")
+        print(f"🔍 [SEGUIMIENTO] BLINDAJE IDs - Tipos normalizados: {[type(lugar_id).__name__ for lugar_id in lugares_ya_enviados[:5]]}")
+        print(f"🔍 [SEGUIMIENTO] BLINDAJE IDs - Valores normalizados (primeros 5): {lugares_ya_enviados[:5]}")
 
         # Obtener excursiones para los nuevos intereses
         excursiones = ExcursionService.obtener_excursiones_por_intereses(
@@ -645,12 +665,14 @@ class PlanViajeService:
         )
 
         # SOLUCIÓN 3: Filtrar lugares ya enviados usando el arreglo simple
-        # BLINDAJE 1: Normalizar IDs a string para comparación consistente
-        lugares_ya_enviados_normalizados = [str(lugar_id) for lugar_id in lugares_ya_enviados]
+        # CORRECCIÓN BUG IDs MIXTOS: lugares_ya_enviados ya está normalizado arriba
         excursiones_filtradas = []
         for exc in excursiones:
-            if str(exc.id) not in lugares_ya_enviados_normalizados:
+            exc_id_str = str(exc.id)
+            if exc_id_str not in lugares_ya_enviados:
                 excursiones_filtradas.append(exc)
+            else:
+                print(f"🔍 [SEGUIMIENTO] BLINDAJE IDs - Lugar {exc_id_str} ({exc.nombre}) EXCLUIDO (ya enviado)")
         
         print(f"🔍 [SEGUIMIENTO] Lugares a enviar después de filtrar: {len(excursiones_filtradas)}")
         
@@ -732,24 +754,28 @@ class PlanViajeService:
                             print(f"✅ [SEGUIMIENTO] Lugar {excursion.id} guardado en UsuarioService")
                         
                         # CRÍTICO: Guardar en conversation_data SEGUNDO (para filtrado inmediato)
-                        # BLINDAJE 1: Normalizar ID a string antes de guardar
+                        # CORRECCIÓN BUG IDs MIXTOS: Siempre normalizar a string antes de guardar
                         # BLINDAJE 4: Persistencia síncrona inmediata
                         if 'lugares_enviados_seguimiento' not in chat.conversation_data:
                             chat.conversation_data['lugares_enviados_seguimiento'] = []
                         
-                        lugar_id_str = str(excursion.id)  # Normalizar a string
-                        if lugar_id_str not in chat.conversation_data['lugares_enviados_seguimiento']:
+                        lugar_id_str = str(excursion.id)  # Normalizar a string SIEMPRE
+                        # CORRECCIÓN BUG IDs MIXTOS: Normalizar la lista antes de verificar
+                        lugares_actuales_normalizados = [str(lugar_id) for lugar_id in chat.conversation_data['lugares_enviados_seguimiento']]
+                        if lugar_id_str not in lugares_actuales_normalizados:
                             chat.conversation_data['lugares_enviados_seguimiento'].append(lugar_id_str)
                             print(f"✅ [SEGUIMIENTO] Agregado lugar {lugar_id_str} a lugares_enviados_seguimiento")
                             
                             # BLINDAJE 4: Persistencia síncrona - verificar inmediatamente después de guardar
-                            lugares_guardados = chat.conversation_data.get('lugares_enviados_seguimiento', [])
+                            lugares_guardados_raw = chat.conversation_data.get('lugares_enviados_seguimiento', [])
+                            lugares_guardados = [str(lugar_id) for lugar_id in lugares_guardados_raw]  # Normalizar para verificación
                             if lugar_id_str in lugares_guardados:
                                 print(f"✅ [SEGUIMIENTO] Verificación: Lugar {lugar_id_str} confirmado en conversation_data")
                             else:
                                 logger.error(f"❌ [SEGUIMIENTO] ERROR: Lugar {lugar_id_str} NO se guardó correctamente en conversation_data")
 
-                    time.sleep(3)
+                    # CORRECCIÓN JUMBLE WHATSAPP: Aumentar delay entre lugares para evitar mezcla de mensajes
+                    time.sleep(5)  # Pausa aumentada entre lugares para evitar jumble de WhatsApp
                     
                 except Exception as e:
                     print(f"     ❌ Error al procesar {excursion.nombre}: {e}")
