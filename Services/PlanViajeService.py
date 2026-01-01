@@ -145,10 +145,8 @@ class PlanViajeService:
     @staticmethod
     def _enviar_informacion_y_qr(numero: str, excursion: Excursion, ruta_qr: Optional[str] = None) -> bool:
         """
-        Envía la información del lugar y luego el QR si corresponde.
-        Verificación de 2 partes ATÓMICA:
-        1. Primero envía la información del lugar (con reintentos)
-        2. Solo si la información se envió exitosamente, envía el QR
+        ENVÍO ATÓMICO: El QR depende 100% del éxito del mensaje anterior.
+        CANDADO DE SEGURIDAD: Si la información no se envía exitosamente, el QR se cancela automáticamente.
         
         Args:
             numero: Número de teléfono del usuario
@@ -158,7 +156,7 @@ class PlanViajeService:
         Returns:
             bool: True si la información se envió exitosamente, False en caso contrario
         """
-        from whatsapp_api import enviar_imagen_whatsapp
+        from whatsapp_api import enviar_imagen_whatsapp, enviar_mensaje_whatsapp
         import time
         from datetime import datetime
         import os
@@ -173,23 +171,54 @@ class PlanViajeService:
         print(f"📤 [LOG ENVÍO] Tiene QR: {ruta_qr is not None}")
         print(f"{'='*80}\n")
         
-        # PARTE 1: Enviar información del lugar con reintentos
-        print(f"🚀 [PASO 1] Iniciando envío de INFO para: {excursion.nombre}")
-        resultado_info = PlanViajeService._enviar_con_reintento(numero, excursion)
+        # 1. Intentar enviar la información (Imagen + Texto)
+        descripcion = excursion.descripcion if excursion.descripcion else "Sin descripción disponible"
+        ubicacion = excursion.ubicacion if excursion.ubicacion else None
         
-        # CRÍTICO: Si la info no se confirmó, abortamos el QR para evitar "QRs huérfanos"
-        if not resultado_info.get("success"):
-            print(f"❌ [FALLO] No se pudo enviar INFO de {excursion.nombre} (ID: {excursion.id}). Cancelando QR.")
+        # Construir caption/mensaje
+        if excursion.imagen_url:
+            caption = f"*{excursion.nombre}*\n\n{descripcion}"
+            if ubicacion:
+                caption += f"\n\n📍 {ubicacion}"
+            
+            if len(caption) > 1024:
+                caption = caption[:1021] + "..."
+            
+            print(f"🚀 [PASO 1] Enviando Info de {excursion.nombre} (imagen)...")
+            resultado_info = enviar_imagen_whatsapp(numero, excursion.imagen_url, caption)
+        else:
+            # Sin imagen, enviar texto directamente
+            mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
+            if ubicacion:
+                mensaje += f"\n\n📍 {ubicacion}"
+            
+            print(f"🚀 [PASO 1] Enviando Info de {excursion.nombre} (texto)...")
+            resultado_info = enviar_mensaje_whatsapp(numero, mensaje)
+        
+        # 2. VALIDACIÓN CRÍTICA: ¿WhatsApp nos dio un OK (Status 200)?
+        info_enviada_exitosamente = resultado_info.get("success", False)
+        
+        # 3. SALVAVIDAS: Si la imagen falló (link roto), intentamos TEXTO SOLO
+        if not info_enviada_exitosamente:
+            print(f"⚠️ [SALVAVIDAS] Imagen/Texto falló para {excursion.nombre}. Intentando enviar solo TEXTO como respaldo...")
+            mensaje_fallback = f"*{excursion.nombre}*\n\n{descripcion}"
+            if ubicacion:
+                mensaje_fallback += f"\n\n📍 {ubicacion}"
+            
+            resultado_fallback = enviar_mensaje_whatsapp(numero, mensaje_fallback)
+            info_enviada_exitosamente = resultado_fallback.get("success", False)
+        
+        # 4. EL CANDADO: Si después de intentar Imagen y luego Texto NADA salió...
+        if not info_enviada_exitosamente:
+            print(f"❌ [BLOQUEO TOTAL] No se pudo enviar nada de {excursion.nombre} (ID: {excursion.id}). CANCELANDO QR.")
             timestamp_fin = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             print(f"📤 [LOG ENVÍO] FIN - {timestamp_fin} - Lugar ID: {excursion.id} - Información enviada: False")
             print(f"{'='*80}\n")
-            return False
+            return False  # AQUÍ SE CORTA TODO. No llega al sleep ni al QR.
         
-        # PARTE 2: El QR solo si hay ruta y la parte 1 fue confirmada
+        # 5. SOLO SI LLEGAMOS AQUÍ, procedemos con el QR
         if ruta_qr and os.path.exists(ruta_qr):
-            # CORRECCIÓN RACE CONDITION: Aumentar delay con log de bloqueo
-            print(f"⏳ [PAUSA] Bloqueando 6s para asegurar que INFO llegue antes que QR...")
-            print(f"⏳ [PAUSA] Lugar: {excursion.nombre} (ID: {excursion.id})")
+            print(f"✅ [CONFIRMACIÓN] Info confirmada. Esperando 6s para mandar QR de {excursion.nombre}...")
             time.sleep(6)
             
             # Sanitizar ruta del QR
@@ -202,22 +231,16 @@ class PlanViajeService:
                 print(f"🎯 [PASO 2] Enviando QR para: {excursion.nombre} (ID: {excursion.id}) - {timestamp_qr}")
                 print(f"🎯 [PASO 2] Ruta QR: {ruta_qr_sanitizada}")
                 
-                try:
-                    resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr_sanitizada, caption_qr)
-                    if resultado_qr.get("success"):
-                        timestamp_qr_result = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        print(f"✅ [PASO 2] ÉXITO - {timestamp_qr_result} - QR enviado para: {excursion.nombre} (ID: {excursion.id})")
-                        # Pausa adicional después de confirmación
-                        time.sleep(3)
-                    else:
-                        timestamp_qr_result = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        error_qr = resultado_qr.get('error', 'Error desconocido')
-                        print(f"⚠️ [AVISO] QR de {excursion.nombre} (ID: {excursion.id}) falló, pero la info ya se envió. Error: {error_qr}")
-                        logger.warning(f"Error al enviar QR para {excursion.nombre} (información ya enviada): {error_qr}")
-                except Exception as e:
-                    timestamp_qr_exception = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    print(f"⚠️ [AVISO] Excepción al enviar QR de {excursion.nombre} (ID: {excursion.id}), pero la info ya se envió. Error: {e}")
-                    logger.warning(f"Excepción al enviar QR para {excursion.nombre} (información ya enviada): {e}")
+                resultado_qr = enviar_imagen_whatsapp(numero, ruta_qr_sanitizada, caption_qr)
+                if resultado_qr.get("success"):
+                    timestamp_qr_result = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    print(f"✅ [PASO 2] ÉXITO - {timestamp_qr_result} - QR enviado para: {excursion.nombre} (ID: {excursion.id})")
+                    time.sleep(3)  # Pausa adicional después de confirmación
+                else:
+                    timestamp_qr_result = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    error_qr = resultado_qr.get('error', 'Error desconocido')
+                    print(f"⚠️ [AVISO] Error al enviar QR de {excursion.nombre} (ID: {excursion.id}), pero la info ya se envió. Error: {error_qr}")
+                    logger.warning(f"Error al enviar QR para {excursion.nombre} (información ya enviada): {error_qr}")
             else:
                 print(f"⚠️ [AVISO] QR no existe en ruta sanitizada: {ruta_qr_sanitizada}")
                 logger.warning(f"QR no existe para {excursion.nombre} en ruta: {ruta_qr_sanitizada}")
@@ -229,11 +252,11 @@ class PlanViajeService:
         print(f"📤 [LOG ENVÍO] FIN - {timestamp_fin}")
         print(f"📤 [LOG ENVÍO] Lugar ID: {excursion.id}")
         print(f"📤 [LOG ENVÍO] Lugar Nombre: {excursion.nombre}")
-        print(f"📤 [LOG ENVÍO] Información enviada: True")
-        print(f"📤 [LOG ENVÍO] QR enviado: {ruta_qr is not None and os.path.exists(ruta_qr) if ruta_qr else False}")
+        print(f"📤 [LOG ENVÍO] Información enviada: {info_enviada_exitosamente}")
+        print(f"📤 [LOG ENVÍO] QR enviado: {info_enviada_exitosamente and ruta_qr is not None and os.path.exists(ruta_qr) if ruta_qr else False}")
         print(f"{'='*80}\n")
         
-        return True
+        return info_enviada_exitosamente
     
     @staticmethod
     def generar_plan_personalizado(usuario: Usuario, lugares_excluidos: Optional[List[str]] = None) -> PlanViaje:
