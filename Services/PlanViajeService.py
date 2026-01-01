@@ -344,6 +344,16 @@ class PlanViajeService:
                         except Exception as e:
                             print(f"     ⚠️ Error al generar QR: {e}")
                             logger.warning(f"No se pudo generar QR para {excursion.nombre}: {e}")
+                            # Para lugares con caracteres especiales como "Charco Bistró", intentar manejo especial
+                            if "bistró" in excursion.nombre.lower() or "bistro" in excursion.nombre.lower():
+                                try:
+                                    print(f"     🔄 Intentando manejo especial para caracteres especiales en: {excursion.nombre}")
+                                    # Limpiar caracteres especiales del nombre para el QR
+                                    nombre_limpio = excursion.nombre.replace("ó", "o").replace("í", "i").replace("ú", "u")
+                                    print(f"     🔄 Nombre limpiado: {nombre_limpio}")
+                                    ruta_qr = obtener_ruta_qr(excursion.id)
+                                except Exception as e2:
+                                    print(f"     ❌ Error persistente con caracteres especiales: {e2}")
                     
                     # VERIFICACIÓN DE 2 PARTES: Primero enviar información, solo entonces QR
                     descripcion = excursion.descripcion if excursion.descripcion else "Sin descripción disponible"
@@ -471,7 +481,7 @@ class PlanViajeService:
         print(f"✅ Finalizado envío de mensajes individuales")
     
     @staticmethod
-    def enviar_lugares_seguimiento(numero: str, usuario: Usuario, nuevos_intereses: List[str]):
+    def enviar_lugares_seguimiento(chat, numero: str, usuario: Usuario, nuevos_intereses: List[str]):
         """
         Envía lugares directamente sin usar Gemini para el resumen.
         Solo envía lugares de los nuevos intereses que no se hayan enviado antes.
@@ -491,25 +501,21 @@ class PlanViajeService:
         
         print(f"📋 [SEGUIMIENTO] Enviando lugares para nuevos intereses: {nuevos_intereses}")
         
-        # Obtener lugares ya enviados por interés
-        lugares_enviados_por_interes = {}
-        for interes in nuevos_intereses:
-            lugares_enviados_por_interes[interes] = usuario.obtener_lugares_enviados_por_interes(interes)
-            print(f"🔍 [SEGUIMIENTO] Interés '{interes}': {len(lugares_enviados_por_interes[interes])} lugares ya enviados")
-        
+        # SOLUCIÓN 3: Usar arreglo simple de lugares enviados en conversation_data
+        lugares_ya_enviados = chat.conversation_data.get('lugares_enviados_seguimiento', [])
+        print(f"🔍 [SEGUIMIENTO] Lugares ya enviados en seguimiento: {len(lugares_ya_enviados)} lugares")
+
         # Obtener excursiones para los nuevos intereses
         excursiones = ExcursionService.obtener_excursiones_por_intereses(
             ciudad=usuario.ciudad,
             intereses=nuevos_intereses,
             perfil=usuario.perfil
         )
-        
-        # Filtrar lugares ya enviados por interés
+
+        # SOLUCIÓN 3: Filtrar lugares ya enviados usando el arreglo simple
         excursiones_filtradas = []
         for exc in excursiones:
-            interes_exc = exc.categoria.lower()
-            lugares_enviados = lugares_enviados_por_interes.get(interes_exc, [])
-            if exc.id not in lugares_enviados:
+            if exc.id not in lugares_ya_enviados:
                 excursiones_filtradas.append(exc)
         
         print(f"🔍 [SEGUIMIENTO] Lugares a enviar después de filtrar: {len(excursiones_filtradas)}")
@@ -668,9 +674,17 @@ class PlanViajeService:
                     elif ruta_qr and not os.path.exists(ruta_qr):
                         print(f"     ⚠️ QR no existe en ruta: {ruta_qr}")
 
-                    # Marcar lugar como enviado solo si la información se envió
+                    # SOLUCIÓN 3: Marcar lugar como enviado en el arreglo simple
                     if info_enviada_exitosamente:
                         lugares_enviados_ids.append(excursion.id)
+                        # Agregar al arreglo de seguimiento en conversation_data
+                        if 'lugares_enviados_seguimiento' not in chat.conversation_data:
+                            chat.conversation_data['lugares_enviados_seguimiento'] = []
+                        if excursion.id not in chat.conversation_data['lugares_enviados_seguimiento']:
+                            chat.conversation_data['lugares_enviados_seguimiento'].append(excursion.id)
+                            print(f"✅ [SEGUIMIENTO] Agregado lugar {excursion.id} a seguimiento")
+
+                        # También mantener en el usuario por interés (para compatibilidad)
                         UsuarioService.agregar_lugar_enviado(numero, excursion.id, excursion.categoria.lower())
 
                     time.sleep(3)

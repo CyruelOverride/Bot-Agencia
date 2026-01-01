@@ -616,9 +616,12 @@ class Chat:
                     # Volver a mostrar opciones de intereses
                     return self._mostrar_mensaje_intereses(numero, usuario, True)
 
+                # BANDERA PARA EVITAR GEMINI: Usar modo seguimiento directo
+                self.conversation_data['modo_seguimiento'] = True
+
                 # CRÍTICO: Enviar lugares SOLO de los nuevos intereses, NO generar un nuevo plan completo
                 print(f"🔍 [SEGUIMIENTO] ENVIANDO SOLO LUGARES DE NUEVOS INTERESES: {nuevos_intereses}")
-                PlanViajeService.enviar_lugares_seguimiento(numero, usuario, nuevos_intereses)
+                PlanViajeService.enviar_lugares_seguimiento(self, numero, usuario, nuevos_intereses)
 
                 # Obtener usuario actualizado después de enviar lugares
                 usuario = UsuarioService.obtener_usuario_por_telefono(numero)
@@ -626,11 +629,15 @@ class Chat:
                 # Enviar mensaje de cierre
                 self._enviar_mensaje_cierre_recomendaciones(numero, usuario, None)
 
-                # Pasar a seguimiento
+                # Pasar a seguimiento y limpiar banderas
                 set_estado_bot(numero, ESTADOS_BOT["SEGUIMIENTO"])
                 if usuario:
                     usuario.estado_conversacion = ESTADOS_BOT["SEGUIMIENTO"]
                     UsuarioService.actualizar_usuario(usuario)
+
+                # Limpiar banderas de seguimiento
+                if 'modo_seguimiento' in self.conversation_data:
+                    del self.conversation_data['modo_seguimiento']
 
                 return None
             
@@ -1075,12 +1082,17 @@ class Chat:
             "d": "cultura",
             "cultura": "cultura",
             "cultural": "cultura",
+            "culturas": "cultura",
+            "cult": "cultura",
             "arte": "cultura",
             "teatro": "cultura",
             "museo": "cultura",
             "museos": "cultura",
             "espectaculos": "cultura",
-            "espectáculos": "cultura"
+            "espectáculos": "cultura",
+            "turismo": "cultura",
+            "patrimonio": "cultura",
+            "historia": "cultura"
         }
         
         intereses_validos = ["restaurantes", "comercios", "compras", "cultura"]
@@ -1303,10 +1315,11 @@ class Chat:
         try:
             # Verificar si viene desde seguimiento (agregando más intereses)
             nuevos_intereses = self.conversation_data.get('nuevos_intereses_seguimiento', None)
-            
-            if nuevos_intereses:
+            modo_seguimiento = self.conversation_data.get('modo_seguimiento', False)
+
+            if nuevos_intereses or modo_seguimiento:
                 # Viene desde seguimiento: usar método directo sin Gemini
-                print(f"🔍 [GENERAR_PLAN] Modo seguimiento: enviando lugares SOLO para nuevos intereses {nuevos_intereses}")
+                print(f"🔍 [GENERAR_PLAN] MODO SEGUIMIENTO ACTIVADO - NO usar Gemini")
 
                 # Verificar que nuevos_intereses no esté vacío
                 if not nuevos_intereses:
@@ -1316,13 +1329,15 @@ class Chat:
                     UsuarioService.actualizar_usuario(usuario)
                     return None
 
-                # Limpiar el flag de nuevos intereses
+                # Limpiar flags de seguimiento
                 if 'nuevos_intereses_seguimiento' in self.conversation_data:
                     del self.conversation_data['nuevos_intereses_seguimiento']
+                if 'modo_seguimiento' in self.conversation_data:
+                    del self.conversation_data['modo_seguimiento']
 
-                # CRÍTICO: Enviar lugares SOLO de los nuevos intereses, NO generar un nuevo plan completo
+                # CRÍTICO: Enviar lugares SOLO de los nuevos intereses, NO todo el plan
                 print(f"🔍 [GENERAR_PLAN] ENVIANDO SOLO LUGARES DE NUEVOS INTERESES: {nuevos_intereses}")
-                PlanViajeService.enviar_lugares_seguimiento(numero, usuario, nuevos_intereses)
+                PlanViajeService.enviar_lugares_seguimiento(self, numero, usuario, nuevos_intereses)
 
                 # Obtener usuario actualizado después de enviar lugares
                 usuario = UsuarioService.obtener_usuario_por_telefono(numero)
@@ -1339,20 +1354,22 @@ class Chat:
                 return None
             else:
                 # Flujo normal: generar plan completo con Gemini
+                print(f"🔍 [GENERAR_PLAN] MODO NORMAL - Usando Gemini para generar plan completo")
+
                 # Obtener lugares ya enviados para excluirlos de nuevas recomendaciones
-                lugares_excluidos = self.conversation_data.get('lugares_enviados', [])
-                
+                lugares_excluidos = self.conversation_data.get('lugares_enviados_seguimiento', [])
+
                 # Generar plan (excluyendo lugares ya enviados si hay)
                 plan = PlanViajeService.generar_plan_personalizado(usuario, lugares_excluidos=lugares_excluidos)
-                
+
                 # Guardar plan en conversation_data
                 self.conversation_data['plan_viaje'] = plan
-                
+
                 # Pasar a presentación del plan
                 set_estado_bot(numero, ESTADOS_BOT["PLAN_PRESENTADO"])
                 usuario.estado_conversacion = ESTADOS_BOT["PLAN_PRESENTADO"]
                 UsuarioService.actualizar_usuario(usuario)
-                
+
                 return self.flujo_plan_presentado(numero, texto)
             
         except Exception as e:
@@ -1373,9 +1390,10 @@ class Chat:
         
         # Guardar IDs de lugares enviados para evitar duplicados en futuras recomendaciones
         lugares_enviados = [exc.id for exc in plan.excursiones]
-        if 'lugares_enviados' not in self.conversation_data:
-            self.conversation_data['lugares_enviados'] = []
-        self.conversation_data['lugares_enviados'].extend(lugares_enviados)
+        if 'lugares_enviados_seguimiento' not in self.conversation_data:
+            self.conversation_data['lugares_enviados_seguimiento'] = []
+        self.conversation_data['lugares_enviados_seguimiento'].extend(lugares_enviados)
+        print(f"✅ [PLAN_PRESENTADO] Agregados {len(lugares_enviados)} lugares a seguimiento: {lugares_enviados}")
         
         # Enviar plan con imagen (si está disponible) y texto detallado
         # El método maneja errores silenciosamente si no hay imagen
