@@ -750,8 +750,7 @@ class Chat:
         intereses_opciones = [
             {"id": "restaurantes", "nombre": "Restaurantes", "emoji": "🍽️", "numero": 1},
             {"id": "comercios", "nombre": "Comercios", "emoji": "🛍️", "numero": 2},
-            {"id": "compras", "nombre": "Compras", "emoji": "🛒", "numero": 3},
-            {"id": "cultura", "nombre": "Cultura", "emoji": "🎭", "numero": 4}
+            {"id": "cultura", "nombre": "Cultura", "emoji": "🏛️", "numero": 3}
         ]
         
         # Normalizar intereses actuales para comparación
@@ -865,7 +864,7 @@ class Chat:
             return
         
         # Intereses disponibles en el sistema
-        intereses_disponibles = ["restaurantes", "comercios", "compras", "cultura"]
+        intereses_disponibles = ["restaurantes", "comercios", "cultura"]
         # Obtener intereses actualizados del usuario (asegurar que estén actualizados)
         intereses_usuario = usuario.intereses if usuario.intereses else []
         
@@ -1075,9 +1074,9 @@ class Chat:
         """
         Detecta intereses del texto del usuario.
         Soporta:
-        - Números: "1 2 3 4" → restaurantes, comercios, compras, cultura
-        - Letras: "A B C D" → restaurantes, comercios, compras, cultura
-        - Nombres completos o parciales: "restaurantes compras comercios cultura"
+        - Números: "1 2 3" → restaurantes, comercios, cultura
+        - Letras: "A B C" → restaurantes, comercios, cultura
+        - Nombres completos o parciales: "restaurantes comercios cultura"
         - "todo" → todos los intereses
         """
         if not texto or not texto.strip():
@@ -1098,15 +1097,8 @@ class Chat:
             "comercios": "comercios",
             "tienda": "comercios",
             "tiendas": "comercios",
-            "3": "compras",
-            "c": "compras",
-            "compra": "compras",
-            "compras": "compras",
-            "shopping": "compras",
-            "regalo": "compras",
-            "regalos": "compras",
-            "4": "cultura",
-            "d": "cultura",
+            "3": "cultura",
+            "b": "cultura",
             "cultura": "cultura",
             "cultural": "cultura",
             "culturas": "cultura",
@@ -1122,7 +1114,7 @@ class Chat:
             "historia": "cultura"
         }
         
-        intereses_validos = ["restaurantes", "comercios", "compras", "cultura"]
+        intereses_validos = ["restaurantes", "comercios", "cultura"]
         intereses_detectados = []
         
         # Si dice "todo", seleccionar todos
