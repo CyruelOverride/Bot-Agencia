@@ -946,11 +946,11 @@ class Chat:
                 ]
             },
             "duracion_estadia": {
-                "body": "¿Cuántos días vas a estar?",
+                "body": "¿En que horario te encuentras más libre?",
                 "options": [
-                    {"id": "duracion_1_2", "title": "1-2 días"},
-                    {"id": "duracion_3_5", "title": "3-5 días"},
-                    {"id": "duracion_mas_5", "title": "Más de 5 días"}
+                    {"id": "duracion_mañana", "title": "Mañana (07:00-14:00)"},
+                    {"id": "duracion_tarde", "title": "Tarde (14:00-19-00)"},
+                    {"id": "duracion_noche", "title": "Noche (19:00 en adelante)"}
                 ]
             },
             "preferencias_comida": {
@@ -1178,9 +1178,9 @@ class Chat:
             "tipo_viaje_amigos": ("tipo_viaje", "amigos"),
             "tipo_viaje_negocios": ("tipo_viaje", "negocios"),
             # Duración
-            "duracion_1_2": ("duracion_estadia", 2),
-            "duracion_3_5": ("duracion_estadia", 4),
-            "duracion_mas_5": ("duracion_estadia", 7),
+            "duracion_mañana": ("duracion_estadia", "mañana"),
+            "duracion_tarde": ("duracion_estadia", "tarde"),
+            "duracion_noche": ("duracion_estadia", "noche"),
             # Preferencias comida
             "comida_local": ("preferencias_comida", "local"),
             "comida_internacional": ("preferencias_comida", "internacional"),
