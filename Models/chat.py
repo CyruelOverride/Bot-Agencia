@@ -948,9 +948,9 @@ class Chat:
             "duracion_estadia": {
                 "body": "¿En que horario te encuentras más libre?",
                 "options": [
-                    {"id": "duracion_mañana", "title": "Mañana (07:00-14:00)"},
-                    {"id": "duracion_tarde", "title": "Tarde (14:00-19-00)"},
-                    {"id": "duracion_noche", "title": "Noche (19:00 en adelante)"}
+                    {"id": "duracion_mañana", "title": "Mañana 07-14h"},
+                    {"id": "duracion_tarde", "title": "Tarde 14-19h"},
+                    {"id": "duracion_noche", "title": "Noche 19h+"}
                 ]
             },
             "preferencias_comida": {
