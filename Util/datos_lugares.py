@@ -19,7 +19,7 @@ DATOS_LUGARES = {
                 nombre="El Buen Suspiro",
                 descripcion="Situado en la icónica Calle de los Suspiros, este local funciona en una construcción portuguesa del siglo XVIII que mantiene sus paredes de piedra y techos de madera originales. Es famoso por ofrecer una experiencia íntima donde se pueden degustar los mejores quesos de la región, fiambres artesanales y una selección premium de vinos uruguayos. Es el lugar ideal para una picada romántica o un brindis en un entorno que transporta al pasado colonial.\n\nHorario: Lunes a domingo de 11:00 a 20:00 hs.",
                 ubicacion="https://www.google.com/maps/search/El+Buen+Suspiro+Colonia",
-                tags=["quesos", "vinos", "romantico", "historico", "premium"],
+                tags=["mañana", "tarde", "noche", "quesos", "vinos", "romantico", "historico", "premium"],
                 imagen_url="https://media-cdn.tripadvisor.com/media/photo-s/0e/d1/3a/50/fachada-de-la-casa-ano.jpg"
             ),
             Excursion(
@@ -29,7 +29,7 @@ DATOS_LUGARES = {
                 nombre="Charco Bistró",
                 descripcion="Este restaurante de autor se encuentra dentro de un hotel boutique ubicado en la faja costera del casco histórico. Se destaca por su diseño minimalista y elegante con una terraza que ofrece vistas espectaculares al Río de la Plata. Su propuesta culinaria es sofisticada, incluyendo mariscos frescos, pulpo a la parrilla, carnes de exportación y una pastelería de origen seleccionada, siendo una parada obligatoria para quienes buscan alta cocina frente al agua.\n\nHorario: Todos los días de 08:00 a 23:00 hs.",
                 ubicacion="https://www.google.com/maps/search/Charco+Bistro+Colonia",
-                tags=["alta_cocina", "mariscos", "premium", "vista_rio", "elegante"],
+                tags=["mañana","tarde","noche", "alta_cocina", "mariscos", "premium", "vista_rio", "elegante"],
                 imagen_url="https://media-cdn.tripadvisor.com/media/photo-s/0f/39/57/29/terrace.jpg"
             ),
             Excursion(
@@ -39,7 +39,7 @@ DATOS_LUGARES = {
                 nombre="La Bodeguita",
                 descripcion="Ubicada sobre la antigua muralla defensiva de la ciudad, esta pizzería y restaurante es reconocida por poseer una de las mejores terrazas para contemplar el atardecer. Su especialidad son las pizzas cocinadas en horno de barro, aunque también ofrecen chivitos uruguayos y pastas en un ambiente relajado y bohemio que suele llenarse al caer el sol.\n\nHorario: Todos los días a partir de las 20:00 hs.",
                 ubicacion="https://www.google.com/maps/search/La+Bodeguita+Colonia",
-                tags=["pizza", "horno_barro", "atardecer", "bohemio", "terraza"],
+                tags=["noche", "pizza", "horno_barro", "atardecer", "bohemio", "terraza"],
                 imagen_url="https://th.bing.com/th/id/R.fd97452e324b98f82067527e105c3cae?rik=iP76bvNh%2fnrOhQ&pid=ImgRaw&r=0"
             ),
         ],
@@ -51,7 +51,7 @@ DATOS_LUGARES = {
                 nombre="Manos del Uruguay",
                 descripcion="Cooperativa nacional sin fines de lucro integrada a la Organización Mundial del Comercio Justo. Ofrece prendas de lana tejidas a mano de alta gama, accesorios de cuero, mantas de diseño y joyería artesanal de exportación.\n\nHorario: Lun-Dom 10:00-19:00 hs.",
                 ubicacion="https://www.google.com/maps/search/Manos+del+Uruguay+Colonia",
-                tags=["artesanias", "lana", "cuero", "joyeria", "comercio_justo", "premium"],
+                tags=["tarde","noche", "artesanias", "lana", "cuero", "joyeria", "comercio_justo", "premium"],
                 imagen_url=None
             ),
             Excursion(
@@ -61,7 +61,7 @@ DATOS_LUGARES = {
                 nombre="Mercado Artesanal",
                 descripcion="Espacio cultural ubicado en un antiguo galpón ferroviario recuperado cerca del puerto. Ofrece cerámica esmaltada, joyería de autor, textiles regionales, objetos de madera y vitrofusión realizados por artistas locales.\n\nHorario: Jue-Lun 10:00-20:00 hs.",
                 ubicacion="https://www.google.com/maps/search/Mercado+Artesanal+Colonia",
-                tags=["artesanias", "ceramica", "joyeria", "textiles", "cultural", "local"],
+                tags=["mañana","tarde","noche","artesanias", "ceramica", "joyeria", "textiles", "cultural", "local"],
                 imagen_url=None
             ),
             Excursion(
@@ -71,7 +71,7 @@ DATOS_LUGARES = {
                 nombre="Feria de Emprendedores",
                 descripcion="Feria tradicional al aire libre donde productores de todo el departamento exhiben su trabajo. Se pueden encontrar dulces regionales, manualidades, antigüedades, mates trabajados y piezas únicas de decoración criolla.\n\nHorario: Domingos 07:00-14:00 hs.",
                 ubicacion="https://www.google.com/maps/search/Feria+Productores+Colonia",
-                tags=["feria", "artesanias", "dulces", "antiguedades", "decoracion", "tradicional"],
+                tags=["mañana","tarde","feria", "artesanias", "dulces", "antiguedades", "decoracion", "tradicional"],
                 imagen_url=None
             ),
             Excursion(
@@ -81,7 +81,7 @@ DATOS_LUGARES = {
                 nombre="Lemon",
                 descripcion="Lemon es una de las marcas de indumentaria femenina más importantes de Uruguay, destacada por su estilo casual, contemporáneo y urbano. Su local en la avenida principal de Colonia ofrece una amplia variedad de prendas de temporada que combinan diseño moderno con comodidad, siendo una parada obligada para quienes buscan renovar su vestidor con calidad nacional.\n\nHorario: Lunes a Viernes de 10:00 a 19:00 hs, Sábados de 10:00 a 14:00 hs.",
                 ubicacion="https://www.google.com/maps/search/Lemon+Colonia+Gral+Flores+435",
-                tags=["ropa", "indumentaria", "mujer", "moda", "nacional", "premium"],
+                tags=["mañana","tarde","noche", "ropa", "indumentaria", "mujer", "moda", "nacional", "premium"],
                 imagen_url="https://kronelectronics.uy/wp-content/uploads/2025/04/LEMON.jpeg"
             ),
             Excursion(
@@ -91,7 +91,7 @@ DATOS_LUGARES = {
                 nombre="Cosas Bellas",
                 descripcion="Como su nombre lo indica, esta tienda es un refugio de objetos hermosos y curiosidades seleccionadas. Alejándose del souvenir masivo, ofrece artesanías de alta calidad, textiles, joyería de diseño, y productos gourmet locales. Es el sitio ideal para quienes desean llevarse un recuerdo auténtico de Colonia, en un local que en sí mismo es un paseo visual.\n\nHorario: Todos los días de 10:30 a 18:30 hs.",
                 ubicacion="https://www.google.com/maps/search/Cosas+Bellas+Colonia+Misiones+Tapes",
-                tags=["souvenirs", "artesanias", "joyeria", "textiles", "gourmet", "local", "premium"],
+                tags=["mañana","tarde","souvenirs", "artesanias", "joyeria", "textiles", "gourmet", "local", "premium"],
                 imagen_url="https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/2a/4b/3a/6.jpg?w=1200&h=1200&s=1"
             ),
             Excursion(
@@ -101,7 +101,7 @@ DATOS_LUGARES = {
                 nombre="Lombardía Arte & Joyas",
                 descripcion="Es un prestigioso taller de orfebrería dirigido por Gino Martinelli, con fuerte presencia en Nueva Helvecia (Colonia). Se especializan en la fabricación artesanal de joyas clásicas y contemporáneas, además de ser expertos en platería criolla, una técnica tradicional uruguaya. Sus piezas son únicas, elaboradas con metales nobles y diseños que combinan la tradición orfebre con la elegancia moderna.\n\nHorario: Lunes a Viernes de 09:00 a 12:00 hs y de 14:30 a 18:30 hs (Aprox).",
                 ubicacion="https://www.google.com/maps/search/Lombardia+Arte+y+Joyas+Nueva+Helvecia",
-                tags=["joyeria", "orfebreria", "plateria", "artesanal", "premium", "tradicional"],
+                tags=["mañana","tarde","joyeria", "orfebreria", "plateria", "artesanal", "premium", "tradicional"],
                 imagen_url="https://lombardia.com.uy/wp-content/uploads/2023/11/22-3.jpg"
             )
         ],
@@ -113,7 +113,7 @@ DATOS_LUGARES = {
                 nombre="Colonia Shopping",
                 descripcion="El centro comercial cerrado más importante de la ciudad. Cuenta con más de cien marcas nacionales e internacionales, salas de cine, un gran supermercado (Ta-Ta) y una plaza de comidas variada.\n\nHorario: Lun-Dom 10:00-22:00 hs.",
                 ubicacion="https://www.google.com/maps/search/Colonia+Shopping",
-                tags=["shopping", "marcas", "cine", "supermercado", "comida", "variedad"],
+                tags=["mañana","tarde","noche","shopping", "marcas", "cine", "supermercado", "comida", "variedad"],
                 imagen_url=None
             ),
             Excursion(
@@ -123,7 +123,7 @@ DATOS_LUGARES = {
                 nombre="Av. General Flores",
                 descripcion="Es el 'shopping a cielo abierto' y la arteria principal de la ciudad. Concentra las mayores tiendas de ropa, zapaterías, bancos y farmacias, además de ser el eje central donde se desarrolla la vida social de Colonia.\n\nHorario: Variable (aprox. 10:00-19:00 hs).",
                 ubicacion="https://www.google.com/maps/search/Avenida+General+Flores+Colonia",
-                tags=["avenida", "tiendas", "ropa", "zapatos", "bancos", "social"],
+                tags=["mañana","tarde","avenida", "tiendas", "ropa", "zapatos", "bancos", "social"],
                 imagen_url=None
             )
         ],
@@ -135,7 +135,7 @@ DATOS_LUGARES = {
                 nombre="Teatro Bastión del Carmen",
                 descripcion="Un centro cultural vibrante construido sobre los restos de una antigua fortificación española y una posterior fábrica de jabón. Este espacio combina muros de piedra originales con una arquitectura moderna, ofreciendo una sala de teatro, galerías de arte y un hermoso jardín que bordea la muralla con vista al río. Es el epicentro de la actividad artística local, albergando obras de teatro, conciertos y exposiciones de artes visuales durante todo el año.\n\nHorario: Depende de la programación; galería abierta de 12:00 a 20:00 hs.",
                 ubicacion="https://goo.gl/maps/8V9R2Y7L1M4",
-                tags=["teatro", "arte", "musica", "vistas", "arquitectura"],
+                tags=["mañana","tarde","teatro", "arte", "musica", "vistas", "arquitectura"],
                 imagen_url="https://salimos.uy/wp-content/uploads/2021/01/bastion-del-carmen-en-colonia-del-sacramento.jpg"
             ),
             Excursion(
@@ -145,7 +145,7 @@ DATOS_LUGARES = {
                 nombre="Plaza de Toros Real de San Carlos",
                 descripcion="Inaugurada originalmente en 1910, es la única plaza de toros de estilo neomudéjar que queda en pie en el Río de la Plata. Tras un siglo de abandono debido a la prohibición de las corridas en Uruguay (1912), fue majestuosamente rehabilitada en 2021. Hoy funciona como un moderno centro de espectáculos y convenciones con capacidad para miles de personas. El complejo incluye un museo taurino que exhibe trajes de toreros y afiches de época, una vinoteca y un restaurante. Su acústica circular es tan perfecta que artistas como Jorge Drexler han elogiado el sonido del lugar.\n\nHorario: Lunes, jueves, viernes, sábados y domingos de 10:00 a 18:30 hs. (Sábados hasta las 19:00 hs).",
                 ubicacion="https://maps.app.goo.gl/3P3Z5G9J6XN2",
-                tags=["historia", "arquitectura", "espectaculos", "museo", "patrimonio"],
+                tags=["mañana","tarde","historia", "arquitectura", "espectaculos", "museo", "patrimonio"],
                 imagen_url="https://images.adsttc.com/media/images/61f0/4592/3e4b/313f/8900/001e/newsletter/DJI_0992.jpg?1643136376"
             ),
             Excursion(
@@ -155,7 +155,7 @@ DATOS_LUGARES = {
                 nombre="Museo del Período Histórico Portugués",
                 descripcion="Ubicado en una antigua casona de 1720 frente a la Plaza Mayor, este museo recrea fielmente la presencia lusitana en la ciudad. El acervo se centra en la historia política y bélica, exhibiendo armas, escudos, uniformes militares, mobiliario y cartografía original que marcaron el período de fundación de Colonia del Sacramento por parte de los portugueses. Es una pieza fundamental para entender la identidad binacional y el valor estratégico que tuvo la ciudad durante el siglo XVIII.\n\nHorario: Jueves a martes de 11:30 a 16:30 hs.",
                 ubicacion="https://www.google.com/maps/search/Museo+Portugues+Colonia+del+Sacramento",
-                tags=["historia", "museo", "portugal", "colonial", "patrimonio"],
+                tags=["mañana","tarde","historia", "museo", "portugal", "colonial", "patrimonio"],
                 imagen_url="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRyEbSkf-lD6Cnroy9tnsllSCGmC6RmK4yGLjX3UbqCcw&s=10"
             ),
             Excursion(
@@ -165,7 +165,7 @@ DATOS_LUGARES = {
                 nombre="Museo Municipal Dr. Bautista Rebuffo",
                 descripcion="Es el museo más antiguo y completo de la ciudad (fundado en 1951). Se ubica en la 'Casa de Brown', una construcción principalmente portuguesa del siglo XVIII con intervenciones españolas. Su colección es sumamente variada, abarcando desde arqueología indígena y restos fósiles (incluyendo un esqueleto de ballena azul en el patio trasero) hasta documentos y mobiliario de la época colonial. Es una parada obligatoria para comprender la identidad y evolución de esta ciudad declarada Patrimonio de la Humanidad por la UNESCO.\n\nHorario: Martes a domingo de 11:30 a 16:30 hs.",
                 ubicacion="https://www.google.com/maps/search/Museo+Municipal+Dr+Bautista+Rebuffo+Colonia",
-                tags=["historia", "museo", "arqueologia", "paleontologia", "patrimonio"],
+                tags=["mañana","tarde","historia", "museo", "arqueologia", "paleontologia", "patrimonio"],
                 imagen_url="https://media-cdn.tripadvisor.com/media/photo-s/0e/fe/98/25/acervo.jpg"
             )
         ]
