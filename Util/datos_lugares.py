@@ -147,6 +147,26 @@ DATOS_LUGARES = {
                 ubicacion="https://maps.app.goo.gl/3P3Z5G9J6XN2",
                 tags=["historia", "arquitectura", "espectaculos", "museo", "patrimonio"],
                 imagen_url="https://images.adsttc.com/media/images/61f0/4592/3e4b/313f/8900/001e/newsletter/DJI_0992.jpg?1643136376"
+            ),
+            Excursion(
+                id="cult_003",
+                ciudad="Colonia",
+                categoria="cultural",
+                nombre="Museo del Período Histórico Portugués",
+                descripcion="Ubicado en una antigua casona de 1720 frente a la Plaza Mayor, este museo recrea fielmente la presencia lusitana en la ciudad. El acervo se centra en la historia política y bélica, exhibiendo armas, escudos, uniformes militares, mobiliario y cartografía original que marcaron el período de fundación de Colonia del Sacramento por parte de los portugueses. Es una pieza fundamental para entender la identidad binacional y el valor estratégico que tuvo la ciudad durante el siglo XVIII.\n\nHorario: Jueves a martes de 11:30 a 16:30 hs.",
+                ubicacion="https://www.google.com/maps/search/Museo+Portugues+Colonia+del+Sacramento",
+                tags=["historia", "museo", "portugal", "colonial", "patrimonio"],
+                imagen_url="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRyEbSkf-lD6Cnroy9tnsllSCGmC6RmK4yGLjX3UbqCcw&s=10"
+            ),
+            Excursion(
+                id="cult_004",
+                ciudad="Colonia",
+                categoria="cultural",
+                nombre="Museo Municipal Dr. Bautista Rebuffo",
+                descripcion="Es el museo más antiguo y completo de la ciudad (fundado en 1951). Se ubica en la 'Casa de Brown', una construcción principalmente portuguesa del siglo XVIII con intervenciones españolas. Su colección es sumamente variada, abarcando desde arqueología indígena y restos fósiles (incluyendo un esqueleto de ballena azul en el patio trasero) hasta documentos y mobiliario de la época colonial. Es una parada obligatoria para comprender la identidad y evolución de esta ciudad declarada Patrimonio de la Humanidad por la UNESCO.\n\nHorario: Martes a domingo de 11:30 a 16:30 hs.",
+                ubicacion="https://www.google.com/maps/search/Museo+Municipal+Dr+Bautista+Rebuffo+Colonia",
+                tags=["historia", "museo", "arqueologia", "paleontologia", "patrimonio"],
+                imagen_url="https://media-cdn.tripadvisor.com/media/photo-s/0e/fe/98/25/acervo.jpg"
             )
         ]
     }
