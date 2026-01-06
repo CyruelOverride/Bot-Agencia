@@ -119,17 +119,7 @@ def debe_enviar_qr(categoria: str) -> bool:
     Returns:
         bool: True si se debe enviar QR, False en caso contrario
     """
-    return categoria in ["museo","restaurantes", "comercios"]
-    if categoria == "cultural":
-        museos_con_qr = [
-            "Museo del Período Histórico Portugués",
-            "Museo Municipal Dr. Bautista Rebuffo",
-            "Plaza de Toros Real de San Carlos"  # Si quieres incluirlo
-        ]
-        return any(museo in nombre_lugar for museo in museos_con_qr)
-    
-    return False
-
+    return categoria in ["cultural","restaurantes", "comercios"]
 
 def obtener_ruta_qr(excursion_id: str, base_url: Optional[str] = None, usar_html_estatico: bool = True) -> Optional[str]:
     """
