@@ -119,7 +119,7 @@ def debe_enviar_qr(categoria: str) -> bool:
     Returns:
         bool: True si se debe enviar QR, False en caso contrario
     """
-    return categoria in ["restaurantes", "comercios"]
+    return categoria in ["museo","restaurantes", "comercios"]
 
 
 def obtener_ruta_qr(excursion_id: str, base_url: Optional[str] = None, usar_html_estatico: bool = True) -> Optional[str]:
