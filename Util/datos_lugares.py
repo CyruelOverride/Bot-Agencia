@@ -20,7 +20,10 @@ DATOS_LUGARES = {
                 descripcion="Situado en la icónica Calle de los Suspiros, este local funciona en una construcción portuguesa del siglo XVIII que mantiene sus paredes de piedra y techos de madera originales. Es famoso por ofrecer una experiencia íntima donde se pueden degustar los mejores quesos de la región, fiambres artesanales y una selección premium de vinos uruguayos. Es el lugar ideal para una picada romántica o un brindis en un entorno que transporta al pasado colonial.\n\nHorario: Lunes a domingo de 11:00 a 20:00 hs.",
                 ubicacion="https://www.google.com/maps/search/El+Buen+Suspiro+Colonia",
                 tags=["mañana", "tarde", "noche", "quesos", "vinos", "romantico", "historico", "premium"],
-                imagen_url="https://media-cdn.tripadvisor.com/media/photo-s/0e/d1/3a/50/fachada-de-la-casa-ano.jpg"
+                imagenes_url=[
+                    "https://media-cdn.tripadvisor.com/media/photo-s/0e/d1/3a/50/fachada-de-la-casa-ano.jpg",
+                    # Se pueden agregar más imágenes aquí
+                ]
             ),
             Excursion(
                 id="rest_002",
@@ -30,7 +33,10 @@ DATOS_LUGARES = {
                 descripcion="Este restaurante de autor se encuentra dentro de un hotel boutique ubicado en la faja costera del casco histórico. Se destaca por su diseño minimalista y elegante con una terraza que ofrece vistas espectaculares al Río de la Plata. Su propuesta culinaria es sofisticada, incluyendo mariscos frescos, pulpo a la parrilla, carnes de exportación y una pastelería de origen seleccionada, siendo una parada obligatoria para quienes buscan alta cocina frente al agua.\n\nHorario: Todos los días de 08:00 a 23:00 hs.",
                 ubicacion="https://www.google.com/maps/search/Charco+Bistro+Colonia",
                 tags=["mañana","tarde","noche", "alta_cocina", "mariscos", "premium", "vista_rio", "elegante"],
-                imagen_url="https://media-cdn.tripadvisor.com/media/photo-s/0f/39/57/29/terrace.jpg"
+                imagenes_url=[
+                    "https://media-cdn.tripadvisor.com/media/photo-s/0f/39/57/29/terrace.jpg",
+                    # Se pueden agregar más imágenes aquí
+                ]
             ),
             Excursion(
                 id="rest_003",

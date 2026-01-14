@@ -87,8 +87,15 @@ class PlanViajeService:
         descripcion = excursion.descripcion if excursion.descripcion else "Sin descripción disponible"
         ubicacion = excursion.ubicacion if excursion.ubicacion else None
         
-        # Intentar enviar imagen primero
-        if excursion.imagen_url:
+        # Intentar enviar imágenes primero
+        imagenes_disponibles = excursion.imagenes_url if hasattr(excursion, 'imagenes_url') and excursion.imagenes_url else []
+        if not imagenes_disponibles and excursion.imagen_url:
+            # Compatibilidad hacia atrás: usar imagen_url si imagenes_url no está disponible
+            imagenes_disponibles = [excursion.imagen_url]
+        
+        if imagenes_disponibles:
+            import time
+            # Construir caption completo para la primera imagen
             caption = f"*{excursion.nombre}*\n\n{descripcion}"
             if ubicacion:
                 caption += f"\n\n📍 {ubicacion}"
@@ -98,9 +105,25 @@ class PlanViajeService:
             
             try:
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                print(f"🚀 [PASO 1] Enviando INFO (imagen) para: {excursion.nombre} - {timestamp}")
-                resultado = enviar_imagen_whatsapp(numero, excursion.imagen_url, caption)
-                if resultado.get("success"):
+                print(f"🚀 [PASO 1] Enviando INFO ({len(imagenes_disponibles)} imagen/es) para: {excursion.nombre} - {timestamp}")
+                
+                # Enviar todas las imágenes
+                resultado = None
+                for idx, imagen_url in enumerate(imagenes_disponibles):
+                    # Primera imagen lleva el caption completo, las demás solo el nombre
+                    caption_imagen = caption if idx == 0 else f"*{excursion.nombre}*"
+                    
+                    resultado_imagen = enviar_imagen_whatsapp(numero, imagen_url, caption_imagen)
+                    
+                    # El resultado de la primera imagen es el que cuenta para validación
+                    if idx == 0:
+                        resultado = resultado_imagen
+                    
+                    # Pequeño delay entre imágenes
+                    if idx < len(imagenes_disponibles) - 1:
+                        time.sleep(1)
+                
+                if resultado and resultado.get("success"):
                     timestamp_result = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     print(f"✅ [PASO 1] ÉXITO - {timestamp_result} - Lugar: {excursion.nombre} (ID: {excursion.id})")
                     return {"success": True}
@@ -177,7 +200,14 @@ class PlanViajeService:
         ubicacion = excursion.ubicacion if excursion.ubicacion else None
         
         # Construir caption/mensaje
-        if excursion.imagen_url:
+        imagenes_disponibles = excursion.imagenes_url if hasattr(excursion, 'imagenes_url') and excursion.imagenes_url else []
+        if not imagenes_disponibles and excursion.imagen_url:
+            # Compatibilidad hacia atrás: usar imagen_url si imagenes_url no está disponible
+            imagenes_disponibles = [excursion.imagen_url]
+        
+        if imagenes_disponibles:
+            import time
+            # Construir caption completo para la primera imagen
             caption = f"*{excursion.nombre}*\n\n{descripcion}"
             if ubicacion:
                 caption += f"\n\n📍 {ubicacion}"
@@ -185,15 +215,43 @@ class PlanViajeService:
             if len(caption) > 1024:
                 caption = caption[:1021] + "..."
             
-            print(f"🚀 [PASO 1] Enviando Info de {excursion.nombre} (imagen - descargada y subida a WhatsApp)...")
+            print(f"🚀 [PASO 1] Enviando Info de {excursion.nombre} ({len(imagenes_disponibles)} imagen/es - descargada y subida a WhatsApp)...")
             print(f"📝 [PASO 1] CONTENIDO A ENVIAR:")
             print(f"   Nombre: {excursion.nombre}")
             print(f"   Descripción: {descripcion[:100]}..." if len(descripcion) > 100 else f"   Descripción: {descripcion}")
             print(f"   Ubicación: {ubicacion}" if ubicacion else "   Ubicación: No disponible")
-            print(f"   URL Imagen: {excursion.imagen_url[:80]}..." if len(excursion.imagen_url) > 80 else f"   URL Imagen: {excursion.imagen_url}")
-            print(f"   Caption completo ({len(caption)} chars): {caption[:200]}..." if len(caption) > 200 else f"   Caption completo: {caption}")
-            resultado_info = enviar_imagen_whatsapp(numero, excursion.imagen_url, caption)
-            print(f"📊 [PASO 1] RESULTADO: success={resultado_info.get('success', False)}, message_id={resultado_info.get('message_id', 'N/A')}, error={resultado_info.get('error', 'N/A')}")
+            print(f"   Total de imágenes: {len(imagenes_disponibles)}")
+            
+            # Enviar todas las imágenes
+            resultado_info = None
+            for idx, imagen_url in enumerate(imagenes_disponibles):
+                # Primera imagen lleva el caption completo, las demás solo el nombre
+                caption_imagen = caption if idx == 0 else f"*{excursion.nombre}*"
+                
+                print(f"   📷 Enviando imagen {idx + 1}/{len(imagenes_disponibles)}: {imagen_url[:80]}..." if len(imagen_url) > 80 else f"   📷 Enviando imagen {idx + 1}/{len(imagenes_disponibles)}: {imagen_url}")
+                
+                resultado_imagen = enviar_imagen_whatsapp(numero, imagen_url, caption_imagen)
+                
+                # El resultado de la primera imagen es el que cuenta para validación
+                if idx == 0:
+                    resultado_info = resultado_imagen
+                    print(f"📊 [PASO 1] RESULTADO (primera imagen): success={resultado_info.get('success', False)}, message_id={resultado_info.get('message_id', 'N/A')}, error={resultado_info.get('error', 'N/A')}")
+                else:
+                    # Para imágenes adicionales, solo loguear el resultado
+                    if resultado_imagen.get('success'):
+                        print(f"✅ [PASO 1] Imagen {idx + 1} enviada exitosamente")
+                    else:
+                        print(f"⚠️ [PASO 1] Imagen {idx + 1} falló: {resultado_imagen.get('error', 'N/A')}")
+                
+                # Pequeño delay entre imágenes para evitar problemas con WhatsApp
+                if idx < len(imagenes_disponibles) - 1:
+                    time.sleep(1)
+            
+            # Delay adicional después de enviar todas las imágenes antes de proceder con QR
+            # Esto asegura que WhatsApp procese todas las imágenes antes del QR
+            if len(imagenes_disponibles) > 1:
+                print(f"⏳ Esperando {2} segundos después de enviar {len(imagenes_disponibles)} imágenes antes de proceder con QR...")
+                time.sleep(2)
         else:
             # Sin imagen, enviar texto directamente
             mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
@@ -214,7 +272,11 @@ class PlanViajeService:
         message_id_valido = resultado_info.get("message_id") is not None and resultado_info.get("message_id") != "N/A"
         
         # Para imágenes, requerimos message_id válido (ahora más confiable porque se suben a WhatsApp)
-        if excursion.imagen_url:
+        imagenes_disponibles_check = excursion.imagenes_url if hasattr(excursion, 'imagenes_url') and excursion.imagenes_url else []
+        if not imagenes_disponibles_check and excursion.imagen_url:
+            imagenes_disponibles_check = [excursion.imagen_url]
+        
+        if imagenes_disponibles_check:
             if not info_enviada_exitosamente or not message_id_valido:
                 print(f"⚠️ [ADVERTENCIA] Imagen falló o sin message_id válido para {excursion.nombre}.")
                 print(f"⚠️ [ADVERTENCIA] success={info_enviada_exitosamente}, message_id={resultado_info.get('message_id', 'N/A')}")
@@ -381,8 +443,15 @@ class PlanViajeService:
                         ids_existentes.add(exc.id)
                         print(f"🔍 [GENERAR_PLAN] Agregada excursión adicional: {exc.nombre} (ID: {exc.id}, Categoría: {exc.categoria})")
         
-        # Filtrar excursiones: solo incluir las que tienen imagen
-        excursiones = [exc for exc in excursiones if exc.imagen_url]
+        # Filtrar excursiones: solo incluir las que tienen al menos una imagen
+        excursiones_filtradas = []
+        for exc in excursiones:
+            imagenes_disponibles = exc.imagenes_url if hasattr(exc, 'imagenes_url') and exc.imagenes_url else []
+            if not imagenes_disponibles and exc.imagen_url:
+                imagenes_disponibles = [exc.imagen_url]
+            if imagenes_disponibles:
+                excursiones_filtradas.append(exc)
+        excursiones = excursiones_filtradas
         
         # Limitar total a 15
         excursiones = excursiones[:15]
@@ -677,7 +746,10 @@ class PlanViajeService:
             # Para cada lugar (excursión) de este interés, enviar un mensaje individual
             for excursion in excursiones:
                 print(f"  → Enviando lugar: {excursion.nombre}")
-                print(f"     - Tiene imagen: {excursion.imagen_url is not None}")
+                imagenes_check = excursion.imagenes_url if hasattr(excursion, 'imagenes_url') and excursion.imagenes_url else []
+                if not imagenes_check and excursion.imagen_url:
+                    imagenes_check = [excursion.imagen_url]
+                print(f"     - Tiene imagen/es: {len(imagenes_check)} imagen/es")
                 print(f"     - Tiene descripción: {len(excursion.descripcion) > 0 if excursion.descripcion else False}")
                 print(f"     - Tiene ubicación: {excursion.ubicacion is not None}")
                 try:

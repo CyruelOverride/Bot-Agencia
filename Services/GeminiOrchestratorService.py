@@ -295,13 +295,16 @@ Intereses: {intereses_texto}
 Excursiones recomendadas:
 {excursiones_texto}
 
-Genera un resumen directo, amigable y medio formal (máximo 150 palabras) que:
-1. Sea conciso y no robe tiempo al usuario
+Genera un resumen MUY BREVE, directo y amigable (máximo 60 palabras, idealmente 40-50 palabras) que:
+1. Sea extremadamente conciso - el usuario no quiere leer mucho
 2. Mencione el nombre si está disponible
-3. Haga referencia breve a sus intereses
-4. Presente las recomendaciones de forma clara y directa
-5. Use emojis moderados
+3. Haga referencia muy breve a sus intereses (solo mencionar, no explicar)
+4. Presente las recomendaciones de forma ultra directa
+5. Use máximo 2-3 emojis
 6. Mantenga tono amigable pero profesional
+7. NO incluyas detalles innecesarios, solo lo esencial
+
+IMPORTANTE: El mensaje debe ser corto y directo. El usuario recibirá información detallada de cada lugar después.
 
 Responde SOLO con el texto del resumen, sin explicaciones adicionales."""
 

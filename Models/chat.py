@@ -270,8 +270,12 @@ class Chat:
                 descripcion = restaurante.descripcion if restaurante.descripcion else "Sin descripción disponible"
                 ubicacion = restaurante.ubicacion if restaurante.ubicacion else None
                 
-                # Enviar imagen del restaurante
-                if restaurante.imagen_url:
+                # Enviar imágenes del restaurante (soporte para múltiples imágenes)
+                imagenes_disponibles = restaurante.imagenes_url if hasattr(restaurante, 'imagenes_url') and restaurante.imagenes_url else []
+                if not imagenes_disponibles and restaurante.imagen_url:
+                    imagenes_disponibles = [restaurante.imagen_url]
+                
+                if imagenes_disponibles:
                     caption = f"*{restaurante.nombre}*\n\n{descripcion}"
                     if ubicacion:
                         caption += f"\n\n📍 {ubicacion}"
@@ -282,7 +286,15 @@ class Chat:
                     if len(caption) > 1024:
                         caption = caption[:1021] + "..."
                     
-                    resultado = enviar_imagen_whatsapp(numero, restaurante.imagen_url, caption)
+                    # Enviar todas las imágenes
+                    resultado = None
+                    for idx, imagen_url in enumerate(imagenes_disponibles):
+                        caption_imagen = caption if idx == 0 else f"*{restaurante.nombre}*"
+                        resultado_imagen = enviar_imagen_whatsapp(numero, imagen_url, caption_imagen)
+                        if idx == 0:
+                            resultado = resultado_imagen
+                        if idx < len(imagenes_disponibles) - 1:
+                            time.sleep(1)
                     
                     if resultado.get("success"):
                         print(f"🧪 [TEST] ✅ Imagen del restaurante enviada con información completa")
@@ -1559,7 +1571,13 @@ class Chat:
                     # Enviar un lugar random del plan
                     lugar_random = random.choice(plan.excursiones)
                     
-                    if lugar_random.imagen_url:
+                    # Obtener imágenes disponibles (soporte para múltiples imágenes)
+                    imagenes_disponibles = lugar_random.imagenes_url if hasattr(lugar_random, 'imagenes_url') and lugar_random.imagenes_url else []
+                    if not imagenes_disponibles and lugar_random.imagen_url:
+                        imagenes_disponibles = [lugar_random.imagen_url]
+                    
+                    if imagenes_disponibles:
+                        import time
                         caption = f"*{lugar_random.nombre}*\n\n{lugar_random.descripcion}"
                         if lugar_random.ubicacion:
                             caption += f"\n\n📍 {lugar_random.ubicacion}"
@@ -1568,8 +1586,17 @@ class Chat:
                             caption = caption[:1021] + "..."
                         
                         from whatsapp_api import enviar_imagen_whatsapp
-                        resultado = enviar_imagen_whatsapp(numero, lugar_random.imagen_url, caption)
-                        if not resultado.get("success"):
+                        # Enviar todas las imágenes
+                        resultado = None
+                        for idx, imagen_url in enumerate(imagenes_disponibles):
+                            caption_imagen = caption if idx == 0 else f"*{lugar_random.nombre}*"
+                            resultado_imagen = enviar_imagen_whatsapp(numero, imagen_url, caption_imagen)
+                            if idx == 0:
+                                resultado = resultado_imagen
+                            if idx < len(imagenes_disponibles) - 1:
+                                time.sleep(1)
+                        
+                        if not resultado or not resultado.get("success"):
                             # Si falla, enviar solo texto
                             mensaje = f"*{lugar_random.nombre}*\n\n{lugar_random.descripcion}"
                             if lugar_random.ubicacion:

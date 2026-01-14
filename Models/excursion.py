@@ -11,7 +11,8 @@ class Excursion:
         descripcion: str,
         ubicacion: Optional[str] = None,
         tags: Optional[List[str]] = None,
-        imagen_url: Optional[str] = None  # URL de la imagen del lugar
+        imagen_url: Optional[str] = None,  # URL de la imagen del lugar (deprecated, usar imagenes_url)
+        imagenes_url: Optional[List[str]] = None  # Lista de URLs de imágenes del lugar
     ):
         self.id = id
         self.ciudad = ciudad
@@ -20,7 +21,16 @@ class Excursion:
         self.descripcion = descripcion
         self.ubicacion = ubicacion
         self.tags = tags or []
-        self.imagen_url = imagen_url
+        # Soporte para múltiples imágenes
+        if imagenes_url is not None:
+            self.imagenes_url = imagenes_url if isinstance(imagenes_url, list) else [imagenes_url]
+        elif imagen_url is not None:
+            # Compatibilidad hacia atrás: convertir imagen_url única a lista
+            self.imagenes_url = [imagen_url]
+        else:
+            self.imagenes_url = []
+        # Mantener imagen_url para compatibilidad hacia atrás (primera imagen)
+        self.imagen_url = self.imagenes_url[0] if self.imagenes_url else None
     
     def tiene_tag(self, tag: str) -> bool:
         """Verifica si la excursión tiene un tag específico"""
@@ -47,6 +57,7 @@ class Excursion:
             "descripcion": self.descripcion,
             "ubicacion": self.ubicacion,
             "tags": self.tags,
-            "imagen_url": self.imagen_url
+            "imagen_url": self.imagen_url,  # Mantener para compatibilidad
+            "imagenes_url": self.imagenes_url
         }
 
