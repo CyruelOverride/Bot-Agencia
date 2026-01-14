@@ -22,7 +22,7 @@ DATOS_LUGARES = {
                 tags=["mañana", "tarde", "noche", "quesos", "vinos", "romantico", "historico", "premium"],
                 imagenes_url=[
                     "https://media-cdn.tripadvisor.com/media/photo-s/0e/d1/3a/50/fachada-de-la-casa-ano.jpg",
-                    # Se pueden agregar más imágenes aquí
+                    "https://tse4.mm.bing.net/th/id/OIP.HwEGsQVfkJtmyCPKZhqpwwHaE8?rs=1&pid=ImgDetMain&o=7&rm=3"
                 ]
             ),
             Excursion(
@@ -35,7 +35,8 @@ DATOS_LUGARES = {
                 tags=["mañana","tarde","noche", "alta_cocina", "mariscos", "premium", "vista_rio", "elegante"],
                 imagenes_url=[
                     "https://media-cdn.tripadvisor.com/media/photo-s/0f/39/57/29/terrace.jpg",
-                    # Se pueden agregar más imágenes aquí
+                    "https://img.hellofresh.com/w_3840,q_auto,f_auto,c_fill,fl_lossy/hellofresh_website/es/cms/SEO/recipes/gourmet/entrecot-de-ternera.jpeg",
+                    "https://tse4.mm.bing.net/th/id/OIP.HwEGsQVfkJtmyCPKZhqpwwHaE8?rs=1&pid=ImgDetMain&o=7&rm=3"
                 ]
             ),
             Excursion(
@@ -46,7 +47,11 @@ DATOS_LUGARES = {
                 descripcion="Ubicada sobre la antigua muralla defensiva de la ciudad, esta pizzería y restaurante es reconocida por poseer una de las mejores terrazas para contemplar el atardecer. Su especialidad son las pizzas cocinadas en horno de barro, aunque también ofrecen chivitos uruguayos y pastas en un ambiente relajado y bohemio que suele llenarse al caer el sol.\n\nHorario: Todos los días a partir de las 20:00 hs.",
                 ubicacion="https://www.google.com/maps/search/La+Bodeguita+Colonia",
                 tags=["noche", "pizza", "horno_barro", "atardecer", "bohemio", "terraza"],
-                imagen_url="https://th.bing.com/th/id/R.fd97452e324b98f82067527e105c3cae?rik=iP76bvNh%2fnrOhQ&pid=ImgRaw&r=0"
+                imagenes_url=[
+                    "https://th.bing.com/th/id/R.fd97452e324b98f82067527e105c3cae?rik=iP76bvNh%2fnrOhQ&pid=ImgRaw&r=0",
+                    "https://tse2.mm.bing.net/th/id/OIP.9oYMWLN5a1gu82FZQbzr0QHaGM?rs=1&pid=ImgDetMain&o=7&rm=3",
+                    "https://tse1.mm.bing.net/th/id/OIP.5nlhstzHYoltrav-57Bp8AHaEK?rs=1&pid=ImgDetMain&o=7&rm=3"
+                ]
             ),
         ],
         "comercios": [
@@ -58,7 +63,9 @@ DATOS_LUGARES = {
                 descripcion="Cooperativa nacional sin fines de lucro integrada a la Organización Mundial del Comercio Justo. Ofrece prendas de lana tejidas a mano de alta gama, accesorios de cuero, mantas de diseño y joyería artesanal de exportación.\n\nHorario: Lun-Dom 10:00-19:00 hs.",
                 ubicacion="https://www.google.com/maps/search/Manos+del+Uruguay+Colonia",
                 tags=["tarde","noche", "artesanias", "lana", "cuero", "joyeria", "comercio_justo", "premium"],
-                imagen_url=None
+                imagenes_url=[
+                    "https://tse1.mm.bing.net/th/id/OIP.jHoP55C9sIXPDXWUeJjHPgHaEO?rs=1&pid=ImgDetMain&o=7&rm=3"
+                ]
             ),
             Excursion(
                 id="com_002",
@@ -68,7 +75,9 @@ DATOS_LUGARES = {
                 descripcion="Espacio cultural ubicado en un antiguo galpón ferroviario recuperado cerca del puerto. Ofrece cerámica esmaltada, joyería de autor, textiles regionales, objetos de madera y vitrofusión realizados por artistas locales.\n\nHorario: Jue-Lun 10:00-20:00 hs.",
                 ubicacion="https://www.google.com/maps/search/Mercado+Artesanal+Colonia",
                 tags=["mañana","tarde","noche","artesanias", "ceramica", "joyeria", "textiles", "cultural", "local"],
-                imagen_url=None
+                imagenes_url=[
+                    "https://cdn.shopify.com/s/files/1/0591/9096/8528/files/PU02190_Joyas_de_Acero_Uruguay_Pulsera_Acero_Dorado.jpg?v=1682552381"
+                ]
             ),
             Excursion(
                 id="com_003",
@@ -88,7 +97,10 @@ DATOS_LUGARES = {
                 descripcion="Lemon es una de las marcas de indumentaria femenina más importantes de Uruguay, destacada por su estilo casual, contemporáneo y urbano. Su local en la avenida principal de Colonia ofrece una amplia variedad de prendas de temporada que combinan diseño moderno con comodidad, siendo una parada obligada para quienes buscan renovar su vestidor con calidad nacional.\n\nHorario: Lunes a Viernes de 10:00 a 19:00 hs, Sábados de 10:00 a 14:00 hs.",
                 ubicacion="https://www.google.com/maps/search/Lemon+Colonia+Gral+Flores+435",
                 tags=["mañana","tarde","noche", "ropa", "indumentaria", "mujer", "moda", "nacional", "premium"],
-                imagen_url="https://kronelectronics.uy/wp-content/uploads/2025/04/LEMON.jpeg"
+                imagenes_url=[
+                    "https://kronelectronics.uy/wp-content/uploads/2025/04/LEMON.jpeg",
+                    "https://tse2.mm.bing.net/th/id/OIP.ONCJKpXjHK1WNTy5hDQNfgHaEo?w=1200&h=750&rs=1&pid=ImgDetMain&o=7&rm=3"
+                ]
             ),
             Excursion(
                 id="com_005",
@@ -98,7 +110,10 @@ DATOS_LUGARES = {
                 descripcion="Como su nombre lo indica, esta tienda es un refugio de objetos hermosos y curiosidades seleccionadas. Alejándose del souvenir masivo, ofrece artesanías de alta calidad, textiles, joyería de diseño, y productos gourmet locales. Es el sitio ideal para quienes desean llevarse un recuerdo auténtico de Colonia, en un local que en sí mismo es un paseo visual.\n\nHorario: Todos los días de 10:30 a 18:30 hs.",
                 ubicacion="https://www.google.com/maps/search/Cosas+Bellas+Colonia+Misiones+Tapes",
                 tags=["mañana","tarde","souvenirs", "artesanias", "joyeria", "textiles", "gourmet", "local", "premium"],
-                imagen_url="https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/2a/4b/3a/6.jpg?w=1200&h=1200&s=1"
+                imagenes_url=[
+                    "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/2a/4b/3a/6.jpg?w=1200&h=1200&s=1",
+                    "https://cdn.shopify.com/s/files/1/0591/9096/8528/files/PU02190_Joyas_de_Acero_Uruguay_Pulsera_Acero_Dorado.jpg?v=1682552381"
+                ]
             ),
             Excursion(
                 id="com_006",
@@ -108,7 +123,11 @@ DATOS_LUGARES = {
                 descripcion="Es un prestigioso taller de orfebrería dirigido por Gino Martinelli, con fuerte presencia en Nueva Helvecia (Colonia). Se especializan en la fabricación artesanal de joyas clásicas y contemporáneas, además de ser expertos en platería criolla, una técnica tradicional uruguaya. Sus piezas son únicas, elaboradas con metales nobles y diseños que combinan la tradición orfebre con la elegancia moderna.\n\nHorario: Lunes a Viernes de 09:00 a 12:00 hs y de 14:30 a 18:30 hs (Aprox).",
                 ubicacion="https://www.google.com/maps/search/Lombardia+Arte+y+Joyas+Nueva+Helvecia",
                 tags=["mañana","tarde","joyeria", "orfebreria", "plateria", "artesanal", "premium", "tradicional"],
-                imagen_url="https://lombardia.com.uy/wp-content/uploads/2023/11/22-3.jpg"
+                imagenes_url=[
+                    "https://lombardia.com.uy/wp-content/uploads/2023/11/22-3.jpg",
+                    "https://cdn.shopify.com/s/files/1/0591/9096/8528/files/PU02190_Joyas_de_Acero_Uruguay_Pulsera_Acero_Dorado.jpg?v=1682552381",
+                    "https://tse1.explicit.bing.net/th/id/OIP.B4MZSyGssd2D7iMBWlo_CAHaEK?rs=1&pid=ImgDetMain&o=7&rm=3"
+                ]
             )
         ],
         "compras": [
