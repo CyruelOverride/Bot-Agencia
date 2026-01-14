@@ -119,9 +119,7 @@ class PlanViajeService:
                     if idx == 0:
                         resultado = resultado_imagen
                     
-                    # Pequeño delay entre imágenes
-                    if idx < len(imagenes_disponibles) - 1:
-                        time.sleep(1)
+                    # Delay eliminado - enviar imágenes sin delay
                 
                 if resultado and resultado.get("success"):
                     timestamp_result = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -243,15 +241,7 @@ class PlanViajeService:
                     else:
                         print(f"⚠️ [PASO 1] Imagen {idx + 1} falló: {resultado_imagen.get('error', 'N/A')}")
                 
-                # Pequeño delay entre imágenes para evitar problemas con WhatsApp
-                if idx < len(imagenes_disponibles) - 1:
-                    time.sleep(1)
-            
-            # Delay adicional después de enviar todas las imágenes antes de proceder con QR
-            # Esto asegura que WhatsApp procese todas las imágenes antes del QR
-            if len(imagenes_disponibles) > 1:
-                print(f"⏳ Esperando {2} segundos después de enviar {len(imagenes_disponibles)} imágenes antes de proceder con QR...")
-                time.sleep(2)
+                # Delay mínimo eliminado - enviar imágenes sin delay para mayor velocidad
         else:
             # Sin imagen, enviar texto directamente
             mensaje = f"*{excursion.nombre}*\n\n{descripcion}"

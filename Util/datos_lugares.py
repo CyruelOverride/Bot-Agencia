@@ -35,8 +35,7 @@ DATOS_LUGARES = {
                 tags=["mañana","tarde","noche", "alta_cocina", "mariscos", "premium", "vista_rio", "elegante"],
                 imagenes_url=[
                     "https://media-cdn.tripadvisor.com/media/photo-s/0f/39/57/29/terrace.jpg",
-                    "https://img.hellofresh.com/w_3840,q_auto,f_auto,c_fill,fl_lossy/hellofresh_website/es/cms/SEO/recipes/gourmet/entrecot-de-ternera.jpeg",
-                    "https://tse4.mm.bing.net/th/id/OIP.HwEGsQVfkJtmyCPKZhqpwwHaE8?rs=1&pid=ImgDetMain&o=7&rm=3"
+                    "https://img.hellofresh.com/w_3840,q_auto,f_auto,c_fill,fl_lossy/hellofresh_website/es/cms/SEO/recipes/gourmet/entrecot-de-ternera.jpeg"
                 ]
             ),
             Excursion(
@@ -64,7 +63,8 @@ DATOS_LUGARES = {
                 ubicacion="https://www.google.com/maps/search/Manos+del+Uruguay+Colonia",
                 tags=["tarde","noche", "artesanias", "lana", "cuero", "joyeria", "comercio_justo", "premium"],
                 imagenes_url=[
-                    "https://tse1.mm.bing.net/th/id/OIP.jHoP55C9sIXPDXWUeJjHPgHaEO?rs=1&pid=ImgDetMain&o=7&rm=3"
+                    "https://tse1.mm.bing.net/th/id/OIP.jHoP55C9sIXPDXWUeJjHPgHaEO?rs=1&pid=ImgDetMain&o=7&rm=3",
+                    "https://cdn.shopify.com/s/files/1/0591/9096/8528/files/PU02190_Joyas_de_Acero_Uruguay_Pulsera_Acero_Dorado.jpg?v=1682552381"
                 ]
             ),
             Excursion(
@@ -76,6 +76,7 @@ DATOS_LUGARES = {
                 ubicacion="https://www.google.com/maps/search/Mercado+Artesanal+Colonia",
                 tags=["mañana","tarde","noche","artesanias", "ceramica", "joyeria", "textiles", "cultural", "local"],
                 imagenes_url=[
+                    "https://tse1.explicit.bing.net/th/id/OIP.B4MZSyGssd2D7iMBWlo_CAHaEK?rs=1&pid=ImgDetMain&o=7&rm=3",
                     "https://cdn.shopify.com/s/files/1/0591/9096/8528/files/PU02190_Joyas_de_Acero_Uruguay_Pulsera_Acero_Dorado.jpg?v=1682552381"
                 ]
             ),
@@ -87,7 +88,10 @@ DATOS_LUGARES = {
                 descripcion="Feria tradicional al aire libre donde productores de todo el departamento exhiben su trabajo. Se pueden encontrar dulces regionales, manualidades, antigüedades, mates trabajados y piezas únicas de decoración criolla.\n\nHorario: Domingos 07:00-14:00 hs.",
                 ubicacion="https://www.google.com/maps/search/Feria+Productores+Colonia",
                 tags=["mañana","tarde","feria", "artesanias", "dulces", "antiguedades", "decoracion", "tradicional"],
-                imagen_url=None
+                imagenes_url=[
+                    "https://tse2.mm.bing.net/th/id/OIP.ONCJKpXjHK1WNTy5hDQNfgHaEo?w=1200&h=750&rs=1&pid=ImgDetMain&o=7&rm=3",
+                    "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/2a/4b/3a/6.jpg?w=1200&h=1200&s=1"
+                ]
             ),
             Excursion(
                 id="com_004",
@@ -112,7 +116,7 @@ DATOS_LUGARES = {
                 tags=["mañana","tarde","souvenirs", "artesanias", "joyeria", "textiles", "gourmet", "local", "premium"],
                 imagenes_url=[
                     "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/2a/4b/3a/6.jpg?w=1200&h=1200&s=1",
-                    "https://cdn.shopify.com/s/files/1/0591/9096/8528/files/PU02190_Joyas_de_Acero_Uruguay_Pulsera_Acero_Dorado.jpg?v=1682552381"
+                    "https://lombardia.com.uy/wp-content/uploads/2023/11/22-3.jpg"
                 ]
             ),
             Excursion(
@@ -125,7 +129,6 @@ DATOS_LUGARES = {
                 tags=["mañana","tarde","joyeria", "orfebreria", "plateria", "artesanal", "premium", "tradicional"],
                 imagenes_url=[
                     "https://lombardia.com.uy/wp-content/uploads/2023/11/22-3.jpg",
-                    "https://cdn.shopify.com/s/files/1/0591/9096/8528/files/PU02190_Joyas_de_Acero_Uruguay_Pulsera_Acero_Dorado.jpg?v=1682552381",
                     "https://tse1.explicit.bing.net/th/id/OIP.B4MZSyGssd2D7iMBWlo_CAHaEK?rs=1&pid=ImgDetMain&o=7&rm=3"
                 ]
             )
@@ -139,7 +142,10 @@ DATOS_LUGARES = {
                 descripcion="El centro comercial cerrado más importante de la ciudad. Cuenta con más de cien marcas nacionales e internacionales, salas de cine, un gran supermercado (Ta-Ta) y una plaza de comidas variada.\n\nHorario: Lun-Dom 10:00-22:00 hs.",
                 ubicacion="https://www.google.com/maps/search/Colonia+Shopping",
                 tags=["mañana","tarde","noche","shopping", "marcas", "cine", "supermercado", "comida", "variedad"],
-                imagen_url=None
+                imagenes_url=[
+                    "https://kronelectronics.uy/wp-content/uploads/2025/04/LEMON.jpeg",
+                    "https://tse1.mm.bing.net/th/id/OIP.jHoP55C9sIXPDXWUeJjHPgHaEO?rs=1&pid=ImgDetMain&o=7&rm=3"
+                ]
             ),
             Excursion(
                 id="compr_002",
@@ -149,7 +155,10 @@ DATOS_LUGARES = {
                 descripcion="Es el 'shopping a cielo abierto' y la arteria principal de la ciudad. Concentra las mayores tiendas de ropa, zapaterías, bancos y farmacias, además de ser el eje central donde se desarrolla la vida social de Colonia.\n\nHorario: Variable (aprox. 10:00-19:00 hs).",
                 ubicacion="https://www.google.com/maps/search/Avenida+General+Flores+Colonia",
                 tags=["mañana","tarde","avenida", "tiendas", "ropa", "zapatos", "bancos", "social"],
-                imagen_url=None
+                imagenes_url=[
+                    "https://tse2.mm.bing.net/th/id/OIP.ONCJKpXjHK1WNTy5hDQNfgHaEo?w=1200&h=750&rs=1&pid=ImgDetMain&o=7&rm=3",
+                    "https://media-cdn.tripadvisor.com/media/photo-s/0e/fe/98/25/acervo.jpg"
+                ]
             )
         ],
         "cultural": [
@@ -161,7 +170,11 @@ DATOS_LUGARES = {
                 descripcion="Un centro cultural vibrante construido sobre los restos de una antigua fortificación española y una posterior fábrica de jabón. Este espacio combina muros de piedra originales con una arquitectura moderna, ofreciendo una sala de teatro, galerías de arte y un hermoso jardín que bordea la muralla con vista al río. Es el epicentro de la actividad artística local, albergando obras de teatro, conciertos y exposiciones de artes visuales durante todo el año.\n\nHorario: Depende de la programación; galería abierta de 12:00 a 20:00 hs.",
                 ubicacion="https://goo.gl/maps/8V9R2Y7L1M4",
                 tags=["mañana","tarde","teatro", "arte", "musica", "vistas", "arquitectura"],
-                imagen_url="https://salimos.uy/wp-content/uploads/2021/01/bastion-del-carmen-en-colonia-del-sacramento.jpg"
+                imagenes_url=[
+                    "https://salimos.uy/wp-content/uploads/2021/01/bastion-del-carmen-en-colonia-del-sacramento.jpg",
+                    "https://images.adsttc.com/media/images/61f0/4592/3e4b/313f/8900/001e/newsletter/DJI_0992.jpg?1643136376",
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRyEbSkf-lD6Cnroy9tnsllSCGmC6RmK4yGLjX3UbqCcw&s=10"
+                ]
             ),
             Excursion(
                 id="cult_002",
@@ -171,7 +184,10 @@ DATOS_LUGARES = {
                 descripcion="Inaugurada originalmente en 1910, es la única plaza de toros de estilo neomudéjar que queda en pie en el Río de la Plata. Tras un siglo de abandono debido a la prohibición de las corridas en Uruguay (1912), fue majestuosamente rehabilitada en 2021. Hoy funciona como un moderno centro de espectáculos y convenciones con capacidad para miles de personas. El complejo incluye un museo taurino que exhibe trajes de toreros y afiches de época, una vinoteca y un restaurante. Su acústica circular es tan perfecta que artistas como Jorge Drexler han elogiado el sonido del lugar.\n\nHorario: Lunes, jueves, viernes, sábados y domingos de 10:00 a 18:30 hs. (Sábados hasta las 19:00 hs).",
                 ubicacion="https://maps.app.goo.gl/3P3Z5G9J6XN2",
                 tags=["mañana","tarde","historia", "arquitectura", "espectaculos", "museo", "patrimonio"],
-                imagen_url="https://images.adsttc.com/media/images/61f0/4592/3e4b/313f/8900/001e/newsletter/DJI_0992.jpg?1643136376"
+                imagenes_url=[
+                    "https://images.adsttc.com/media/images/61f0/4592/3e4b/313f/8900/001e/newsletter/DJI_0992.jpg?1643136376",
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRyEbSkf-lD6Cnroy9tnsllSCGmC6RmK4yGLjX3UbqCcw&s=10"
+                ]
             ),
             Excursion(
                 id="cult_003",
@@ -181,7 +197,10 @@ DATOS_LUGARES = {
                 descripcion="Ubicado en una antigua casona de 1720 frente a la Plaza Mayor, este museo recrea fielmente la presencia lusitana en la ciudad. El acervo se centra en la historia política y bélica, exhibiendo armas, escudos, uniformes militares, mobiliario y cartografía original que marcaron el período de fundación de Colonia del Sacramento por parte de los portugueses. Es una pieza fundamental para entender la identidad binacional y el valor estratégico que tuvo la ciudad durante el siglo XVIII.\n\nHorario: Jueves a martes de 11:30 a 16:30 hs.",
                 ubicacion="https://www.google.com/maps/search/Museo+Portugues+Colonia+del+Sacramento",
                 tags=["mañana","tarde","historia", "museo", "portugal", "colonial", "patrimonio"],
-                imagen_url="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRyEbSkf-lD6Cnroy9tnsllSCGmC6RmK4yGLjX3UbqCcw&s=10"
+                imagenes_url=[
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRyEbSkf-lD6Cnroy9tnsllSCGmC6RmK4yGLjX3UbqCcw&s=10",
+                    "https://images.adsttc.com/media/images/61f0/4592/3e4b/313f/8900/001e/newsletter/DJI_0992.jpg?1643136376"
+                ]
             ),
             Excursion(
                 id="cult_004",
@@ -191,7 +210,10 @@ DATOS_LUGARES = {
                 descripcion="Es el museo más antiguo y completo de la ciudad (fundado en 1951). Se ubica en la 'Casa de Brown', una construcción principalmente portuguesa del siglo XVIII con intervenciones españolas. Su colección es sumamente variada, abarcando desde arqueología indígena y restos fósiles (incluyendo un esqueleto de ballena azul en el patio trasero) hasta documentos y mobiliario de la época colonial. Es una parada obligatoria para comprender la identidad y evolución de esta ciudad declarada Patrimonio de la Humanidad por la UNESCO.\n\nHorario: Martes a domingo de 11:30 a 16:30 hs.",
                 ubicacion="https://www.google.com/maps/search/Museo+Municipal+Dr+Bautista+Rebuffo+Colonia",
                 tags=["mañana","tarde","historia", "museo", "arqueologia", "paleontologia", "patrimonio"],
-                imagen_url="https://media-cdn.tripadvisor.com/media/photo-s/0e/fe/98/25/acervo.jpg"
+                imagenes_url=[
+                    "https://media-cdn.tripadvisor.com/media/photo-s/0e/fe/98/25/acervo.jpg",
+                    "https://salimos.uy/wp-content/uploads/2021/01/bastion-del-carmen-en-colonia-del-sacramento.jpg"
+                ]
             )
         ]
     }
