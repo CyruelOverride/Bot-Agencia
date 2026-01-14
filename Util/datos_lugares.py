@@ -22,7 +22,7 @@ DATOS_LUGARES = {
                 tags=["mañana", "tarde", "noche", "quesos", "vinos", "romantico", "historico", "premium"],
                 imagenes_url=[
                     "https://media-cdn.tripadvisor.com/media/photo-s/0e/d1/3a/50/fachada-de-la-casa-ano.jpg",
-                    "https://tse4.mm.bing.net/th/id/OIP.HwEGsQVfkJtmyCPKZhqpwwHaE8?rs=1&pid=ImgDetMain&o=7&rm=3"
+                    "https://tse2.mm.bing.net/th/id/OIP.dQPA01pCW5z2QsTAWvpPmAHaEK?rs=1&pid=ImgDetMain&o=7&rm=3"
                 ]
             ),
             Excursion(
@@ -48,8 +48,7 @@ DATOS_LUGARES = {
                 tags=["noche", "pizza", "horno_barro", "atardecer", "bohemio", "terraza"],
                 imagenes_url=[
                     "https://th.bing.com/th/id/R.fd97452e324b98f82067527e105c3cae?rik=iP76bvNh%2fnrOhQ&pid=ImgRaw&r=0",
-                    "https://tse2.mm.bing.net/th/id/OIP.9oYMWLN5a1gu82FZQbzr0QHaGM?rs=1&pid=ImgDetMain&o=7&rm=3",
-                    "https://tse1.mm.bing.net/th/id/OIP.5nlhstzHYoltrav-57Bp8AHaEK?rs=1&pid=ImgDetMain&o=7&rm=3"
+                    "https://tse3.mm.bing.net/th/id/OIP.pbrxeUZsbRcWg30Y95bscwHaFj?rs=1&pid=ImgDetMain&o=7&rm=3",
                 ]
             ),
         ],
