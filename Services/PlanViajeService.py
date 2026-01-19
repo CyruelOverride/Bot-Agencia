@@ -86,6 +86,7 @@ class PlanViajeService:
         
         descripcion = excursion.descripcion if excursion.descripcion else "Sin descripción disponible"
         ubicacion = excursion.ubicacion if excursion.ubicacion else None
+        pagina_web = excursion.pagina_web if hasattr(excursion, 'pagina_web') and excursion.pagina_web else None
         
         # Intentar enviar imágenes primero
         imagenes_disponibles = excursion.imagenes_url if hasattr(excursion, 'imagenes_url') and excursion.imagenes_url else []
@@ -99,6 +100,8 @@ class PlanViajeService:
             caption = f"*{excursion.nombre}*\n\n{descripcion}"
             if ubicacion:
                 caption += f"\n\n📍 {ubicacion}"
+            if pagina_web:
+                caption += f"\n\n🌐 {pagina_web}"
             
             if len(caption) > 1024:
                 caption = caption[:1021] + "..."
@@ -135,6 +138,8 @@ class PlanViajeService:
         mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
         if ubicacion:
             mensaje += f"\n\n📍 {ubicacion}"
+        if pagina_web:
+            mensaje += f"\n\n🌐 {pagina_web}"
         
         try:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -196,6 +201,7 @@ class PlanViajeService:
         # Esto las hace más confiables que usar URLs externas directamente
         descripcion = excursion.descripcion if excursion.descripcion else "Sin descripción disponible"
         ubicacion = excursion.ubicacion if excursion.ubicacion else None
+        pagina_web = excursion.pagina_web if hasattr(excursion, 'pagina_web') and excursion.pagina_web else None
         
         # Construir caption/mensaje
         imagenes_disponibles = excursion.imagenes_url if hasattr(excursion, 'imagenes_url') and excursion.imagenes_url else []
@@ -209,6 +215,8 @@ class PlanViajeService:
             caption = f"*{excursion.nombre}*\n\n{descripcion}"
             if ubicacion:
                 caption += f"\n\n📍 {ubicacion}"
+            if pagina_web:
+                caption += f"\n\n🌐 {pagina_web}"
             
             if len(caption) > 1024:
                 caption = caption[:1021] + "..."
@@ -247,6 +255,8 @@ class PlanViajeService:
             mensaje = f"*{excursion.nombre}*\n\n{descripcion}"
             if ubicacion:
                 mensaje += f"\n\n📍 {ubicacion}"
+            if pagina_web:
+                mensaje += f"\n\n🌐 {pagina_web}"
             
             print(f"🚀 [PASO 1] Enviando Info de {excursion.nombre} (texto)...")
             print(f"📝 [PASO 1] CONTENIDO A ENVIAR:")

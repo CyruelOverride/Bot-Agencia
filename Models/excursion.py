@@ -12,7 +12,8 @@ class Excursion:
         ubicacion: Optional[str] = None,
         tags: Optional[List[str]] = None,
         imagen_url: Optional[str] = None,  # URL de la imagen del lugar (deprecated, usar imagenes_url)
-        imagenes_url: Optional[List[str]] = None  # Lista de URLs de imágenes del lugar
+        imagenes_url: Optional[List[str]] = None,  # Lista de URLs de imágenes del lugar
+        pagina_web: Optional[str] = None  # URL de la página web del lugar
     ):
         self.id = id
         self.ciudad = ciudad
@@ -21,6 +22,7 @@ class Excursion:
         self.descripcion = descripcion
         self.ubicacion = ubicacion
         self.tags = tags or []
+        self.pagina_web = pagina_web
         # Soporte para múltiples imágenes
         if imagenes_url is not None:
             self.imagenes_url = imagenes_url if isinstance(imagenes_url, list) else [imagenes_url]
@@ -58,6 +60,7 @@ class Excursion:
             "ubicacion": self.ubicacion,
             "tags": self.tags,
             "imagen_url": self.imagen_url,  # Mantener para compatibilidad
-            "imagenes_url": self.imagenes_url
+            "imagenes_url": self.imagenes_url,
+            "pagina_web": self.pagina_web
         }
 
