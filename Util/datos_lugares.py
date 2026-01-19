@@ -24,7 +24,7 @@ DATOS_LUGARES = {
                     "https://media-cdn.tripadvisor.com/media/photo-s/0e/d1/3a/50/fachada-de-la-casa-ano.jpg",
                     "https://tse2.mm.bing.net/th/id/OIP.dQPA01pCW5z2QsTAWvpPmAHaEK?rs=1&pid=ImgDetMain&o=7&rm=3"
                 ],
-                pagina_web=None
+                pagina_web="no cuenta con sitio web actualmente"
             ),
             Excursion(
                 id="rest_002",
@@ -38,7 +38,7 @@ DATOS_LUGARES = {
                     "https://media-cdn.tripadvisor.com/media/photo-s/0f/39/57/29/terrace.jpg",
                     "https://img.hellofresh.com/w_3840,q_auto,f_auto,c_fill,fl_lossy/hellofresh_website/es/cms/SEO/recipes/gourmet/entrecot-de-ternera.jpeg"
                 ],
-                pagina_web=None
+                pagina_web="no cuenta con sitio web actualmente"
             ),
             Excursion(
                 id="rest_003",
@@ -52,7 +52,7 @@ DATOS_LUGARES = {
                     "https://th.bing.com/th/id/R.fd97452e324b98f82067527e105c3cae?rik=iP76bvNh%2fnrOhQ&pid=ImgRaw&r=0",
                     "https://tse3.mm.bing.net/th/id/OIP.pbrxeUZsbRcWg30Y95bscwHaFj?rs=1&pid=ImgDetMain&o=7&rm=3",
                 ],
-                pagina_web=None
+                pagina_web="no cuenta con sitio web actualmente"
             ),
         ],
         "comercios": [
@@ -82,7 +82,7 @@ DATOS_LUGARES = {
                     "https://tse1.explicit.bing.net/th/id/OIP.B4MZSyGssd2D7iMBWlo_CAHaEK?rs=1&pid=ImgDetMain&o=7&rm=3",  # REPETIDA: también en com_006 (Lombardía Arte & Joyas)
                     "https://cdn.shopify.com/s/files/1/0591/9096/8528/files/PU02190_Joyas_de_Acero_Uruguay_Pulsera_Acero_Dorado.jpg?v=1682552381"  # REPETIDA: también en com_001 (Manos del Uruguay)
                 ],
-                pagina_web=None
+                pagina_web="no cuenta con sitio web actualmente"
             ),
             Excursion(
                 id="com_003",
@@ -96,7 +96,7 @@ DATOS_LUGARES = {
                     "https://tse2.mm.bing.net/th/id/OIP.ONCJKpXjHK1WNTy5hDQNfgHaEo?w=1200&h=750&rs=1&pid=ImgDetMain&o=7&rm=3",  # REPETIDA: también en com_004 (Lemon) y compr_002 (Av. General Flores)
                     "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/2a/4b/3a/6.jpg?w=1200&h=1200&s=1"  # REPETIDA: también en com_005 (Cosas Bellas)
                 ],
-                pagina_web=None
+                pagina_web="no cuenta con sitio web actualmente"
             ),
             Excursion(
                 id="com_004",
@@ -123,7 +123,7 @@ DATOS_LUGARES = {
                     "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/2a/4b/3a/6.jpg?w=1200&h=1200&s=1",  # REPETIDA: también en com_003 (Feria de Emprendedores)
                     "https://th.bing.com/th/id/R.56f669861b8254e6113582d1178bc5cf?rik=b%2bx%2fvXGN226reA&pid=ImgRaw&r=0"  # REPETIDA: también en com_006 (Lombardía Arte & Joyas)
                 ],
-                pagina_web=None
+                pagina_web="no cuenta con sitio web actualmente"
             ),
             Excursion(
                 id="com_006",
@@ -153,7 +153,7 @@ DATOS_LUGARES = {
                     "https://kronelectronics.uy/wp-content/uploads/2025/04/LEMON.jpeg",  # REPETIDA: también en com_004 (Lemon)
                     "https://tse1.mm.bing.net/th/id/OIP.jHoP55C9sIXPDXWUeJjHPgHaEO?rs=1&pid=ImgDetMain&o=7&rm=3"  # REPETIDA: también en com_001 (Manos del Uruguay)
                 ],
-                pagina_web=None
+                pagina_web="no cuenta con sitio web actualmente"
             ),
             Excursion(
                 id="compr_002",
@@ -167,7 +167,7 @@ DATOS_LUGARES = {
                     "https://tse2.mm.bing.net/th/id/OIP.ONCJKpXjHK1WNTy5hDQNfgHaEo?w=1200&h=750&rs=1&pid=ImgDetMain&o=7&rm=3",  # REPETIDA: también en com_003 (Feria de Emprendedores) y com_004 (Lemon)
                     "https://media-cdn.tripadvisor.com/media/photo-s/0e/fe/98/25/acervo.jpg"  # REPETIDA: también en cult_004 (Museo Municipal Dr. Bautista Rebuffo)
                 ],
-                pagina_web=None
+                pagina_web="no cuenta con sitio web actualmente"
             )
         ],
         "cultural": [
@@ -184,7 +184,7 @@ DATOS_LUGARES = {
                     "https://images.adsttc.com/media/images/61f0/4592/3e4b/313f/8900/001e/newsletter/DJI_0992.jpg?1643136376",  # REPETIDA: también en cult_002 (Plaza de Toros Real de San Carlos) y cult_003 (Museo del Período Histórico Portugués)
                     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRyEbSkf-lD6Cnroy9tnsllSCGmC6RmK4yGLjX3UbqCcw&s=10"  # REPETIDA: también en cult_002 (Plaza de Toros Real de San Carlos) y cult_003 (Museo del Período Histórico Portugués)
                 ],
-                pagina_web=None
+                pagina_web="no cuenta con sitio web actualmente"
             ),
             Excursion(
                 id="cult_002",
@@ -198,7 +198,7 @@ DATOS_LUGARES = {
                     "https://images.adsttc.com/media/images/61f0/4592/3e4b/313f/8900/001e/newsletter/DJI_0992.jpg?1643136376",  # REPETIDA: también en cult_001 (Teatro Bastión del Carmen) y cult_003 (Museo del Período Histórico Portugués)
                     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRyEbSkf-lD6Cnroy9tnsllSCGmC6RmK4yGLjX3UbqCcw&s=10"  # REPETIDA: también en cult_001 (Teatro Bastión del Carmen) y cult_003 (Museo del Período Histórico Portugués)
                 ],
-                pagina_web=None
+                pagina_web="no cuenta con sitio web actualmente"
             ),
             Excursion(
                 id="cult_003",
@@ -212,7 +212,7 @@ DATOS_LUGARES = {
                     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRyEbSkf-lD6Cnroy9tnsllSCGmC6RmK4yGLjX3UbqCcw&s=10",  # REPETIDA: también en cult_001 (Teatro Bastión del Carmen) y cult_002 (Plaza de Toros Real de San Carlos)
                     "https://images.adsttc.com/media/images/61f0/4592/3e4b/313f/8900/001e/newsletter/DJI_0992.jpg?1643136376"  # REPETIDA: también en cult_001 (Teatro Bastión del Carmen) y cult_002 (Plaza de Toros Real de San Carlos)
                 ],
-                pagina_web=None
+                pagina_web="no cuenta con sitio web actualmente"
             ),
             Excursion(
                 id="cult_004",
@@ -226,7 +226,7 @@ DATOS_LUGARES = {
                     "https://media-cdn.tripadvisor.com/media/photo-s/0e/fe/98/25/acervo.jpg",  # REPETIDA: también en compr_002 (Av. General Flores)
                     "https://salimos.uy/wp-content/uploads/2021/01/bastion-del-carmen-en-colonia-del-sacramento.jpg"  # REPETIDA: también en cult_001 (Teatro Bastión del Carmen)
                 ],
-                pagina_web=None
+                pagina_web="no cuenta con sitio web actualmente"
             )
         ]
     }

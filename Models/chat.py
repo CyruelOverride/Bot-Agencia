@@ -269,7 +269,7 @@ class Chat:
                 # Construir mensaje
                 descripcion = restaurante.descripcion if restaurante.descripcion else "Sin descripción disponible"
                 ubicacion = restaurante.ubicacion if restaurante.ubicacion else None
-                pagina_web = restaurante.pagina_web if hasattr(restaurante, 'pagina_web') and restaurante.pagina_web else None
+                pagina_web = restaurante.pagina_web if hasattr(restaurante, 'pagina_web') and restaurante.pagina_web and restaurante.pagina_web != "no cuenta con sitio web actualmente" else None
                 
                 # Enviar imágenes del restaurante (soporte para múltiples imágenes)
                 imagenes_disponibles = restaurante.imagenes_url if hasattr(restaurante, 'imagenes_url') and restaurante.imagenes_url else []
@@ -1584,9 +1584,6 @@ class Chat:
                         caption = f"*{lugar_random.nombre}*\n\n{lugar_random.descripcion}"
                         if lugar_random.ubicacion:
                             caption += f"\n\n📍 {lugar_random.ubicacion}"
-                        pagina_web = lugar_random.pagina_web if hasattr(lugar_random, 'pagina_web') and lugar_random.pagina_web else None
-                        if pagina_web:
-                            caption += f"\n\n🌐 {pagina_web}"
                         
                         if len(caption) > 1024:
                             caption = caption[:1021] + "..."
@@ -1607,9 +1604,6 @@ class Chat:
                             mensaje = f"*{lugar_random.nombre}*\n\n{lugar_random.descripcion}"
                             if lugar_random.ubicacion:
                                 mensaje += f"\n\n📍 {lugar_random.ubicacion}"
-                            pagina_web = lugar_random.pagina_web if hasattr(lugar_random, 'pagina_web') and lugar_random.pagina_web else None
-                            if pagina_web:
-                                mensaje += f"\n\n🌐 {pagina_web}"
                             return enviar_mensaje_whatsapp(numero, mensaje)
                         return resultado
                     else:
@@ -1617,9 +1611,6 @@ class Chat:
                         mensaje = f"*{lugar_random.nombre}*\n\n{lugar_random.descripcion}"
                         if lugar_random.ubicacion:
                             mensaje += f"\n\n📍 {lugar_random.ubicacion}"
-                        pagina_web = lugar_random.pagina_web if hasattr(lugar_random, 'pagina_web') and lugar_random.pagina_web else None
-                        if pagina_web:
-                            mensaje += f"\n\n🌐 {pagina_web}"
                         return enviar_mensaje_whatsapp(numero, mensaje)
                 else:
                     # Si no hay plan, mostrar lista de intereses

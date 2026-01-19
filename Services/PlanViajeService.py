@@ -86,7 +86,7 @@ class PlanViajeService:
         
         descripcion = excursion.descripcion if excursion.descripcion else "Sin descripción disponible"
         ubicacion = excursion.ubicacion if excursion.ubicacion else None
-        pagina_web = excursion.pagina_web if hasattr(excursion, 'pagina_web') and excursion.pagina_web else None
+        pagina_web = excursion.pagina_web if hasattr(excursion, 'pagina_web') and excursion.pagina_web and excursion.pagina_web != "no cuenta con sitio web actualmente" else None
         
         # Intentar enviar imágenes primero
         imagenes_disponibles = excursion.imagenes_url if hasattr(excursion, 'imagenes_url') and excursion.imagenes_url else []
@@ -112,6 +112,8 @@ class PlanViajeService:
                 
                 # Enviar todas las imágenes
                 resultado = None
+                primera_imagen_exitosa = False
+                
                 for idx, imagen_url in enumerate(imagenes_disponibles):
                     # Primera imagen lleva el caption completo, las demás solo el nombre
                     caption_imagen = caption if idx == 0 else f"*{excursion.nombre}*"
@@ -121,6 +123,17 @@ class PlanViajeService:
                     # El resultado de la primera imagen es el que cuenta para validación
                     if idx == 0:
                         resultado = resultado_imagen
+                        primera_imagen_exitosa = resultado_imagen.get('success', False)
+                        
+                        # Si la primera imagen falla, no enviar las demás y salir del loop
+                        if not primera_imagen_exitosa:
+                            print(f"⚠️ [PASO 1] Primera imagen falló, cancelando envío de imágenes adicionales")
+                            break
+                    else:
+                        # Solo enviar imágenes adicionales si la primera fue exitosa
+                        if not primera_imagen_exitosa:
+                            print(f"⚠️ [PASO 1] Saltando imagen {idx + 1} porque la primera imagen falló")
+                            break
                     
                     # Delay eliminado - enviar imágenes sin delay
                 
@@ -201,7 +214,7 @@ class PlanViajeService:
         # Esto las hace más confiables que usar URLs externas directamente
         descripcion = excursion.descripcion if excursion.descripcion else "Sin descripción disponible"
         ubicacion = excursion.ubicacion if excursion.ubicacion else None
-        pagina_web = excursion.pagina_web if hasattr(excursion, 'pagina_web') and excursion.pagina_web else None
+        pagina_web = excursion.pagina_web if hasattr(excursion, 'pagina_web') and excursion.pagina_web and excursion.pagina_web != "no cuenta con sitio web actualmente" else None
         
         # Construir caption/mensaje
         imagenes_disponibles = excursion.imagenes_url if hasattr(excursion, 'imagenes_url') and excursion.imagenes_url else []
@@ -230,6 +243,8 @@ class PlanViajeService:
             
             # Enviar todas las imágenes
             resultado_info = None
+            primera_imagen_exitosa = False
+            
             for idx, imagen_url in enumerate(imagenes_disponibles):
                 # Primera imagen lleva el caption completo, las demás solo el nombre
                 caption_imagen = caption if idx == 0 else f"*{excursion.nombre}*"
@@ -241,13 +256,23 @@ class PlanViajeService:
                 # El resultado de la primera imagen es el que cuenta para validación
                 if idx == 0:
                     resultado_info = resultado_imagen
-                    print(f"📊 [PASO 1] RESULTADO (primera imagen): success={resultado_info.get('success', False)}, message_id={resultado_info.get('message_id', 'N/A')}, error={resultado_info.get('error', 'N/A')}")
+                    primera_imagen_exitosa = resultado_imagen.get('success', False)
+                    print(f"📊 [PASO 1] RESULTADO (primera imagen): success={primera_imagen_exitosa}, message_id={resultado_info.get('message_id', 'N/A')}, error={resultado_info.get('error', 'N/A')}")
+                    
+                    # Si la primera imagen falla, no enviar las demás y salir del loop
+                    if not primera_imagen_exitosa:
+                        print(f"⚠️ [PASO 1] Primera imagen falló, cancelando envío de imágenes adicionales")
+                        break
                 else:
-                    # Para imágenes adicionales, solo loguear el resultado
-                    if resultado_imagen.get('success'):
-                        print(f"✅ [PASO 1] Imagen {idx + 1} enviada exitosamente")
+                    # Solo enviar imágenes adicionales si la primera fue exitosa
+                    if primera_imagen_exitosa:
+                        # Para imágenes adicionales, solo loguear el resultado
+                        if resultado_imagen.get('success'):
+                            print(f"✅ [PASO 1] Imagen {idx + 1} enviada exitosamente")
+                        else:
+                            print(f"⚠️ [PASO 1] Imagen {idx + 1} falló: {resultado_imagen.get('error', 'N/A')}")
                     else:
-                        print(f"⚠️ [PASO 1] Imagen {idx + 1} falló: {resultado_imagen.get('error', 'N/A')}")
+                        print(f"⚠️ [PASO 1] Saltando imagen {idx + 1} porque la primera imagen falló")
                 
                 # Delay mínimo eliminado - enviar imágenes sin delay para mayor velocidad
         else:
