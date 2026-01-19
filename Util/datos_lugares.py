@@ -65,8 +65,8 @@ DATOS_LUGARES = {
                 ubicacion="https://www.google.com/maps/search/Manos+del+Uruguay+Colonia",
                 tags=["tarde","noche", "artesanias", "lana", "cuero", "joyeria", "comercio_justo", "premium"],
                 imagenes_url=[
-                    "https://tse1.mm.bing.net/th/id/OIP.jHoP55C9sIXPDXWUeJjHPgHaEO?rs=1&pid=ImgDetMain&o=7&rm=3",  # REPETIDA: también en compr_001 (Colonia Shopping)
-                    "https://cdn.shopify.com/s/files/1/0591/9096/8528/files/PU02190_Joyas_de_Acero_Uruguay_Pulsera_Acero_Dorado.jpg?v=1682552381"  # REPETIDA: también en com_002 (Mercado Artesanal)
+                    "https://tse2.mm.bing.net/th/id/OIP.dQPA01pCW5z2QsTAWvpPmAHaEK?rs=1&pid=ImgDetMain&o=7&rm=3",
+                    "https://tse3.mm.bing.net/th/id/OIP.pbrxeUZsbRcWg30Y95bscwHaFj?rs=1&pid=ImgDetMain&o=7&rm=3"
                 ],
                 pagina_web="https://www.manos.com.uy/"
             ),
@@ -79,8 +79,8 @@ DATOS_LUGARES = {
                 ubicacion="https://www.google.com/maps/search/Mercado+Artesanal+Colonia",
                 tags=["mañana","tarde","noche","artesanias", "ceramica", "joyeria", "textiles", "cultural", "local"],
                 imagenes_url=[
-                    "https://tse1.explicit.bing.net/th/id/OIP.B4MZSyGssd2D7iMBWlo_CAHaEK?rs=1&pid=ImgDetMain&o=7&rm=3",  # REPETIDA: también en com_006 (Lombardía Arte & Joyas)
-                    "https://cdn.shopify.com/s/files/1/0591/9096/8528/files/PU02190_Joyas_de_Acero_Uruguay_Pulsera_Acero_Dorado.jpg?v=1682552381"  # REPETIDA: también en com_001 (Manos del Uruguay)
+                    "https://media-cdn.tripadvisor.com/media/photo-s/0e/d1/3a/50/fachada-de-la-casa-ano.jpg",
+                    "https://media-cdn.tripadvisor.com/media/photo-s/0f/39/57/29/terrace.jpg"
                 ],
                 pagina_web="no cuenta con sitio web actualmente"
             ),
@@ -93,8 +93,8 @@ DATOS_LUGARES = {
                 ubicacion="https://www.google.com/maps/search/Feria+Productores+Colonia",
                 tags=["mañana","tarde","feria", "artesanias", "dulces", "antiguedades", "decoracion", "tradicional"],
                 imagenes_url=[
-                    "https://tse2.mm.bing.net/th/id/OIP.ONCJKpXjHK1WNTy5hDQNfgHaEo?w=1200&h=750&rs=1&pid=ImgDetMain&o=7&rm=3",  # REPETIDA: también en com_004 (Lemon) y compr_002 (Av. General Flores)
-                    "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/2a/4b/3a/6.jpg?w=1200&h=1200&s=1"  # REPETIDA: también en com_005 (Cosas Bellas)
+                    "https://th.bing.com/th/id/R.fd97452e324b98f82067527e105c3cae?rik=iP76bvNh%2fnrOhQ&pid=ImgRaw&r=0",
+                    "https://img.hellofresh.com/w_3840,q_auto,f_auto,c_fill,fl_lossy/hellofresh_website/es/cms/SEO/recipes/gourmet/entrecot-de-ternera.jpeg"
                 ],
                 pagina_web="no cuenta con sitio web actualmente"
             ),
