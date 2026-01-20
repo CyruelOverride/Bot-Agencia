@@ -472,11 +472,10 @@ class Chat:
         # (sin importar qué texto envió el usuario, incluso "Hola")
         mensaje = (
             f"¡Hola! 👋\n\n"
-            f"Soy tu asistente virtual de viaje y estoy acá para ayudarte a aprovechar al máximo tu estadía en {usuario.ciudad}.\n\n"
-            f"A continuación te voy a hacer unas breves preguntas para conocerte mejor y poder recomendarte lugares, actividades y opciones que se adapten mejor a tus gustos.\n\n"
-            f"Además, muchas de las sugerencias incluyen beneficios y descuentos especiales pensados para nuestros pasajeros, para que disfrutes más gastando menos.\n\n"
-            f"La idea es simple: ahorrarte tiempo, evitar búsquedas interminables y llevarte directo a lo mejor de la ciudad.\n\n"
-            f"¿Quieres que te proporcione este servicio sin costo adicional?"
+            f"Soy tu asistente virtual en {usuario.ciudad}.\n\n"
+            f"Te haré unas breves preguntas para darte recomendaciones personalizadas, muchas de ellas con descuentos exclusivos para pasajeros."
+            f"El objetivo es simple, ahorrarte tiempo y dinero, llevandote directo a lo mejor de la ciudad."
+            f"¿Te interesaria que te proporcione este servicio gratuito?"
         )
         
         # Enviar mensaje con botones de confirmación
@@ -898,7 +897,7 @@ class Chat:
         
         if tiene_todos_los_intereses:
             # Tiene todos los intereses, solo mensaje de cierre
-            mensaje = f"{mensaje_base}. Por cualquier consulta puedes escribirme sin problema"
+            mensaje = f"{mensaje_base}. Te deseo mucha suerte en tu estadía en Colonia"
             return enviar_mensaje_whatsapp(numero, mensaje)
         else:
             # No tiene todos los intereses, ofrecer agregar más

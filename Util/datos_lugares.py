@@ -66,7 +66,8 @@ DATOS_LUGARES = {
                 tags=["tarde","noche", "artesanias", "lana", "cuero", "joyeria", "comercio_justo", "premium"],
                 imagenes_url=[
                     "https://th.bing.com/th/id/R.fcc02c6e342e664aefe296212cc5bd7a?rik=w%2fH9MgtB2e%2b4Rg&riu=http%3a%2f%2fwww.explore-uruguay.com%2fimage-files%2fmanos-del-uruguay-yarn.jpg&ehk=EQYO4bfb1LD6MA9CYcLVC1jkdJZPoitS8qd7TIy1j0s%3d&risl=&pid=ImgRaw&r=0",
-                    "https://www.designscene.net/wp-content/uploads/2019/02/M-Missoni-FW19-03-620x930.jpg"
+                    "https://www.designscene.net/wp-content/uploads/2019/02/M-Missoni-FW19-03-620x930.jpg",
+                    "https://tse1.mm.bing.net/th/id/OIP.9skpD_PxPWG40Y3tC36fVAHaLH?rs=1&pid=ImgDetMain&o=7&rm=3"
                 ],
                 pagina_web="https://www.manos.com.uy/"
             ),
@@ -80,7 +81,8 @@ DATOS_LUGARES = {
                 tags=["mañana","tarde","noche","artesanias", "ceramica", "joyeria", "textiles", "cultural", "local"],
                 imagenes_url=[
                     "https://rosarioweb.com.uy/wp-content/uploads/2023/05/FB_IMG_1683663472591.jpg",
-                    "https://tse4.mm.bing.net/th/id/OIP.AzlfAo3zU7sTth156auKEwHaFj?rs=1&pid=ImgDetMain&o=7&rm=3"
+                    "https://tse4.mm.bing.net/th/id/OIP.AzlfAo3zU7sTth156auKEwHaFj?rs=1&pid=ImgDetMain&o=7&rm=3",
+                    "https://www.radiosantaclara.cr/wp-content/uploads/2024/07/FOTO-MERCADO-ARTESANAL-LA-FORTUNA.jpg"
                 ],
                 pagina_web="no cuenta con sitio web actualmente"
             ),
@@ -93,7 +95,9 @@ DATOS_LUGARES = {
                 ubicacion="https://www.google.com/maps/search/Lemon+Colonia+Gral+Flores+435",
                 tags=["mañana","tarde","noche", "ropa", "indumentaria", "mujer", "moda", "nacional", "premium"],
                 imagenes_url=[
-                    "https://kronelectronics.uy/wp-content/uploads/2025/04/LEMON.jpeg"  # REPETIDA: también en compr_001 (Colonia Shopping)
+                    "https://kronelectronics.uy/wp-content/uploads/2025/04/LEMON.jpeg",
+                    "https://imgs.elpais.com.uy/dims4/default/b810c21/2147483647/strip/true/crop/1001x688+18+0/resize/1440x990!/quality/90/?url=https%3A%2F%2Fel-pais-uruguay-production-web.s3.us-east-1.amazonaws.com%2Fbrightspot%2F6f%2F1b%2F959be2844ffabc8819cef2ca9f04%2Flemon-1.JPG",
+                    "https://f.fcdn.app/imgs/7beaa9/lemon.com.uy/lemouy/e63d/original/recursos/2886/1000x500/semana-santander-web-33.jpg"
                 ],
                 pagina_web="https://lemon.com.uy/"
             ),
@@ -107,7 +111,8 @@ DATOS_LUGARES = {
                 tags=["mañana","tarde","souvenirs", "artesanias", "joyeria", "textiles", "gourmet", "local", "premium"],
                 imagenes_url=[
                     "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/2a/4b/3a/6.jpg?w=1200&h=1200&s=1",  # REPETIDA: también en com_003 (Feria de Emprendedores)
-                    "https://th.bing.com/th/id/R.56f669861b8254e6113582d1178bc5cf?rik=b%2bx%2fvXGN226reA&pid=ImgRaw&r=0"  # REPETIDA: también en com_006 (Lombardía Arte & Joyas)
+                    "https://tse2.mm.bing.net/th/id/OIP.EBXdJ0Q5Ca3wMKFjDFh8AgHaJQ?rs=1&pid=ImgDetMain&o=7&rm=3",
+                    "https://tse1.explicit.bing.net/th/id/OIP.kMDbztb_ceZDVsENviIBCAHaHa?rs=1&pid=ImgDetMain&o=7&rm=3"
                 ],
                 pagina_web="no cuenta con sitio web actualmente"
             ),
@@ -121,7 +126,8 @@ DATOS_LUGARES = {
                 tags=["mañana","tarde","joyeria", "orfebreria", "plateria", "artesanal", "premium", "tradicional"],
                 imagenes_url=[
                     "https://lombardia.com.uy/wp-content/uploads/2024/12/2-17.jpg",
-                    "https://tse1.explicit.bing.net/th/id/OIP.B4MZSyGssd2D7iMBWlo_CAHaEK?rs=1&pid=ImgDetMain&o=7&rm=3"  # REPETIDA: también en com_002 (Mercado Artesanal)
+                    "https://tse1.explicit.bing.net/th/id/OIP.B4MZSyGssd2D7iMBWlo_CAHaEK?rs=1&pid=ImgDetMain&o=7&rm=3",
+                    "https://lombardia.com.uy/wp-content/uploads/2023/11/333-1-300x300.jpg"
                 ],
                 pagina_web="https://lombardia.com.uy/"
             )
