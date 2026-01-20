@@ -67,7 +67,7 @@ DATOS_LUGARES = {
                 imagenes_url=[
                     "https://th.bing.com/th/id/R.fcc02c6e342e664aefe296212cc5bd7a?rik=w%2fH9MgtB2e%2b4Rg&riu=http%3a%2f%2fwww.explore-uruguay.com%2fimage-files%2fmanos-del-uruguay-yarn.jpg&ehk=EQYO4bfb1LD6MA9CYcLVC1jkdJZPoitS8qd7TIy1j0s%3d&risl=&pid=ImgRaw&r=0",
                     "https://www.designscene.net/wp-content/uploads/2019/02/M-Missoni-FW19-03-620x930.jpg",
-                    "https://tse1.mm.bing.net/th/id/OIP.9skpD_PxPWG40Y3tC36fVAHaLH?rs=1&pid=ImgDetMain&o=7&rm=3"
+                    "https://i.etsystatic.com/35216084/r/il/560c12/4046990905/il_570xN.4046990905_iycs.jpg"
                 ],
                 pagina_web="https://www.manos.com.uy/"
             ),
@@ -111,7 +111,7 @@ DATOS_LUGARES = {
                 tags=["mañana","tarde","souvenirs", "artesanias", "joyeria", "textiles", "gourmet", "local", "premium"],
                 imagenes_url=[
                     "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/2a/4b/3a/6.jpg?w=1200&h=1200&s=1",  # REPETIDA: también en com_003 (Feria de Emprendedores)
-                    "https://tse2.mm.bing.net/th/id/OIP.EBXdJ0Q5Ca3wMKFjDFh8AgHaJQ?rs=1&pid=ImgDetMain&o=7&rm=3",
+                    "https://www.mexicodesconocido.com.mx/wp-content/uploads/2019/10/DSC_0778-1024x683.jpg",
                     "https://tse1.explicit.bing.net/th/id/OIP.kMDbztb_ceZDVsENviIBCAHaHa?rs=1&pid=ImgDetMain&o=7&rm=3"
                 ],
                 pagina_web="no cuenta con sitio web actualmente"
